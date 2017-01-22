@@ -1,0 +1,7 @@
+{
+    "AUTHOR" : "FlapJack",
+    "INSTALL_MSG" : "Thanks for installing Dongers.",
+    "NAME" : "Dongers",
+    "SHORT" : "Prints dongers in a chat channel.",
+    "DESCRIPTION" : "Retreives dongers from dongerlist.com and prints them in chat channels on request"
+}
