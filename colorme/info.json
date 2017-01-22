@@ -3,5 +3,5 @@
     "INSTALL_MSG" : "Thanks for installing ColorMe.\n\nNOTE: To use this cog properly, if you have roles with elevated permissions (i.e. admins, mods)\nthese users will need special roles placed ABOVE their admin or mod roles, since only top_role\ndetermines the name color. Or, you can remove admin and mod roles completely\nand just make sure each user's custom role has the right permissions.\nCurrently, roles named 'admin', 'mod', and 'bots' are protected from editing.",
     "NAME" : "ColorMe",
     "SHORT" : "Allow users to manage the color of their own name.",
-    "DESCRIPTION" : "Creates a custom role for each user and allows them to manage the color of their own name."
+    "DESCRIPTION" : "Creates a custom role for each user and allows them to manage the color of their own name. Best used on small servers with not a lot of roles to manage."
 }

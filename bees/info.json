@@ -3,5 +3,5 @@
     "INSTALL_MSG" : "Thanks for installing Bees.",
     "NAME" : "Bees",
     "SHORT" : "Reacts with a bee when you talk about bees.",
-    "DESCRIPTION" : "Reacts with a bee when you talk about bees. Attempts to filter out some non-bee references"
+    "DESCRIPTION" : "Reacts with a bee when you talk about bees. Attempts to filter out some non-bee references for maxium bee accuracy."
 }
