@@ -2,6 +2,6 @@
     "AUTHOR" : "FlapJack",
     "INSTALL_MSG" : "Thanks for installing Bees.",
     "NAME" : "Bees",
-    "SHORT" : "Reacts with a bee when you talk about bees.",
-    "DESCRIPTION" : "Reacts with a bee when you talk about bees. Attempts to filter out some non-bee references for maxium bee accuracy."
+    "SHORT" : "Adds an emoji bee reaction when it detects chat about bees.",
+    "DESCRIPTION" : "Adds an emoji bee reaction when it detects chat about bees."
 }
