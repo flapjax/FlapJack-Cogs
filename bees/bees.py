@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-#import asyncio
 
 # React if message includes one of these phrases
 words_that_are_bees = 'bee'
@@ -32,9 +31,9 @@ class Bees:
 		await self.bot.say("bees.")
 
 async def check_messages(message):
-	if message.author.id != bee_manager.bot.user.id: # Don't react to self
+	if message.author.id != bee_manager.bot.user.id:
 		if words_that_are_bees in message.content.lower():
-			bees_detected = True # Bee detection flag
+			bees_detected = True
 		else:
 			bees_detected = False
 
@@ -43,7 +42,6 @@ async def check_messages(message):
 				if phrase in message.content.lower():
 					bees_detected = False # False alarm!
 					# Yeah, false negatives are possible with multiple bee references in message
-					# I will fix this soon!
 					break
 
 		if bees_detected:

@@ -8,8 +8,7 @@ from .utils.dataIO import dataIO
 # determines the name color. Or, you can remove admin and mod roles completely
 # and just make sure each user's custom role has the right permissions.
 
-# If a member's top role matches one of these roles, the color will not be changed.
-# Use this to protect roles that are not meant to be used for changing colors.
+# The following roles are protected from color changes using this cog.
 roles_to_ignore = ['admin', 'mod', 'bots']
 # When creating a custom role for a new member, this is the role that will be copied.
 # Recommended to use the @everyone role, otherwise new users could get access to
