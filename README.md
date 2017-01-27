@@ -3,7 +3,7 @@
 # FlapJack Cogs
 
 These are custom cogs I have written for Red Bot.    
-Some of them are still in development, so please read the info.json files before using and contact me on discord (FlapJack#5505) with any issues.
+Please read the info.json files before using and contact me on discord (FlapJack#5505) with any issues.
 
 ## Credits
 
