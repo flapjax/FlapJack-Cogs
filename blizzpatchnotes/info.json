@@ -3,5 +3,5 @@
     "INSTALL_MSG" : "Thanks for installing BlizzPatchNotes.\n BeautifulSoup4, pypandoc, and pandoc must be installed to use this cog.",
     "NAME" : "BlizzPatchNotes",
     "SHORT" : "Posts latest Blizzard game patch notes in chat.",
-    "DESCRIPTION" : "Posts latest Blizzard game patch notes in chat.\n\nGames supported:\nOverwatch\n\nDependencies:\nBeautifulSoup4 :: https://www.crummy.com/software/BeautifulSoup/bs4/doc/\npypandoc :: https://pypi.python.org/pypi/pypandoc\nPandoc :: http://pandoc.org/"
+    "DESCRIPTION" : "Posts latest Blizzard game patch notes in chat.\n\nGames supported:\nOverwatch\nDiablo3\nHearthstone\nHeroes of the Storm\nStarcraft2\nWorld of Warcraft\n\nDependencies:\nBeautifulSoup4 :: https://www.crummy.com/software/BeautifulSoup/bs4/doc/\npypandoc :: https://pypi.python.org/pypi/pypandoc\nPandoc :: http://pandoc.org/"
 }
