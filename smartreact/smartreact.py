@@ -88,11 +88,8 @@ class SmartReact:
 			server = message.server
 			react_dict = self.settings[server.id]
 			for emoji in react_dict:
-				print("Searching emoji: {}".format(str(emoji)))
 				for word in react_dict[emoji]:
-					print("Searching word: {}".format(str(word)))
 					if word.lower() in message.content.lower():
-						print("Found!")
 						try:
 							await self.bot.add_reaction(message, emoji)
 						except discord.errors.HTTPException:
