@@ -3,5 +3,7 @@
     "INSTALL_MSG" : "Thanks for installing Dongers.",
     "NAME" : "Dongers",
     "SHORT" : "Prints dongers in a chat channel.",
-    "DESCRIPTION" : "Retreives dongers from dongerlist.com and prints them in chat channels on request"
+    "DESCRIPTION" : "Retreives dongers from dongerlist.com and prints them in chat channels on request.\n\nDependencies:\nBeautifulSoup4 :: https://www.crummy.com/software/BeautifulSoup/bs4/doc/",
+    "DISABLED" : false,
+    "TAGS" : ["donger"]
 }

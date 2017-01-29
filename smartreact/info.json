@@ -3,5 +3,7 @@
     "INSTALL_MSG" : "Thanks for installing SmartReact.",
     "NAME" : "SmartReact",
     "SHORT" : "Create automatic reactions when trigger words are typed in chat",
-    "DESCRIPTION" : "Create automatic reactions when trigger words are typed in chat.\nCustom emojis are not supported at this time.\nDependencies:\nNone"
+    "DESCRIPTION" : "Create automatic reactions when trigger words are typed in chat.\nCustom emojis are not supported at this time.\n\nDependencies: None",
+    "DISABLED" : false,
+    "TAGS" : ["reaction", "smart"]
 }
