@@ -2,8 +2,9 @@
 
 # FlapJack Cogs
 
-These are custom cogs I have written for Red Bot.    
-Please read the info.json files before using and contact me on discord (FlapJack#5505) with any issues.
+These are cogs I have written for Red Bot.
+View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/)   
+Contact me on discord [**FlapJack#5505**] with any issues or suggestions.
 
 ## Credits
 
@@ -12,4 +13,4 @@ Redjumpman for this neat readme file template.
 
 ## License
 
-Please see MIT License for details. This project is open source and you are free to modify my work so long as you credit me.
+Please see MIT License for details. This project is open source and you are free to modify and use my work so long as you credit me.
