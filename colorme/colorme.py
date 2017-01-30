@@ -5,17 +5,18 @@ from .utils.dataIO import dataIO
 from .utils import checks
 from __main__ import send_cmd_help
 
-# NOTE: To use this cog properly, if you have roles with elevated permissions (i.e. admins, mods)
-# these users will need special roles placed ABOVE their admin or mod roles, since only top_role
-# determines the name color (this is a Discord limitation).
+# NOTE: To use this cog properly, if you have roles with elevated permissions
+# (i.e. admins, mods) these users will need special roles placed ABOVE their
+# admin or mod roles, since only top_role determines the name color (this is a
+# Discord limitation).
 # Use [p]colorme protect <role> to protect these roles from color changes.
-# Alternatively, you can remove admin and mod roles completely and just make sure each user's
-# custom role has the right permissions.
-# Your bot must have permission to edit roles AND be placed above other roles in order
-# to edit them (another Discord limitation)
-
+# Alternatively, you can remove admin and mod roles completely and just make
+# sure each user's custom role has the right permissions.
+# Your bot must have permission to edit roles AND be placed above other roles
+# in order to edit them (another Discord limitation)
 # The @everyone role is used as a template for creating the new custom roles,
-# otherwise new users could get access to additional permissions by using the bot.
+# otherwise new users could access additional permissions by using the bot.
+
 
 class ColorMe:
 
@@ -44,8 +45,8 @@ class ColorMe:
         server = ctx.message.server
         member = ctx.message.author
         nick = member.nick
-        # If message came from a private channel, member would actually be a user,
-        # and we need name instead of nick
+        # If message came from a private channel, member would actually be a
+        # user, and we need name instead of nick
         if not nick:
             nick = member.name
 
@@ -55,7 +56,8 @@ class ColorMe:
 
         # Check for valid color
         if not self.is_color_valid(newcolor):
-            await self.bot.reply("Invalid color choice. Must be a valid hexidecimal color value.")
+            await self.bot.reply("Invalid color choice. Must be a valid "
+                                 "hexidecimal color value.")
             return
 
         # Convert color input to integer
@@ -63,19 +65,25 @@ class ColorMe:
 
         if member.top_role.name in roles_to_ignore:
             # Member's top role is on the protected list
-            await self.bot.reply("Your top role is protected from editing, sorry.")
+            await self.bot.reply("Your top role is protected from editing, "
+                                 "sorry.")
 
         elif member.top_role.name == '@everyone':
             # Make a new role for this person, using default role as template
             role_to_copy = discord.utils.get(server.roles, name=default_role)
-            new_role = await self.bot.create_role(server, name=nick, permissions=role_to_copy.permissions,
-                            colour=discord.Colour(intcolor), hoist=role_to_copy.hoist, mentionable=role_to_copy.mentionable)
+            new_role = await self.bot.create_role(server, name=nick,
+                                        permissions=role_to_copy.permissions,
+                                        colour=discord.Colour(intcolor),
+                                        hoist=role_to_copy.hoist,
+                                        mentionable=role_to_copy.mentionable)
             await self.bot.add_roles(member, new_role)
-            await self.bot.reply("You didn't have a custom role yet, so I made you one.")
+            await self.bot.reply("You didn't have a custom role yet, so I "
+                                 "made you one.")
 
         else:
-            #Member has a top role that can be edited.
-            await self.bot.edit_role(server, member.top_role, colour = discord.Colour(intcolor))
+            # Member has a top role that can be edited.
+            await self.bot.edit_role(server, member.top_role,
+                                     colour=discord.Colour(intcolor))
             await self.bot.reply("Your new color is set.")
 
     @colorme.command(name="protect", pass_context=True)
@@ -92,7 +100,8 @@ class ColorMe:
         else:
             self.settings[server.id]["Roles"]["Protected"].append(role)
             dataIO.save_json(self.settings_path, self.settings)
-            await self.bot.say("Role '{}' is now protected from color changes.".format(role))
+            await self.bot.say("Role '{}' is now protected from color "
+                               "changes.".format(role))
 
     @colorme.command(name="unprotect", pass_context=True)
     @checks.admin_or_permissions(manage_server=True)
@@ -108,7 +117,8 @@ class ColorMe:
         else:
             self.settings[server.id]["Roles"]["Protected"].remove(role)
             dataIO.save_json(self.settings_path, self.settings)
-            await self.bot.say("Role '{}' is no longer protected from color changes.".format(role))
+            await self.bot.say("Role '{}' is no longer protected from color "
+                               "changes.".format(role))
 
     @colorme.command(name="listprotected", pass_context=True)
     async def _listprotected_colorme(self, ctx):
@@ -127,7 +137,8 @@ class ColorMe:
             self.add_default_settings(server_id)
 
     def add_default_settings(self, server_id):
-        self.settings[server_id] = {"Roles": {"Protected": [], "Default": "@everyone"}}
+        self.settings[server_id] = {"Roles": {"Protected": [], "Default":
+                                    "@everyone"}}
         dataIO.save_json(self.settings_path, self.settings)
 
     def is_color_valid(self, newcolor):
@@ -148,17 +159,20 @@ class ColorMe:
         except ValueError:
             return False
 
+
 def check_folders():
     folder = "data/colorme"
     if not os.path.exists(folder):
         print("Creating {} folder...".format(folder))
         os.makedirs(folder)
 
+
 def check_files():
     default = {}
     if not dataIO.is_valid_json("data/colorme/settings.json"):
         print("Creating default colorme settings.json...")
         dataIO.save_json("data/colorme/settings.json", default)
+
 
 def setup(bot):
     check_folders()
