@@ -44,11 +44,7 @@ class ColorMe:
 
         server = ctx.message.server
         member = ctx.message.author
-        nick = member.nick
-        # If message came from a private channel, member would actually be a
-        # user, and we need name instead of nick
-        if not nick:
-            nick = member.name
+        nick = member.display_name
 
         self.load_settings(server.id)
         roles_to_ignore = self.settings[server.id]["Roles"]["Protected"]

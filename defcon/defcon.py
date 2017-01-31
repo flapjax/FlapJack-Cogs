@@ -36,10 +36,10 @@ class Defcon:
         else:
             self.settings[server.id]["defcon"] -= 1
 
-        self.settings[server.id]["authority"] = member.nick
+        self.settings[server.id]["authority"] = member.display_name
         self.save_settings(server)
         await self.post_defcon(str(self.settings[server.id]["defcon"]),
-                               member.nick)
+                               member.display_name)
 
     @commands.command(name="defcon-", no_pm=True, pass_context=True)
     async def defconminus(self, ctx):
@@ -52,10 +52,10 @@ class Defcon:
         else:
             self.settings[server.id]["defcon"] += 1
 
-        self.settings[server.id]["authority"] = member.nick
+        self.settings[server.id]["authority"] = member.display_name
         self.save_settings(server)
         await self.post_defcon(str(self.settings[server.id]["defcon"]),
-                               member.nick)
+                               member.display_name)
 
     @commands.command(name="setdefcon", no_pm=True, pass_context=True)
     async def setdefcon(self, ctx, level):
@@ -66,10 +66,10 @@ class Defcon:
 
         if level in valid_defcons:
             self.settings[server.id]["defcon"] = int(level)
-            self.settings[server.id]["authority"] = member.nick
+            self.settings[server.id]["authority"] = member.display_name
             self.save_settings(server)
             await self.post_defcon(str(self.settings[server.id]["defcon"]),
-                                   member.nick)
+                                   member.display_name)
         else:
             await self.bot.say("Not a valid DEFCON level. Haven't "
                                "you seen War Games?")
