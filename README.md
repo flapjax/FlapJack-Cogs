@@ -2,7 +2,7 @@
 
 # FlapJack Cogs
 
-These are cogs I have written for Red Bot.
+These are cogs I have written for Red Bot.  
 View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/)
 
 - **BlizzPatchNotes** - Fetches and prints latest patch notes from all current Blizzard games.
@@ -13,7 +13,7 @@ View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/
 
 ## Dependencies
 
-**Dongers** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).\n
+**Dongers** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).  
 **BlizzPatchNotes** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), [pypandoc](https://github.com/bebraw/pypandoc), and [Pandoc](http://pandoc.org/).
 
 ## Contact Me
@@ -22,7 +22,7 @@ Contact me on discord [**FlapJack#5505**] with any questions or suggestions. Col
 
 ## Credits
 
-Twentysix26 and everyone else who has contributed to Red Bot.  
+Twentysix26 and everyone else who has contributed to Red Bot.    
 Redjumpman, for this neat readme file template.
 
 ## License
