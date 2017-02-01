@@ -3,7 +3,7 @@
     "INSTALL_MSG" : "Thanks for installing Defcon.",
     "NAME" : "Defcon",
     "SHORT" : "Implement the DEFCON scale on your server, like in War Games!",
-    "DESCRIPTION" : "Creates embeds in response to DEFCON level changes.This cog is purely cosmetic. No server settings are altered.\n\nDependencies: None",
+    "DESCRIPTION" : "Creates embeds in response to DEFCON level changes. This cog is purely cosmetic. No server settings are altered.\n\nDependencies: None",
     "DISABLED" : false,
-    "TAGS" : ["defcon", "embed", "cosmetic"]
+    "TAGS" : ["defcon", "embed"]
 }

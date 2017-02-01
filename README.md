@@ -3,13 +3,27 @@
 # FlapJack Cogs
 
 These are cogs I have written for Red Bot.
-View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/)   
-Contact me on discord [**FlapJack#5505**] with any issues or suggestions.
+View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/)
+
+- **BlizzPatchNotes** - Fetches and prints latest patch notes from all current Blizzard games.
+- **ColorMe** - Allows users to manage the color of their own name through custom roles with default permissions.
+- **Defcon** - A nod to the 1983 film War Games. Maintain a DEFCON system on your server, displayed through creative use of embeds.
+- **Dongers** - Fetches and prints a random donger from <dongerlist.com>.
+- **SmartReact** - Set up automatic emoji reactions to specific words in chat.
+
+## Dependencies
+
+**Dongers** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).
+**BlizzPatchNotes** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), [pypandoc](https://github.com/bebraw/pypandoc), and [Pandoc](http://pandoc.org/).
+
+## Contact Me
+
+Contact me on discord [**FlapJack#5505**] with any questions or suggestions. Collaboration is awesome! Don't hesitate to suggest new features, or code them yourself!
 
 ## Credits
 
 Twentysix26 and everyone else who has contributed to Red Bot.  
-Redjumpman for this neat readme file template.
+Redjumpman, for this neat readme file template.
 
 ## License
 

@@ -1,6 +1,6 @@
 {
     "AUTHOR" : "FlapJack",
-    "INSTALL_MSG" : "Thanks for installing Dongers.",
+    "INSTALL_MSG" : "Thanks for installing Dongers. BeautifulSoup4, must be installed to use this cog.",
     "NAME" : "Dongers",
     "SHORT" : "Prints dongers in a chat channel.",
     "DESCRIPTION" : "Retreives dongers from dongerlist.com and prints them in chat channels on request.\n\nDependencies:\nBeautifulSoup4 :: https://www.crummy.com/software/BeautifulSoup/bs4/doc/",
