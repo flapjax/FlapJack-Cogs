@@ -8,12 +8,12 @@ View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/
 - **BlizzPatchNotes** - Fetches and prints latest patch notes from all current Blizzard games.
 - **ColorMe** - Allows users to manage the color of their own name through custom roles with default permissions.
 - **Defcon** - A nod to the 1983 film War Games. Maintain a DEFCON system on your server, displayed through creative use of embeds.
-- **Dongers** - Fetches and prints a random donger from <dongerlist.com>.
+- **Dongers** - Fetches and prints a random donger from www.dongerlist.com.
 - **SmartReact** - Set up automatic emoji reactions to specific words in chat.
 
 ## Dependencies
 
-**Dongers** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).
+**Dongers** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).\n
 **BlizzPatchNotes** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), [pypandoc](https://github.com/bebraw/pypandoc), and [Pandoc](http://pandoc.org/).
 
 ## Contact Me
