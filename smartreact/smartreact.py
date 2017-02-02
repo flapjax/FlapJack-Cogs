@@ -19,7 +19,7 @@ class SmartReact:
         server = ctx.message.server
         message = ctx.message
         self.load_settings(server.id)
-        emoji = self.fix_custom_emoji(emoji)
+        emoji = self.fix_custom_emoji(server, emoji)
         await self.create_smart_reaction(server, word, emoji, message)
 
     @commands.command(name="delreact", no_pm=True, pass_context=True)
@@ -28,7 +28,7 @@ class SmartReact:
         server = ctx.message.server
         message = ctx.message
         self.load_settings(server.id)
-        emoji = self.fix_custom_emoji(emoji)
+        emoji = self.fix_custom_emoji(server, emoji)
         await self.remove_smart_reaction(server, word, emoji, message)
 
     def load_settings(self, server_id):
@@ -40,13 +40,10 @@ class SmartReact:
         self.settings[server_id] = {}
         dataIO.save_json(self.settings_path, self.settings)
 
-    def fix_custom_emoji(self, emoji):
-        # Not useful at the moment, perhaps later for custom emoji handling
-        # For now, custom emojis will throw HTTPException and will be ignored
-        if emoji[:2] == "<:":
-            return ':' + emoji.split(':')[1] + ':'
-
-        return emoji
+    def fix_custom_emoji(self, server, emoji):
+        if emoji[:2] != "<:":
+            return emoji
+        return [r for r in server.emojis if r.name == emoji.split(':')[1]][0]
 
     async def create_smart_reaction(self, server, word, emoji, message):
         try:
@@ -58,7 +55,6 @@ class SmartReact:
             else:
                 self.settings[server.id][emoji] = [word]
 
-            await self.bot.remove_reaction(message, emoji, server.me)
             await self.bot.say("Successfully added this reaction.")
             dataIO.save_json(self.settings_path, self.settings)
 
@@ -89,17 +85,15 @@ class SmartReact:
                                "(might be custom!)")
 
     async def msg_listener(self, message):
-        if message.author.id != self.bot.user.id:
-            server = message.server
-            react_dict = self.settings[server.id]
-            for emoji in react_dict:
-                for word in react_dict[emoji]:
-                    if word.lower() in message.content.lower():
-                        try:
-                            await self.bot.add_reaction(message, emoji)
-                        except discord.errors.HTTPException:
-                            pass
-                            # Probably a custom emoji. Ignore
+        if message.author == self.bot.user:
+            return
+        server = message.server
+        react_dict = self.settings[server.id]
+        words = message.content.lower().split()
+        for emoji in react_dict.copy():
+            if set(w.lower() for w in emoji).intersection(words):
+                await self.bot.add_reaction(message, fix_custom_emoji(server, emoji))
+
 
 
 def check_folders():
