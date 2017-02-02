@@ -1,5 +1,6 @@
 import os
 import discord
+import copy
 from discord.ext import commands
 from .utils.dataIO import dataIO
 
@@ -45,15 +46,28 @@ class SmartReact:
             return emoji
         return [r for r in server.emojis if r.name == emoji.split(':')[1]][0]
 
+    # From Twentysix26's trigger.py cog
+    def is_command(self, msg):
+        if callable(self.bot.command_prefix):
+            prefixes = self.bot.command_prefix(self.bot, msg)
+        else:
+            prefixes = self.bot.command_prefix
+        for p in prefixes:
+            if msg.content.startswith(p):
+                return True
+        return False
+
     async def create_smart_reaction(self, server, word, emoji, message):
         try:
             # Use the reaction to see if it's valid
             await self.bot.add_reaction(message, emoji)
-            if emoji in self.settings[server.id]:
-                # Already some existing words for this reaction
-                self.settings[server.id][emoji].append(word)
+            if str(emoji) in self.settings[server.id]:
+                if word.lower() in self.settings[server.id][str(emoji)]:
+                    await self.bot.say("This smart reaction already exists.")
+                    return
+                self.settings[server.id][str(emoji)].append(word.lower())
             else:
-                self.settings[server.id][emoji] = [word]
+                self.settings[server.id][str(emoji)] = [word.lower()]
 
             await self.bot.say("Successfully added this reaction.")
             dataIO.save_json(self.settings_path, self.settings)
@@ -66,9 +80,9 @@ class SmartReact:
         try:
             # Use the reaction to see if it's valid
             await self.bot.add_reaction(message, emoji)
-            if emoji in self.settings[server.id]:
-                if word in self.settings[server.id][emoji]:
-                    self.settings[server.id][emoji].remove(word)
+            if str(emoji) in self.settings[server.id]:
+                if word.lower() in self.settings[server.id][str(emoji)]:
+                    self.settings[server.id][str(emoji)].remove(word.lower())
                     await self.bot.say("Removed this smart reaction.")
                 else:
                     await self.bot.say("That emoji is not used as a reaction "
@@ -77,23 +91,25 @@ class SmartReact:
                 await self.bot.say("There are no smart reactions which use "
                                    "this emoji.")
 
-            await self.bot.remove_reaction(message, emoji, server.me)
             dataIO.save_json(self.settings_path, self.settings)
 
         except discord.errors.HTTPException:
             await self.bot.say("That's not an emoji I recognize. "
                                "(might be custom!)")
 
+    # Special thanks to irdumb#1229 on discord for helping me make this method
+    # "more Pythonic"
     async def msg_listener(self, message):
         if message.author == self.bot.user:
             return
+        if self.is_command(message):
+            return
         server = message.server
-        react_dict = self.settings[server.id]
+        react_dict = copy.deepcopy(self.settings[server.id])
         words = message.content.lower().split()
-        for emoji in react_dict.copy():
-            if set(w.lower() for w in emoji).intersection(words):
-                await self.bot.add_reaction(message, fix_custom_emoji(server, emoji))
-
+        for emoji in react_dict:
+            if set(w.lower() for w in react_dict[emoji]).intersection(words):
+                await self.bot.add_reaction(message, self.fix_custom_emoji(server, emoji))
 
 
 def check_folders():
