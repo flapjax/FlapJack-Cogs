@@ -1,6 +1,8 @@
 [![Red Bot](https://img.shields.io/badge/Discord-Red%20Bot-red.svg)](https://github.com/Twentysix26/Red-DiscordBot)
 
-# FlapJack Cogs
+&nbsp;
+
+![FlapJack Cogs](https://raw.githubusercontent.com/ptoast/freecodecamp/master/portfolio/img/flapjackcogs_sm.png "FlapJack Cogs")
 
 These are cogs I have written for Red Bot.  
 View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/)
