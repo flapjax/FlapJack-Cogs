@@ -1,9 +1,10 @@
 {
-    "AUTHOR" : "FlapJack",
-    "INSTALL_MSG" : "Thanks for installing ColorMe.",
     "NAME" : "ColorMe",
+    "AUTHOR" : "FlapJack",
     "SHORT" : "Allow users to manage the color of their own name.",
     "DESCRIPTION" : "Creates a custom role for each user and allows them to manage the color of their own name.\nTo use this cog properly, if you have roles with elevated permissions (i.e. admins, mods), these users will need special roles placed ABOVE their admin or mod roles, since only top role determines the name color. Or, you can remove admin and mod roles completely and just make sure each user's custom role has the right permissions.\nUse [p]colorme protect <role> to prevent color changes.\n\nDependencies: None",
-    "DISABLED" : false,
-    "TAGS" : ["color", "name", "role"]
+    "INSTALL_MSG" : "Thanks for installing ColorMe. Due to some limitations with the way Discord chooses name colors, full use of this cog may require that you reconfigure your server roles. Please read the source code, info.json file, or visit https://cogs.red/cogs/ptoast/FlapJack-Cogs/colorme/ for more information.",
+    "REQUIREMENTS" : [],
+    "TAGS" : ["color", "name", "role"],
+    "DISABLED" : false
 }

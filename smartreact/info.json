@@ -1,9 +1,10 @@
 {
-    "AUTHOR" : "FlapJack",
-    "INSTALL_MSG" : "Thanks for installing SmartReact.",
     "NAME" : "SmartReact",
+    "AUTHOR" : "FlapJack",
     "SHORT" : "Create automatic reactions when trigger words are typed in chat",
-    "DESCRIPTION" : "Create automatic reactions when trigger words are typed in chat.\nCustom emojis are not supported at this time.\n\nDependencies: None",
+    "DESCRIPTION" : "Create automatic reactions when trigger words are typed in chat.\n\nDependencies: None",
+    "INSTALL_MSG" : "Thanks for installing SmartReact.",
+    "REQUIREMENTS" : [],
+    "TAGS" : ["reaction", "smart", "auto"],
     "DISABLED" : false,
-    "TAGS" : ["reaction", "smart"]
 }

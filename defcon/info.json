@@ -1,9 +1,10 @@
 {
-    "AUTHOR" : "FlapJack",
-    "INSTALL_MSG" : "Thanks for installing Defcon.",
     "NAME" : "Defcon",
-    "SHORT" : "Implement the DEFCON scale on your server, like in War Games!",
+    "AUTHOR" : "FlapJack",
+    "SHORT" : "Implement the DEFCON scale on your server, like in the movie War Games!",
     "DESCRIPTION" : "Creates embeds in response to DEFCON level changes. This cog is purely cosmetic. No server settings are altered.\n\nDependencies: None",
+    "INSTALL_MSG" : "Thanks for installing DEFCON. Remember... sometimes the only winning move is not to play!",
+    "REQUIREMENTS" : [],
+    "TAGS" : ["defcon", "embed", "war"],
     "DISABLED" : false,
-    "TAGS" : ["defcon", "embed"]
 }
