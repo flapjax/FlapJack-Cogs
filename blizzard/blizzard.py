@@ -117,26 +117,42 @@ class Blizzard:
         comp = stats[region]['stats']['competitive']
         qplay = stats[region]['stats']['quickplay']
         thumb_url = comp['overall_stats']['avatar']
-        icon_url = 'http://i.imgur.com/xU2iv6U.png'
-        #icon_url = comp['overall_stats']['rank_image']
-        comp_stats = ''.join(['Wins: ', str(int(round(comp['game_stats']['games_won']))),
-                              '\nElims: ', str(int(round(comp['average_stats']['eliminations_avg']))),
-                              '\nDeaths: ', str(int(round(comp['average_stats']['deaths_avg']))),
-                              '\nDamage: ', str(int(round(comp['average_stats']['damage_done_avg']))),
-                              '\nHeal: ', str(int(round(comp['average_stats']['healing_done_avg'])))])
+        tier = comp['overall_stats']['tier']
+        if tier == 'bronze':
+            icon_url = 'http://i.imgur.com/B4IR72H.png'
+        elif tier == 'silver':
+            icon_url = 'http://i.imgur.com/1mOpjRc.png'
+        elif tier == 'gold':
+            icon_url = 'http://i.imgur.com/lCTsNwo.png'
+        elif tier == 'platinum':
+            icon_url = 'http://i.imgur.com/nDVHAbp.png'
+        elif tier == 'diamond':
+            icon_url = 'http://i.imgur.com/fLmIC70.png'
+        elif tier == 'master':
+            icon_url = 'http://i.imgur.com/wjf0lEc.png'
+        elif tier == 'grandmaster':
+            icon_url = 'http://i.imgur.com/5ApGiZs.png'
+        else:
+            icon_url = 'http://i.imgur.com/xU2iv6U.png'
 
-        qplay_stats = ''.join(['Wins: ', str(int(round(qplay['game_stats']['games_won']))),
-                               '\nElims: ', str(int(round(qplay['average_stats']['eliminations_avg']))),
-                               '\nDeaths: ', str(int(round(qplay['average_stats']['deaths_avg']))),
-                               '\nDamage: ', str(int(round(qplay['average_stats']['damage_done_avg']))),
-                               '\nHeal: ', str(int(round(qplay['average_stats']['healing_done_avg'])))])
+        comp_stats = ''.join(['**Wins:** ', str(int(round(comp['game_stats']['games_won']))),
+                              '\n**Avg Elim:** ', str(int(round(comp['average_stats']['eliminations_avg']))),
+                              '\n**Avg Death:** ', str(int(round(comp['average_stats']['deaths_avg']))),
+                              '\n**Avg Dmg:** ', str(int(round(comp['average_stats']['damage_done_avg']))),
+                              '\n**Avg Heal:** ', str(int(round(comp['average_stats']['healing_done_avg'])))])
 
-        embed = discord.Embed(title='Overwatch Stats (PC-' + region_full + ')\n', color=0xFAA02E)
+        qplay_stats = ''.join(['**Wins:** ', str(int(round(qplay['game_stats']['games_won']))),
+                               '\n**Avg Elim:** ', str(int(round(qplay['average_stats']['eliminations_avg']))),
+                               '\n**Avg Death:** ', str(int(round(qplay['average_stats']['deaths_avg']))),
+                               '\n**Avg Dmg:** ', str(int(round(qplay['average_stats']['damage_done_avg']))),
+                               '\n**Avg Heal:** ', str(int(round(qplay['average_stats']['healing_done_avg'])))])
+
+        embed = discord.Embed(title='Overwatch Stats (PC-' + region_full + ')', color=0xFAA02E)
         embed.set_author(name=battletag, url=url, icon_url=icon_url)
         embed.set_thumbnail(url=thumb_url)
-        embed.add_field(name='Competitive', value=comp_stats, inline=True)
-        embed.add_field(name='Quick Play', value=qplay_stats, inline=True)
-        embed.set_footer(text='Elims, Deaths, Damage, and Heal are avg per game.')
+        embed.add_field(name='__Competitive__', value=comp_stats, inline=True)
+        embed.add_field(name='__Quick Play__', value=qplay_stats, inline=True)
+        #embed.set_footer(text='Elims, Deaths, Damage, and Heal are avg per game.')
         await self.bot.say(embed=embed)
 
     @overwatch.command(name="notes", pass_context=True)
