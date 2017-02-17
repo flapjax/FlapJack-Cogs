@@ -1,7 +1,11 @@
+import os
 import discord
 from discord.ext import commands
 from .utils.chat_formatting import pagify
+from cogs.utils import checks
+from .utils.dataIO import dataIO
 from __main__ import send_cmd_help
+import re
 import aiohttp
 import asyncio
 
@@ -43,6 +47,57 @@ class Blizzard:
 
     def __init__(self, bot):
         self.bot = bot
+        self.settings_path = "data/blizzard/settings.json"
+        self.settings = dataIO.load_json(self.settings_path)
+
+    @commands.group(name="blizzard", pass_context=True)
+    async def blizzard(self, ctx):
+        """Change blizzard cog settings."""
+
+        if ctx.invoked_subcommand is None:
+            await send_cmd_help(ctx)
+
+    @blizzard.command(name="apikey", pass_context=True)
+    @checks.is_owner()
+    async def _apikey_blizzard(self, ctx, key: str):
+        """Set the cog's battle.net API key, required for some statistics.
+        (get one at https://dev.battle.net/)
+        Use a direct message to keep the key secret."""
+
+        self.settings['apikey'] = key
+        dataIO.save_json(self.settings_path, self.settings)
+        await self.bot.say('API key set.')
+
+    @commands.group(name="battletag", pass_context=True)
+    async def battletag(self, ctx):
+        """Change your battletag settings."""
+
+        if ctx.invoked_subcommand is None:
+            await send_cmd_help(ctx)
+
+    @battletag.command(name="set", pass_context=True)
+    async def _set_battletag(self, ctx, tag: str):
+        """Set your battletag"""
+
+        pattern = re.compile(r'.#\d{4}\Z')
+        if pattern.search(tag) is None:
+            await self.bot.say("That doesn't look like a valid battletag.")
+            return
+        uid = ctx.message.author.id
+        self.settings['battletags'][uid] = tag
+        dataIO.save_json(self.settings_path, self.settings)
+        await self.bot.say("Your battletag has been set.")
+
+    @battletag.command(name="clear", pass_context=True)
+    async def _clear_battletag(self, ctx):
+        """Remove your battletag"""
+
+        uid = ctx.message.author.id
+        if self.settings['battletags'].pop(uid, None) is not None:
+            await self.bot.say("Your battletag has been removed.")
+        else:
+            await self.bot.say("I had no battletag stored for you.")
+        dataIO.save_json(self.settings_path, self.settings)
 
     @commands.group(name="hearthstone", pass_context=True)
     async def hearthstone(self, ctx):
@@ -69,15 +124,30 @@ class Blizzard:
             await send_cmd_help(ctx)
 
     @overwatch.command(name="stats", pass_context=True)
-    async def _stats_overwatch(self, ctx, battletag, region=None):
+    async def _stats_overwatch(self, ctx, tag: str=None, region: str=None):
         """Overwatch stats for your battletag (case sensitive and PC only!).
+        If battletag is ommitted, bot will use your battletag if stored.
         Region is optional and will autodetect with this priority: kr>eu>us
 
         Example: [p]overwatch stats CoolDude#1234 kr
         """
 
-        battletag = battletag.replace("#", "-")
-        url = 'https://owapi.net/api/v3/u/' + battletag + '/stats'
+        uid = ctx.message.author.id
+        # Little hack to detect if region was entered, but not battletag
+        if (tag in ['kr', 'eu', 'us']) and (region is None):
+            region = tag
+            tag = None
+
+        if tag is None:
+            if uid in self.settings['battletags']:
+                tag = self.settings['battletags'][uid]
+            else:
+                await self.bot.say(''.join(['You did not provide a battletag ',
+                                            'and I do not have one stored for you.']))
+                return
+
+        tag = tag.replace("#", "-")
+        url = 'https://owapi.net/api/v3/u/' + tag + '/stats'
         header = {"User-Agent": "flapjackcogs/1.0"}
         async with aiohttp.ClientSession(headers=header) as session:
             async with session.get(url) as resp:
@@ -87,7 +157,9 @@ class Blizzard:
             await self.bot.say(''.join(['Could not fetch your statistics. ',
                                         'Battletags are case sensitive ',
                                         'and require a 4-digit identifier ',
-                                        '(e.g. CoolDude#1234)']))
+                                        '(e.g. CoolDude#1234)',
+                                        'Or, you may have an invalid tag ',
+                                        'on file.']))
             return
 
         if region is None:
@@ -112,8 +184,8 @@ class Blizzard:
                                         'so I can autodetect the region.']))
             return
 
-        url = 'https://playoverwatch.com/en-us/career/pc/' + region + '/' + battletag
-        battletag = battletag.replace("-", "#")
+        url = 'https://playoverwatch.com/en-us/career/pc/' + region + '/' + tag
+        tag = tag.replace("-", "#")
         comp = stats[region]['stats']['competitive']
         qplay = stats[region]['stats']['quickplay']
         thumb_url = comp['overall_stats']['avatar']
@@ -148,11 +220,10 @@ class Blizzard:
                                '\n**Avg Heal:** ', str(int(round(qplay['average_stats']['healing_done_avg'])))])
 
         embed = discord.Embed(title='Overwatch Stats (PC-' + region_full + ')', color=0xFAA02E)
-        embed.set_author(name=battletag, url=url, icon_url=icon_url)
+        embed.set_author(name=tag, url=url, icon_url=icon_url)
         embed.set_thumbnail(url=thumb_url)
         embed.add_field(name='__Competitive__', value=comp_stats, inline=True)
         embed.add_field(name='__Quick Play__', value=qplay_stats, inline=True)
-        #embed.set_footer(text='Elims, Deaths, Damage, and Heal are avg per game.')
         await self.bot.say(embed=embed)
 
     @overwatch.command(name="notes", pass_context=True)
@@ -217,6 +288,60 @@ class Blizzard:
 
         await self.print_patch_notes(url)
 
+    @diablo3.command(name="stats", pass_context=True)
+    async def _stats_diablo3(self, ctx, tag: str=None):
+        """Diablo3 stats for your battletag.
+        If battletag is ommitted, bot will use your battletag if stored.
+
+        Example: [p]diablo3 stats CoolDude#1234
+        """
+
+        uid = ctx.message.author.id
+        if tag is None:
+            if uid in self.settings['battletags']:
+                tag = self.settings['battletags'][uid]
+            else:
+                await self.bot.say(''.join(['You did not provide a battletag ',
+                                            'and I do not have one stored for you.']))
+                return
+
+        if 'apikey' not in self.settings:
+            await self.bot.say(''.join(['The bot owner has not provided a ',
+                                        'battle.net API key, which is ',
+                                        'required for Diablo 3 stats.']))
+            return
+
+        key = self.settings['apikey']
+        tag = tag.replace("#", "-")
+        url = 'https://us.api.battle.net/d3/profile/' + tag + '/?locale=en_US&apikey=' + key
+        header = {"User-Agent": "flapjackcogs/1.0"}
+        async with aiohttp.ClientSession(headers=header) as session:
+            async with session.get(url) as resp:
+                stats = await resp.json()
+
+        tag = tag.replace("-", "#")
+        thumb_url = 'http://i.imgur.com/5WYDHHZ.png'
+
+        paragon = ''.join(['Seasonal: ', str(stats['paragonLevelSeason']),
+                           '\nSeasonal HC: ', str(stats['paragonLevelSeasonHardcore']),
+                           '\nNon-Seasonal: ', str(stats['paragonLevel']),
+                           '\nNon-Seasonal HC: ', str(stats['paragonLevelHardcore'])])
+
+        hero_txt = ''
+        for hero in stats['heroes']:
+            hero_txt += ''.join([hero['name'], ' - lvl ', str(hero['level']), ' ', hero['class'], ' - hardcore' if hero['hardcore'] else '', ' (RIP)\n' if hero['dead'] else '\n'])
+
+        if not hero_txt:
+            await self.bot.say("You don't have any Diablo 3 heroes.")
+            return
+
+        embed = discord.Embed(title='Diablo 3 Stats', color=0xCC2200)
+        embed.set_author(name=tag)
+        embed.set_thumbnail(url=thumb_url)
+        embed.add_field(name='__Paragon__', value=paragon, inline=False)
+        embed.add_field(name='__Heroes__', value=hero_txt, inline=False)
+        await self.bot.say(embed=embed)
+
     @commands.group(name="hots", pass_context=True)
     async def hots(self, ctx):
         """Heroes of the Storm utilities"""
@@ -255,9 +380,26 @@ class Blizzard:
             await self.bot.say("I couldn't find any patch notes.")
 
 
+def check_folders():
+    folder = "data/blizzard"
+    if not os.path.exists(folder):
+        print("Creating {} folder...".format(folder))
+        os.makedirs(folder)
+
+
+def check_files():
+    default = {'battletags': {}}
+    if not dataIO.is_valid_json("data/blizzard/settings.json"):
+        print("Creating default blizzard settings.json...")
+        dataIO.save_json("data/blizzard/settings.json", default)
+
+
 def setup(bot):
     if soup_available and pypandoc_available:
-        bot.add_cog(Blizzard(bot))
+        check_folders()
+        check_files()
+        n = Blizzard(bot)
+        bot.add_cog(n)
     else:
         if not soup_available:
             error_text += "You need to run `pip install beautifulsoup4`\n"
