@@ -319,27 +319,34 @@ class Blizzard:
             async with session.get(url) as resp:
                 stats = await resp.json()
 
+        if 'code' in stats:
+            await self.bot.say("I coulnd't find Diablo 3 stats for that battletag.")
+            return
+
         tag = tag.replace("-", "#")
         thumb_url = 'http://i.imgur.com/5WYDHHZ.png'
 
-        paragon = ''.join(['Seasonal: ', str(stats['paragonLevelSeason']),
-                           '\nSeasonal HC: ', str(stats['paragonLevelSeasonHardcore']),
+        paragon = ''.join([':leaves:Seasonal: ', str(stats['paragonLevelSeason']),
+                           '\n:leaves:Seasonal Hardcore: ', str(stats['paragonLevelSeasonHardcore']),
                            '\nNon-Seasonal: ', str(stats['paragonLevel']),
-                           '\nNon-Seasonal HC: ', str(stats['paragonLevelHardcore'])])
+                           '\nNon-Seasonal Hardcore: ', str(stats['paragonLevelHardcore'])])
 
         hero_txt = ''
         for hero in stats['heroes']:
-            hero_txt += ''.join([hero['name'], ' - lvl ', str(hero['level']), ' ', hero['class'], ' - hardcore' if hero['hardcore'] else '', ' (RIP)\n' if hero['dead'] else '\n'])
+            hero_txt += ''.join([':leaves:' if hero['seasonal'] else '', hero['name'], ' - lvl ', str(hero['level']), ' ', hero['class'], ' - hardcore' if hero['hardcore'] else '', ' (RIP)\n' if hero['dead'] else '\n'])
 
         if not hero_txt:
             await self.bot.say("You don't have any Diablo 3 heroes.")
             return
+
+        kills = "Lifetime monster kills: " + str(stats['kills']['monsters'])
 
         embed = discord.Embed(title='Diablo 3 Stats', color=0xCC2200)
         embed.set_author(name=tag)
         embed.set_thumbnail(url=thumb_url)
         embed.add_field(name='__Paragon__', value=paragon, inline=False)
         embed.add_field(name='__Heroes__', value=hero_txt, inline=False)
+        embed.set_footer(text=kills)
         await self.bot.say(embed=embed)
 
     @commands.group(name="hots", pass_context=True)
