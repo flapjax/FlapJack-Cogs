@@ -31,6 +31,7 @@ except:
 
 # Patch note strings
 base_url = 'https://us.battle.net/connect/en/app/'
+wowtoken_url = 'https://wowtoken.info/'
 product_url = '/patch-notes?productType='
 hearthstone_abbr = 'wtcg'
 overwatch_abbr = 'Pro'
@@ -270,6 +271,38 @@ class Blizzard:
                        warcraft_abbr])
 
         await self.print_patch_notes(url)
+
+    @warcraft.command(name="token", pass_context=True)
+    async def _token_warcraft(self, ctx):
+        """Prints latest NA wowtoken price """
+
+        url = ''.join([wowtoken_url])
+
+        await self.print_patch_notes(url)
+
+    async def print_patch_notes(self, url):
+        try:
+            async with aiohttp.get(url, headers=headers) as response:
+                soup = BeautifulSoup(await response.text(), "html.parser")
+
+            html_notes = soup.find('div', {"class": "mui-panel realm-panel" , "id": "na-panel"})
+            text_notes = pypandoc.convert_text(html_notes, 'plain',
+                                               format='html',
+                                               extra_args=['--wrap=none'])
+            text_notes = text_notes.replace('&nbsp;', ' ')
+            text_notes = text_notes.replace('&apos;', "'")
+#this is the only way I know howto cleanup the formatting. pls halp @TheRealShibe
+            text_notes = text_notes.replace('+', "")
+            text_notes = text_notes.replace('-', "")
+            text_notes = text_notes.replace('-', "")
+            text_notes = text_notes.replace('|', '')
+            text_notes = text_notes.replace("Buy Price", "Buy Price \n")
+            text_notes = text_notes.replace("24Hour Range", "24Hour Range \n")
+            text_notes = text_notes.replace("API Result", "API Result \n")
+            text_notes = text_notes.replace("Updated", "Updated \n")
+            em = discord.Embed(title='WoW Token Info', description=text_notes, colour=0xFFD966)
+            em.set_author(name='Blizzard', icon_url='https://pbs.twimg.com/profile_images/586731244467150849/U4TyFhW8.jpg')
+            await self.bot.say(embed=em)
 
     @commands.group(name="diablo3", pass_context=True)
     async def diablo3(self, ctx):
