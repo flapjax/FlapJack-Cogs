@@ -284,20 +284,26 @@ class Blizzard:
             async with aiohttp.get(url, headers=headers) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            html_notes = soup.find('div', {"class": "mui-panel realm-panel" , "id": "na-panel")
+            html_notes = soup.find('div', {"class": "mui-panel realm-panel", "id": "na-panel"})
             text_notes = pypandoc.convert_text(html_notes, 'plain',
                                                format='html',
                                                extra_args=['--wrap=none'])
-            # Removal/replacement of odd characters
             text_notes = text_notes.replace('&nbsp;', ' ')
             text_notes = text_notes.replace('&apos;', "'")
-            msg_list = pagify(text_notes, delims=["\n"])
-            for msg in msg_list:
-                await self.bot.say(msg)
-                await asyncio.sleep(1)
+# this is the only way I know howto cleanup the formatting... @TheRealShibe
+            text_notes = text_notes.replace('+', "")
+            text_notes = text_notes.replace('-', "")
+            text_notes = text_notes.replace('-', "")
+            text_notes = text_notes.replace('|', '')
+            text_notes = text_notes.replace("Buy Price", "Buy Price \n")
+            text_notes = text_notes.replace("24Hour Range", "24Hour Range \n")
+            text_notes = text_notes.replace("API Result", "API Result \n")
+            text_notes = text_notes.replace("Updated", "Updated \n")
+            em = discord.Embed(title='WoW Token Info', description=text_notes, colour=0xFFD966)
+            await self.bot.say(embed=em)
 
         except:
-            await self.bot.say("I couldn't find any token info.")
+            await self.bot.say("Error")
 
     @commands.group(name="diablo3", pass_context=True)
     async def diablo3(self, ctx):
