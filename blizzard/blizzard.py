@@ -273,7 +273,7 @@ class Blizzard:
         await self.print_patch_notes(url)
 
     @warcraft.command(name="token", pass_context=True)
-    async def _token_hots(self, ctx):
+    async def _notes_token(self, ctx):
         """Latest Heroes of the Storm patch notes"""
         url = ''.join([wowtoken_url])
 
