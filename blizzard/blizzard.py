@@ -284,7 +284,7 @@ class Blizzard:
         try:
             async with aiohttp.get(url, headers=headers) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
-            html_notes = soup.find('div', {"class": "mui-panel realm-panel" , "id": "na-panel"})
+            html_notes = soup.find('div', {"class": "mui-panel realm-panel", "id": "na-panel"})
             text_notes = pypandoc.convert_text(html_notes, 'plain', format='html', extra_args=['--wrap=none'])
             text_notes = text_notes.replace('&nbsp;', ' ')
             text_notes = text_notes.replace('&apos;', "'")
