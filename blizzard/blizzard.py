@@ -281,23 +281,27 @@ class Blizzard:
         await self.print_patch_notes(url)
 
     async def print_patch_notes(self, url):
-        async with aiohttp.get(url, headers=headers) as response:
-            soup = BeautifulSoup(await response.text(), "html.parser")
-        html_notes = soup.find('div', {"class": "mui-panel realm-panel", "id": "na-panel"})
-        text_notes = pypandoc.convert_text(html_notes, 'plain', format='html', extra_args=['--wrap=none'])
-        text_notes = text_notes.replace('&nbsp;', ' ')
-        text_notes = text_notes.replace('&apos;', "'")
-# this is the only way I know howto cleanup formatting. pls halp @TheRealShibe
-        text_notes = text_notes.replace('+', "")
-        text_notes = text_notes.replace('-', "")
-        text_notes = text_notes.replace('-', "")
-        text_notes = text_notes.replace('|', '')
-        text_notes = text_notes.replace("Buy Price", "Buy Price \n")
-        text_notes = text_notes.replace("24Hour Range", "24Hour Range \n")
-        text_notes = text_notes.replace("API Result", "API Result \n")
-        text_notes = text_notes.replace("Updated", "Updated \n")
-        em = discord.Embed(title='WoW Token Info', description=text_notes, colour=0xFFD966)
-        await self.bot.say(embed=em)
+        try:
+            async with aiohttp.get(url, headers=headers) as response:
+                soup = BeautifulSoup(await response.text(), "html.parser")
+            html_notes = soup.find('div', {"class": "mui-panel realm-panel" , "id": "na-panel"})
+            text_notes = pypandoc.convert_text(html_notes, 'plain', format='html', extra_args=['--wrap=none'])
+            text_notes = text_notes.replace('&nbsp;', ' ')
+            text_notes = text_notes.replace('&apos;', "'")
+# this is the only way I know howto cleanup the formatting. pls halp @TheRealShibe
+            text_notes = text_notes.replace('+', "")
+            text_notes = text_notes.replace('-', "")
+            text_notes = text_notes.replace('-', "")
+            text_notes = text_notes.replace('|', '')
+            text_notes = text_notes.replace("Buy Price", "Buy Price \n")
+            text_notes = text_notes.replace("24Hour Range", "24Hour Range \n")
+            text_notes = text_notes.replace("API Result", "API Result \n")
+            text_notes = text_notes.replace("Updated", "Updated \n")
+            em = discord.Embed(title='WoW Token Info', description=text_notes, colour=0xFFD966)
+            await self.bot.say(embed=em)
+
+        except:
+            await self.bot.say("Error")
 
     @commands.group(name="diablo3", pass_context=True)
     async def diablo3(self, ctx):
