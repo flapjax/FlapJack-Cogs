@@ -273,9 +273,8 @@ class Blizzard:
         await self.print_patch_notes(url)
 
     @warcraft.command(name="token", pass_context=True)
-    async def _token_warcraft(self, ctx):
-        """Prints latest NA wowtoken price """
-
+    async def _token_hots(self, ctx):
+        """Latest Heroes of the Storm patch notes"""
         url = ''.join([wowtoken_url])
 
         await self.print_patch_notes(url)
@@ -284,24 +283,21 @@ class Blizzard:
         try:
             async with aiohttp.get(url, headers=headers) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
-            html_notes = soup.find('div', {"class": "mui-panel realm-panel", "id": "na-panel"})
-            text_notes = pypandoc.convert_text(html_notes, 'plain', format='html', extra_args=['--wrap=none'])
+
+            html_notes = soup.find('div', {"class": "mui-panel realm-panel" , "id": "na-panel")
+            text_notes = pypandoc.convert_text(html_notes, 'plain',
+                                               format='html',
+                                               extra_args=['--wrap=none'])
+            # Removal/replacement of odd characters
             text_notes = text_notes.replace('&nbsp;', ' ')
             text_notes = text_notes.replace('&apos;', "'")
-# this is the only way I know howto cleanup the formatting. pls halp @TheRealShibe
-            text_notes = text_notes.replace('+', "")
-            text_notes = text_notes.replace('-', "")
-            text_notes = text_notes.replace('-', "")
-            text_notes = text_notes.replace('|', '')
-            text_notes = text_notes.replace("Buy Price", "Buy Price \n")
-            text_notes = text_notes.replace("24Hour Range", "24Hour Range \n")
-            text_notes = text_notes.replace("API Result", "API Result \n")
-            text_notes = text_notes.replace("Updated", "Updated \n")
-            em = discord.Embed(title='WoW Token Info', description=text_notes, colour=0xFFD966)
-            await self.bot.say(embed=em)
+            msg_list = pagify(text_notes, delims=["\n"])
+            for msg in msg_list:
+                await self.bot.say(msg)
+                await asyncio.sleep(1)
 
         except:
-            await self.bot.say("Error")
+            await self.bot.say("I couldn't find any token info.")
 
     @commands.group(name="diablo3", pass_context=True)
     async def diablo3(self, ctx):
