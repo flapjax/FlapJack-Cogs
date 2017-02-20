@@ -2,9 +2,9 @@
     "NAME" : "ColorMe",
     "AUTHOR" : "FlapJack",
     "SHORT" : "Allow users to manage the color of their own name.",
-    "DESCRIPTION" : "Creates a custom role for each user and allows them to manage the color of their own name.\nTo use this cog properly, if you have roles with elevated permissions (i.e. admins, mods), these users will need special roles placed ABOVE their admin or mod roles, since only top role determines the name color. Or, you can remove admin and mod roles completely and just make sure each user's custom role has the right permissions.\nUse [p]colorme protect <role> to prevent color changes.\n\nDependencies: None",
-    "INSTALL_MSG" : "Thanks for installing ColorMe. Due to some limitations with the way Discord chooses name colors, full use of this cog may require that you reconfigure your server roles. Please read the source code, info.json file, or visit https://cogs.red/cogs/ptoast/FlapJack-Cogs/colorme/ for more information.",
+    "DESCRIPTION" : "Creates a custom role for each user based on their current top_role permissions and allows them to manage the color of their own name.\nTo use this cog properly, your bot needs permission to edit roles and must be placed above other roles on the hierarchy in order to edit them. You may also want to disable the separate displaying of roles.\nUse [p]colorme protect <role> to prevent color changes for certain roles.\n\nDependencies: None",
+    "INSTALL_MSG" : "Thanks for installing ColorMe. Due to Discord constraining name color to the top_role color, full use of this cog requires that your bot have permission to edit roles and must be placed above other roles on the hierarchy in order to edit them. You may also want to disable the separate displaying of roles. Please read the source code, info.json file, or visit https://cogs.red/cogs/ptoast/FlapJack-Cogs/colorme/ for more information.",
     "REQUIREMENTS" : [],
-    "TAGS" : ["color", "name", "role"],
+    "TAGS" : ["color", "name", "role", "custom"],
     "DISABLED" : false
 }
