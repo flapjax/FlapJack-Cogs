@@ -273,11 +273,16 @@ class Blizzard:
         await self.print_patch_notes(url)
 
     @warcraft.command(name="token", pass_context=True)
-    async def _notes_token(self, ctx):
-        """Latest Heroes of the Storm patch notes"""
+    async def _token_warcraft(self, ctx, realm: str='na'):
+        """WoW Token Prices"""
+
         url = ''.join([wowtoken_url])
 
-        await self.print_token(url)
+        if realm.lower() not in ['na', 'eu', 'cn', 'tw', 'kr']:
+            await self.bot.say("'" + realm + "' is not a valid realm.")
+            return
+
+        await self.print_token(url, realm)
 
     @commands.group(name="diablo3", pass_context=True)
     async def diablo3(self, ctx):
@@ -394,31 +399,31 @@ class Blizzard:
         except:
             await self.bot.say("I couldn't find any patch notes.")
 
-    async def print_token(self, url):
+    async def print_token(self, url, realm):
+
+        header = {"User-Agent": "flapjackcogs/1.0"}
+        thumb_url = 'http://wowtokenprices.com/assets/wowtokeninterlaced.png'
+
         try:
-            async with aiohttp.get(url, headers=headers) as response:
+            async with aiohttp.get(url, headers=header) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            html_notes = soup.find('div', {"class": "mui-panel realm-panel", "id": "na-panel"})
-            text_notes = pypandoc.convert_text(html_notes, 'plain',
-                                               format='html',
-                                               extra_args=['--wrap=none'])
-            text_notes = text_notes.replace('&nbsp;', ' ')
-            text_notes = text_notes.replace('&apos;', "'")
-# this is the only way I know howto cleanup the formatting... -TheRealShibe
-            text_notes = text_notes.replace('+', "")
-            text_notes = text_notes.replace('-', "")
-            text_notes = text_notes.replace('-', "")
-            text_notes = text_notes.replace('|', '')
-            text_notes = text_notes.replace("Buy Price", "Buy Price \n")
-            text_notes = text_notes.replace("24Hour Range", "24Hour Range \n")
-            text_notes = text_notes.replace("API Result", "API Result \n")
-            text_notes = text_notes.replace("Updated", "Updated \n")
-            em = discord.Embed(title='WoW Token Info', description=text_notes, colour=0xFFD966)
-            await self.bot.say(embed=em)
+            desc = soup.find('div', {"class": "mui-panel realm-panel", "id": realm.lower() + "-panel"}).h2.string
+            buy_price = soup.find('td', {"class": "buy-price", "id": realm.upper() + "-buy"}).string
+            day_lo = soup.find('span', {"id": realm.upper() + "-24min"}).string
+            day_hi = soup.find('span', {"id": realm.upper() + "-24max"}).string
+            updated = soup.find('td', {"id": realm.upper() + "-updatedhtml"}).string
+
+            embed = discord.Embed(title='WoW Token Info', description=desc, colour=0xFFD966)
+            embed.set_thumbnail(url=thumb_url)
+            embed.add_field(name='Buy Price', value=buy_price, inline=False)
+            embed.add_field(name='24-Hour Range', value=day_lo + ' - ' + day_hi, inline=False)
+            embed.set_footer(text='Updated: ' + updated)
+
+            await self.bot.say(embed=embed)
 
         except:
-            await self.bot.say("Error")
+            await self.bot.say("Error finding WoW token prices.")
 
 
 def check_folders():
