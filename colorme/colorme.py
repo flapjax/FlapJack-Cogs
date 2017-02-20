@@ -67,7 +67,7 @@ class ColorMe:
             new_role = await self.bot.create_role(server, name=name+'#'+disc,
                                         permissions=top_role.permissions,
                                         colour=discord.Colour(intcolor),
-                                        hoist=top_role.hoist,
+                                        hoist=False,
                                         mentionable=top_role.mentionable)
             await self.bot.move_role(server, new_role, top_role.position)
             await self.bot.add_roles(member, new_role)
