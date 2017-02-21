@@ -29,18 +29,6 @@ except:
 # pypandoc :: https://pypi.python.org/pypi/pypandoc
 # Pandoc :: http://pandoc.org/
 
-# Patch note strings
-base_url = 'https://us.battle.net/connect/en/app/'
-wowtoken_url = 'https://wowtoken.info/'
-product_url = '/patch-notes?productType='
-hearthstone_abbr = 'wtcg'
-overwatch_abbr = 'Pro'
-starcraft2_abbr = 'sc2'
-warcraft_abbr = 'WoW'
-diablo_abbr = 'd3'
-hots_abbr = 'heroes'
-headers = {'User-Agent': 'Battle.net/1.0.8.4217'}
-
 
 class Blizzard:
 
@@ -50,6 +38,17 @@ class Blizzard:
         self.bot = bot
         self.settings_path = "data/blizzard/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
+        self.base_url = 'https://us.battle.net/connect/en/app/'
+        self.wowtoken_url = 'https://wowtoken.info/'
+        self.product_url = '/patch-notes?productType='
+        self.hearthstone_abbr = 'wtcg'
+        self.overwatch_abbr = 'Pro'
+        self.starcraft2_abbr = 'sc2'
+        self.warcraft_abbr = 'WoW'
+        self.diablo_abbr = 'd3'
+        self.hots_abbr = 'heroes'
+        self.header = {"User-Agent": "flapjackcogs/1.0"}
+        self.patch_header = {'User-Agent': 'Battle.net/1.0.8.4217'}
 
     @commands.group(name="blizzard", pass_context=True)
     async def blizzard(self, ctx):
@@ -110,10 +109,10 @@ class Blizzard:
     @hearthstone.command(name="notes", pass_context=True)
     async def _notes_hearthstone(self, ctx):
         """Latest Hearthstone patch notes"""
-        url = ''.join([base_url,
-                       hearthstone_abbr,
-                       product_url,
-                       hearthstone_abbr])
+        url = ''.join([self.base_url,
+                       self.hearthstone_abbr,
+                       self.product_url,
+                       self.hearthstone_abbr])
 
         await self.print_patch_notes(url)
 
@@ -149,8 +148,7 @@ class Blizzard:
 
         tag = tag.replace("#", "-")
         url = 'https://owapi.net/api/v3/u/' + tag + '/stats'
-        header = {"User-Agent": "flapjackcogs/1.0"}
-        async with aiohttp.ClientSession(headers=header) as session:
+        async with aiohttp.ClientSession(headers=self.header) as session:
             async with session.get(url) as resp:
                 stats = await resp.json()
 
@@ -230,10 +228,10 @@ class Blizzard:
     @overwatch.command(name="notes", pass_context=True)
     async def _notes_overwatch(self, ctx):
         """Latest Overwatch patch notes"""
-        url = ''.join([base_url,
-                       overwatch_abbr,
-                       product_url,
-                       overwatch_abbr])
+        url = ''.join([self.base_url,
+                       self.overwatch_abbr,
+                       self.product_url,
+                       self.overwatch_abbr])
 
         await self.print_patch_notes(url)
 
@@ -247,10 +245,10 @@ class Blizzard:
     @starcraft2.command(name="notes", pass_context=True)
     async def _notes_starcraft2(self, ctx):
         """Latest Starcraft2 patch notes"""
-        url = ''.join([base_url,
-                       starcraft2_abbr,
-                       product_url,
-                       starcraft2_abbr])
+        url = ''.join([self.base_url,
+                       self.starcraft2_abbr,
+                       self.product_url,
+                       self.starcraft2_abbr])
 
         await self.print_patch_notes(url)
 
@@ -265,10 +263,10 @@ class Blizzard:
     async def _notes_warcraft(self, ctx):
         """Latest World of Warcraft patch notes"""
 
-        url = ''.join([base_url,
-                       warcraft_abbr,
-                       product_url,
-                       warcraft_abbr])
+        url = ''.join([self.base_url,
+                       self.warcraft_abbr,
+                       self.product_url,
+                       self.warcraft_abbr])
 
         await self.print_patch_notes(url)
 
@@ -276,7 +274,7 @@ class Blizzard:
     async def _token_warcraft(self, ctx, realm: str='na'):
         """WoW Token Prices"""
 
-        url = ''.join([wowtoken_url])
+        url = ''.join([self.wowtoken_url])
 
         if realm.lower() not in ['na', 'eu', 'cn', 'tw', 'kr']:
             await self.bot.say("'" + realm + "' is not a valid realm.")
@@ -294,10 +292,10 @@ class Blizzard:
     @diablo3.command(name="notes", pass_context=True)
     async def _notes_diablo3(self, ctx):
         """Latest Diablo3 patch notes"""
-        url = ''.join([base_url,
-                       diablo_abbr,
-                       product_url,
-                       diablo_abbr])
+        url = ''.join([self.base_url,
+                       self.diablo_abbr,
+                       self.product_url,
+                       self.diablo_abbr])
 
         await self.print_patch_notes(url)
 
@@ -327,8 +325,8 @@ class Blizzard:
         key = self.settings['apikey']
         tag = tag.replace("#", "-")
         url = 'https://us.api.battle.net/d3/profile/' + tag + '/?locale=en_US&apikey=' + key
-        header = {"User-Agent": "flapjackcogs/1.0"}
-        async with aiohttp.ClientSession(headers=header) as session:
+
+        async with aiohttp.ClientSession(headers=self.header) as session:
             async with session.get(url) as resp:
                 stats = await resp.json()
 
@@ -372,16 +370,16 @@ class Blizzard:
     @hots.command(name="notes", pass_context=True)
     async def _notes_hots(self, ctx):
         """Latest Heroes of the Storm patch notes"""
-        url = ''.join([base_url,
-                       hots_abbr,
-                       product_url,
-                       hots_abbr])
+        url = ''.join([self.base_url,
+                       self.hots_abbr,
+                       self.product_url,
+                       self.hots_abbr])
 
         await self.print_patch_notes(url)
 
     async def print_patch_notes(self, url):
         try:
-            async with aiohttp.get(url, headers=headers) as response:
+            async with aiohttp.get(url, headers=self.patch_header) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
             html_notes = soup.find('div', {"class": "patch-notes-interior"})
@@ -401,11 +399,10 @@ class Blizzard:
 
     async def print_token(self, url, realm):
 
-        header = {"User-Agent": "flapjackcogs/1.0"}
         thumb_url = 'http://wowtokenprices.com/assets/wowtokeninterlaced.png'
 
         try:
-            async with aiohttp.get(url, headers=header) as response:
+            async with aiohttp.get(url, headers=self.header) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
             desc = soup.find('div', {"class": "mui-panel realm-panel", "id": realm.lower() + "-panel"}).h2.string

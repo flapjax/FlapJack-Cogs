@@ -3,10 +3,6 @@ import discord
 from discord.ext import commands
 from .utils.dataIO import dataIO
 
-blank_char = "\u2063"
-icon_url = 'http://i.imgur.com/MfDcOEU.gif'
-valid_defcons = ['1', '2', '3', '4', '5']
-
 
 class Defcon:
 
@@ -16,6 +12,7 @@ class Defcon:
         self.bot = bot
         self.settings_path = "data/defcon/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
+        self.valid_defcons = ['1', '2', '3', '4', '5']
 
     @commands.command(name="defcon", no_pm=True, pass_context=True)
     async def defcon(self, ctx):
@@ -64,7 +61,7 @@ class Defcon:
         member = ctx.message.author
         self.load_settings(server)
 
-        if level in valid_defcons:
+        if level in self.valid_defcons:
             self.settings[server.id]["defcon"] = int(level)
             self.settings[server.id]["authority"] = member.display_name
             self.save_settings(server)
@@ -75,6 +72,9 @@ class Defcon:
                                "you seen War Games?")
 
     async def post_defcon(self, level, nick):
+
+        icon_url = 'http://i.imgur.com/MfDcOEU.gif'
+
         if level == '5':
             color = 0x0080ff
             thumbnail_url = 'http://i.imgur.com/uTPeW7N.gif'
@@ -123,8 +123,8 @@ class Defcon:
                                     ("- Take shelter outdoors until the "
                                      "all-clear is given")])
 
-        if level in valid_defcons:
-            embed = discord.Embed(title=blank_char, color=color)
+        if level in self.valid_defcons:
+            embed = discord.Embed(title="\u2063", color=color)
             embed.set_author(name=author, icon_url=icon_url)
             embed.set_thumbnail(url=thumbnail_url)
             embed.add_field(name=subtitle, value=instructions, inline=False)
