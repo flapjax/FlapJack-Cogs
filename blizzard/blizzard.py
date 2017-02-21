@@ -142,8 +142,8 @@ class Blizzard:
             if uid in self.settings['battletags']:
                 tag = self.settings['battletags'][uid]
             else:
-                await self.bot.say(''.join(['You did not provide a battletag ',
-                                            'and I do not have one stored for you.']))
+                await self.bot.say('You did not provide a battletag '
+                                   'and I do not have one stored for you.')
                 return
 
         tag = tag.replace("#", "-")
@@ -153,12 +153,12 @@ class Blizzard:
                 stats = await resp.json()
 
         if 'error' in stats:
-            await self.bot.say(''.join(['Could not fetch your statistics. ',
-                                        'Battletags are case sensitive ',
-                                        'and require a 4-digit identifier ',
-                                        '(e.g. CoolDude#1234)',
-                                        'Or, you may have an invalid tag ',
-                                        'on file.']))
+            await self.bot.say('Could not fetch your statistics. '
+                               'Battletags are case sensitive '
+                               'and require a 4-digit identifier '
+                               '(e.g. CoolDude#1234)'
+                               'Or, you may have an invalid tag '
+                               'on file.')
             return
 
         if region is None:
@@ -176,11 +176,11 @@ class Blizzard:
                 return
 
         if stats[region] is None:
-            await self.bot.say(''.join(['That battletag exists, but I could not ',
-                                        'find stats for the region specified. ',
-                                        'Try a different region ',
-                                        '<us/eu/kr> or leave that field blank '
-                                        'so I can autodetect the region.']))
+            await self.bot.say('That battletag exists, but I could not '
+                               'find stats for the region specified. '
+                               'Try a different region '
+                               '<us/eu/kr> or leave that field blank '
+                               'so I can autodetect the region.')
             return
 
         url = 'https://playoverwatch.com/en-us/career/pc/' + region + '/' + tag
@@ -312,14 +312,14 @@ class Blizzard:
             if uid in self.settings['battletags']:
                 tag = self.settings['battletags'][uid]
             else:
-                await self.bot.say(''.join(['You did not provide a battletag ',
-                                            'and I do not have one stored for you.']))
+                await self.bot.say('You did not provide a battletag '
+                                   'and I do not have one stored for you.')
                 return
 
         if 'apikey' not in self.settings:
-            await self.bot.say(''.join(['The bot owner has not provided a ',
-                                        'battle.net API key, which is ',
-                                        'required for Diablo 3 stats.']))
+            await self.bot.say('The bot owner has not provided a '
+                               'battle.net API key, which is '
+                               'required for Diablo 3 stats.')
             return
 
         key = self.settings['apikey']
@@ -344,7 +344,10 @@ class Blizzard:
 
         hero_txt = ''
         for hero in stats['heroes']:
-            hero_txt += ''.join([':leaves:' if hero['seasonal'] else '', hero['name'], ' - lvl ', str(hero['level']), ' ', hero['class'], ' - hardcore' if hero['hardcore'] else '', ' (RIP)\n' if hero['dead'] else '\n'])
+            hero_txt += ''.join([':leaves:' if hero['seasonal'] else '', hero['name'],
+                                 ' - lvl ', str(hero['level']), ' ', hero['class'],
+                                 ' - hardcore' if hero['hardcore'] else '',
+                                 ' (RIP)\n' if hero['dead'] else '\n'])
 
         if not hero_txt:
             await self.bot.say("You don't have any Diablo 3 heroes.")
