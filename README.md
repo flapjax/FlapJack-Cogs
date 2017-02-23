@@ -7,6 +7,7 @@
 These are cogs I have written for Red Bot.  
 View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/)
 
+- **ReactPoll** - Functions exactly like Red's built-in polls, but uses numeric reactions instead of typed responses.
 - **Blizzard** - Fetches and prints latest patch notes and some (limited) user data from current Blizzard games.
 - **ColorMe** - Allows users to manage the color of their own name through custom roles with default permissions.
 - **Defcon** - A nod to the 1983 film War Games. Maintain a DEFCON system on your server, displayed through creative use of embeds.
