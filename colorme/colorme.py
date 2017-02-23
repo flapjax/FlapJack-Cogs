@@ -128,7 +128,7 @@ class ColorMe:
         when they join the server. Set to "@everyone" to disable this feature.
         ("@everyone" is the default setting)
 
-        Example: [p]colorme setdefault member
+        Example: [p]colorme defaultrole member
         """
         server = ctx.message.server
         default_role = discord.utils.get(server.roles, name=role)
