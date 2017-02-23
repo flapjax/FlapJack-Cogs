@@ -1,0 +1,10 @@
+{
+    "NAME" : "ReactPoll",
+    "AUTHOR" : "FlapJack",
+    "SHORT" : "Create polls using reactions as the responses",
+    "DESCRIPTION" : "Create polls using reactions as the responses. Supports polls with up to 9 answers.\n\nDependencies: None",
+    "INSTALL_MSG" : "Thanks for installing ReactPoll. Please make sure your bot has the 'Manage Messages' permission so it can manage emoji reactions on messages.",
+    "REQUIREMENTS" : [],
+    "TAGS" : ["poll", "reaction", "emoji"],
+    "DISABLED" : false,
+}
