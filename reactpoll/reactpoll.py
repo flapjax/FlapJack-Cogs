@@ -17,8 +17,8 @@ class ReactPoll:
         self.bot = bot
         self.poll_sessions = []
 
-    @commands.command(pass_context=True, no_pm=True, aliases=['rpoll'])
-    async def reactpoll(self, ctx, *text):
+    @commands.command(pass_context=True, no_pm=True)
+    async def rpoll(self, ctx, *text):
         """Starts/stops a reaction poll
         Usage example:
         poll Is this a poll?;Yes;No;Maybe
@@ -94,7 +94,7 @@ class NewReactPoll():
         self.author = message.author.id
         self.client = main.bot
         self.poll_sessions = main.poll_sessions
-        msg = message.content[10:]
+        msg = message.content[6:]
         msg = msg.split(";")
         # Reaction poll supports maximum of 9 answers and minimum of 2
         if len(msg) < 2 or len(msg) > 10:
