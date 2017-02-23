@@ -2,7 +2,7 @@ import discord
 import asyncio
 from discord.ext import commands
 
-# This cog is bascally a fork of the poll function in Red Bot's general.py
+# This cog is basically a fork of the poll function in Red Bot's general.py
 # I wanted to preserve as much compatibility as possible so ReactPoll
 # could be a subclass of NewPoll if necessary.
 # Full credit is due to Twentysix26 and the Red staff for the original code
