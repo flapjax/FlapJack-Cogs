@@ -121,6 +121,25 @@ class ColorMe:
             await self.bot.say("Users with top role '{}' are no longer protected "
                                "from color changes.".format(role))
 
+    @colorme.command(name="defaultrole", pass_context=True)
+    @checks.admin_or_permissions(manage_server=True)
+    async def _defaultrole_colorme(self, ctx, role: str):
+        """Specify a role that will automatically be granted to new members
+        when they join the server. Set to "@everyone" to disable this feature.
+        ("@everyone" is the default setting)
+
+        Example: [p]colorme setdefault member
+        """
+        server = ctx.message.server
+        default_role = discord.utils.get(server.roles, name=role)
+        if default_role is None:
+            await self.bot.say("No roles match that name.")
+            return
+        self.settings[server.id]["Roles"]["Default"] = default_role.id
+        dataIO.save_json(self.settings_path, self.settings)
+        await self.bot.say("Role '{}' will be applied to each user who "
+                           "joins the server.".format(role))
+
     @colorme.command(name="listprotect", pass_context=True)
     async def _listprotect_colorme(self, ctx):
         """Lists roles that are protected from color changes."""
@@ -139,8 +158,17 @@ class ColorMe:
             self.add_default_settings(server_id)
 
     def add_default_settings(self, server_id):
-        self.settings[server_id] = {"Roles": {"Protected": [], }}
+        self.settings[server_id] = {"Roles": {"Protected": [],
+                                    "Default": "@everyone"}}
         dataIO.save_json(self.settings_path, self.settings)
+
+    async def member_join_listener(self, member):
+        # Backwards compatibility
+        role = discord.utils.get(member.server.roles,
+                                 id=self.settings[member.server.id]
+                                 ["Roles"].get("Default"))
+        if role is not None and not role.is_everyone:
+            await self.bot.add_roles(member, role)
 
 
 def check_folders():
@@ -162,3 +190,4 @@ def setup(bot):
     check_files()
     n = ColorMe(bot)
     bot.add_cog(n)
+    bot.add_listener(n.member_join_listener, "on_member_join")
