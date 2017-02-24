@@ -135,6 +135,7 @@ class ColorMe:
         if default_role is None:
             await self.bot.say("No roles match that name.")
             return
+        self.load_settings(server.id)
         self.settings[server.id]["Roles"]["Default"] = default_role.id
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say("Role '{}' will be applied to each user who "
@@ -165,8 +166,8 @@ class ColorMe:
     async def member_join_listener(self, member):
         # Backwards compatibility
         role = discord.utils.get(member.server.roles,
-                                 id=self.settings[member.server.id]
-                                 ["Roles"].get("Default"))
+                                 id=self.settings.get(member.server.id, {})
+                                 .get("Roles", {}).get("Default"))
         if role is not None and not role.is_everyone:
             await self.bot.add_roles(member, role)
 
