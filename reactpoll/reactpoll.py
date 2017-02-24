@@ -1,5 +1,6 @@
 import discord
 import asyncio
+import re
 from discord.ext import commands
 
 # This cog is basically a fork of the poll function in Red Bot's general.py
@@ -20,8 +21,8 @@ class ReactPoll:
     @commands.command(pass_context=True, no_pm=True)
     async def rpoll(self, ctx, *text):
         """Starts/stops a reaction poll
-        Usage example:
-        poll Is this a poll?;Yes;No;Maybe
+        Usage example (time argument is optional)
+        poll Is this a poll?;Yes;No;Maybe;t=60
         poll stop"""
         message = ctx.message
         if len(text) == 1:
@@ -38,7 +39,7 @@ class ReactPoll:
                 self.poll_sessions.append(p)
                 await p.start()
             else:
-                await self.bot.say("poll question;option1;option2 (...)")
+                await self.bot.say("poll question;option1;option2...;t=60")
         else:
             await self.bot.say("A reaction poll is already ongoing in this channel.")
 
@@ -94,8 +95,15 @@ class NewReactPoll():
         self.author = message.author.id
         self.client = main.bot
         self.poll_sessions = main.poll_sessions
+        self.duration = 60  # Default duration
         msg = message.content[6:]
         msg = msg.split(";")
+        # Detect optional duration parameter
+        if len(msg[-1].strip().split("t=")) == 2:
+            dur = msg[-1].strip().split("t=")[1]
+            if re.match(r'[0-9]{1,4}$', dur):
+                self.duration = int(dur)
+                msg.pop()
         # Reaction poll supports maximum of 9 answers and minimum of 2
         if len(msg) < 2 or len(msg) > 10:
             self.valid = False
@@ -123,12 +131,13 @@ class NewReactPoll():
         msg = "**POLL STARTED!**\n\n{}\n\n".format(self.question)
         for id, data in self.answers.items():
             msg += "{}\n".format(data["ANSWER"])
-        msg += "\nSelect the number to vote!"
+        msg += ("\nSelect the number to vote!"
+                "\nPoll closes in {} seconds.".format(self.duration))
         self.message = await self.client.send_message(self.channel, msg)
         for emoji in self.emojis:
             await self.client.add_reaction(self.message, emoji)
             await asyncio.sleep(0.5)
-        await asyncio.sleep(60)  # Hardcoded 60 sec poll for now
+        await asyncio.sleep(self.duration)
         if self.valid:
             await self.endPoll()
 
@@ -141,7 +150,6 @@ class NewReactPoll():
             if reaction.emoji in self.emojis:
                 # Oh god what a terrible hack
                 # Please I can explain
-                # I have a family
                 self.answers[ord(reaction.emoji[0])-48]["VOTES"] = reaction.count - 1
         cur_max = 0 # Track the winning number of votes
         # Double iteration probably not the fastest way, but works for now
