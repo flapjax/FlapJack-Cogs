@@ -41,10 +41,10 @@ class SmartReact:
         self.settings[server_id] = {}
         dataIO.save_json(self.settings_path, self.settings)
 
-    def fix_custom_emoji(self, server, emoji):
+    def fix_custom_emoji(self, emoji):
         if emoji[:2] != "<:":
             return emoji
-        return [r for r in server.emojis if r.name == emoji.split(':')[1]][0]
+        return [r for server in self.bot.servers for r in server.emojis if r.name == emoji.split(':')[1]][0]
 
     # From Twentysix26's trigger.py cog
     def is_command(self, msg):
@@ -109,7 +109,7 @@ class SmartReact:
         words = message.content.lower().split()
         for emoji in react_dict:
             if set(w.lower() for w in react_dict[emoji]).intersection(words):
-                await self.bot.add_reaction(message, self.fix_custom_emoji(server, emoji))
+                await self.bot.add_reaction(message, self.fix_custom_emoji(emoji))
 
 
 def check_folders():
