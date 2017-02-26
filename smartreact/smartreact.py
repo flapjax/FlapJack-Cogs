@@ -20,7 +20,7 @@ class SmartReact:
         server = ctx.message.server
         message = ctx.message
         self.load_settings(server.id)
-        emoji = self.fix_custom_emoji(server, emoji)
+        emoji = self.fix_custom_emoji(emoji)
         await self.create_smart_reaction(server, word, emoji, message)
 
     @commands.command(name="delreact", no_pm=True, pass_context=True)
@@ -29,7 +29,7 @@ class SmartReact:
         server = ctx.message.server
         message = ctx.message
         self.load_settings(server.id)
-        emoji = self.fix_custom_emoji(server, emoji)
+        emoji = self.fix_custom_emoji(emoji)
         await self.remove_smart_reaction(server, word, emoji, message)
 
     def load_settings(self, server_id):
