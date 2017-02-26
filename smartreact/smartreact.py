@@ -44,7 +44,7 @@ class SmartReact:
     def fix_custom_emoji(self, emoji):
         if emoji[:2] != "<:":
             return emoji
-        return [r for server in self.bot.servers for r in server.emojis if r.name == emoji.split(':')[1]][0]
+        return [r for server in self.bot.servers for r in server.emojis if r.id == emoji.split(':')[2][:-1]][0]
 
     # From Twentysix26's trigger.py cog
     def is_command(self, msg):
