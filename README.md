@@ -13,6 +13,7 @@ View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/
 - **Defcon** - A nod to the 1983 film War Games. Maintain a DEFCON system on your server, displayed through creative use of embeds.
 - **Dongers** - Fetches and prints a random donger from www.dongerlist.com.
 - **SmartReact** - Set up automatic emoji reactions to specific words in chat.
+- **gtts** - Experimental new cog using the Google TTS service and tmerc's playsound code to play TTS in a voice channel.
 
 ## Dependencies
 
