@@ -2,7 +2,7 @@
     "NAME" : "gtts",
     "AUTHOR" : "FlapJack",
     "SHORT" : "Plays Google TTS audio in voice channel",
-    "DESCRIPTION" : "Uses Google TTS to convert your text into spoken audio in a voice channel. Useful for people without microphones, or when you want to limit TTS to a single voice channel.\n\nDependencies:\ngTTS",
+    "DESCRIPTION" : "Uses Google TTS to convert your text into spoken audio in a voice channel. Useful for people without microphones, or when you want to limit TTS to a single voice channel.\n\nDependencies:\ngTTS :: https://pypi.python.org/pypi/gTTS",
     "INSTALL_MSG" : "Thanks for installing gtts. This cog was recently developed and has not been thoroughly tested yet. I appreciate any feedback.",
     "REQUIREMENTS" : ["gTTS"],
     "TAGS" : ["google", "tts", "gtts", "text", "speech"],
