@@ -18,7 +18,7 @@ View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/
 ## Dependencies
 
 **Dongers** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).  
-**BlizzPatchNotes** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), [pypandoc](https://github.com/bebraw/pypandoc), and [Pandoc](http://pandoc.org/).
+**BlizzPatchNotes** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), [pypandoc](https://github.com/bebraw/pypandoc), and [Pandoc](http://pandoc.org/).  
 **gtts** requires [gTTS](https://pypi.python.org/pypi/gTTS)
 
 ## Contact Me
