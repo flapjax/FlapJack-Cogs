@@ -79,7 +79,7 @@ class Blizzard:
     async def _set_battletag(self, ctx, tag: str):
         """Set your battletag"""
 
-        pattern = re.compile(r'.#\d{4}\Z')
+        pattern = re.compile(r'.#\d{4,5}\Z')
         if pattern.search(tag) is None:
             await self.bot.say("That doesn't look like a valid battletag.")
             return
@@ -155,7 +155,7 @@ class Blizzard:
         if 'error' in stats:
             await self.bot.say('Could not fetch your statistics. '
                                'Battletags are case sensitive '
-                               'and require a 4-digit identifier '
+                               'and require a 4 or 5-digit identifier '
                                '(e.g. CoolDude#1234)'
                                'Or, you may have an invalid tag '
                                'on file.')
