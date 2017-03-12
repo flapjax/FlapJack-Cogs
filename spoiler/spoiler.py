@@ -38,7 +38,6 @@ class Spoiler:
         except discord.errors.Forbidden:
             await self.bot.say("I require the 'manage messages' permission "
                                "to hide spoilers!")
-            return
 
         try:
             fnt = ImageFont.truetype(self.font, self.font_size)
