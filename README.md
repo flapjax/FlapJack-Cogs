@@ -7,6 +7,7 @@
 These are cogs I have written for Red Bot.  
 View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/)
 
+- **Spoiler** - Hide spoilers using animated GIFs.
 - **ReactPoll** - Functions exactly like Red's built-in polls, but uses numeric reactions instead of typed responses.
 - **Blizzard** - Fetches and prints latest patch notes and some (limited) user data from current Blizzard games.
 - **ColorMe** - Allows users to manage the color of their own name through custom roles with default permissions.
@@ -17,9 +18,10 @@ View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/
 
 ## Dependencies
 
+**Spoiler** requires [Pillow](https://python-pillow.org/).
 **Dongers** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).  
 **BlizzPatchNotes** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), [pypandoc](https://github.com/bebraw/pypandoc), and [Pandoc](http://pandoc.org/).  
-**gtts** requires [gTTS](https://pypi.python.org/pypi/gTTS)
+**gtts** requires [gTTS](https://pypi.python.org/pypi/gTTS).
 
 ## Contact Me
 

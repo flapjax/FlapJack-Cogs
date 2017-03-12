@@ -1,0 +1,10 @@
+{
+    "NAME" : "Spoiler",
+    "AUTHOR" : "FlapJack",
+    "SHORT" : "Hide spoilers using animated GIFs",
+    "DESCRIPTION" : "Hide spoilers using animated GIFs. Users need to mouseover the image to see the spoiler. Does not work on Android!\n\nDependencies:\nPillow :: https://python-pillow.org/",
+    "INSTALL_MSG" : "Thanks for installing FlapJack's Spoiler cog. Note that the GIFs may not work correctly on some mobile devices!",
+    "REQUIREMENTS" : ["pillow"],
+    "TAGS" : ["spoiler", "gif"],
+    "DISABLED" : false
+}
