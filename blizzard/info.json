@@ -2,7 +2,7 @@
     "NAME" : "Blizzard",
     "AUTHOR" : "FlapJack",
     "SHORT" : "Utilities for Blizzard games",
-    "DESCRIPTION" : "Player information and latest Blizzard game patch notes in chat.\n\nGames supported:\nOverwatch - Stats, patch notes\nDiablo3 - Stats, patch notes\nHearthstone - patch notes\nHeroes of the Storm - patch notes\nStarcraft2 - patch notes\nWorld of Warcraft - patch notes\n\nDependencies:\nBeautifulSoup4 :: https://www.crummy.com/software/BeautifulSoup/bs4/doc/\npypandoc :: https://pypi.python.org/pypi/pypandoc\nPandoc :: http://pandoc.org/",
+    "DESCRIPTION" : "Player information and latest Blizzard game patch notes in chat.\n\nGames supported:\nOverwatch - Stats, patch notes\nDiablo3 - Stats, patch notes\nHearthstone - patch notes\nHeroes of the Storm - patch notes\nStarcraft2 - patch notes\nWorld of Warcraft - patch notes, token prices\n\nDependencies:\nBeautifulSoup4 :: https://www.crummy.com/software/BeautifulSoup/bs4/doc/\npypandoc :: https://pypi.python.org/pypi/pypandoc\nPandoc :: http://pandoc.org/",
     "INSTALL_MSG" : "Thanks for installing FlapJack's Blizzard utilities cog. You must obtain a battle.net API key for some statistics at https://dev.battle.net/. BeautifulSoup4, pypandoc, and pandoc must be installed to use the patch notes features of this cog. Pandoc is not installed automatically by the downloader cog. Find your install instructions at http://pandoc.org/installing.html.",
     "REQUIREMENTS" : ["beautifulsoup4", "pypandoc"],
     "TAGS" : ["blizzard", "stats", "patch", "notes", "games"],
