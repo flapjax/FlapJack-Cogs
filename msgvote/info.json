@@ -2,7 +2,7 @@
     "NAME" : "Msgvote",
     "AUTHOR" : "FlapJack",
     "SHORT" : "Turn Discord into Reddit (not recommended)",
-    "DESCRIPTION" : "Adds upvote and downvote reactions to every message in a channel. Messages receiving excessive downvotes can be deleted automatically.\nI accept no responsibility for this cog. JennJenn thought of it. It's her fault.\n\nDependencies: None",
+    "DESCRIPTION" : "Adds upvote and downvote reactions to every message in a channel. Messages receiving excessive downvotes can be deleted automatically.\nI accept no responsibility for this cog.\n\nDependencies: None",
     "INSTALL_MSG" : "Thanks for installing Msgvote.",
     "REQUIREMENTS" : [],
     "TAGS" : ["reaction", "vote", "reddit", "upvote", "downvote"],

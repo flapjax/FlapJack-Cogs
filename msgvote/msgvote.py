@@ -78,7 +78,8 @@ class Msgvote:
         if 60 <= duration <= 3600:
             self.settings["duration"] = duration
             dataIO.save_json(self.settings_path, self.settings)
-            await self.bot.say("Duration set to: " + str(duration))
+            await self.bot.say("I will monitor each message's votes until it "
+                               "is {} seconds old.".format(duration))
         else:
             await self.bot.say("Invalid duration. Must be an integer "
                                "between 60-3600.")
@@ -92,7 +93,8 @@ class Msgvote:
         if 1 <= interval <= 60:
             self.settings["interval"] = interval
             dataIO.save_json(self.settings_path, self.settings)
-            await self.bot.say("Interval set to: " + str(interval))
+            await self.bot.say("I will check each message's votes every "
+                               "{} seconds.".format(interval))
         else:
             await self.bot.say("Invalid interval. Must be an integer "
                                "between 1-60.")
@@ -113,7 +115,7 @@ class Msgvote:
             self.settings["threshold"] = threshold
             dataIO.save_json(self.settings_path, self.settings)
             await self.bot.say("Messages will be deleted if [downvotes - "
-                               "upvotes] exceeds {}.".format(threshold))
+                               "upvotes] reaches {}.".format(threshold))
 
     def fix_custom_emoji(self, emoji):
         if emoji[:2] != "<:":
@@ -184,7 +186,7 @@ def check_folders():
 
 def check_files():
     default = {"channels_enabled": [], "duration": 300, "threshold": 3,
-               "interval": 5, "up_emoji": "\u2b06", "dn_emoji": "\u2b07"}
+               "interval": 5, "up_emoji": "\ud83d\udc4d", "dn_emoji": "\ud83d\udc4e"}
     if not dataIO.is_valid_json("data/msgvote/settings.json"):
         print("Creating default msgvote settings.json...")
         dataIO.save_json("data/msgvote/settings.json", default)
