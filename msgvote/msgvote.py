@@ -37,7 +37,7 @@ class Msgvote:
         else:
             self.settings["channels_enabled"].append(channel.id)
             dataIO.save_json(self.settings_path, self.settings)
-            await self.bot.say("Msgvote mode in on in this channel.")
+            await self.bot.say("Msgvote mode is now on in this channel.")
 
     @msgvote.command(name="off", pass_context=True, no_pm=True)
     async def _msgvote_off(self, ctx):
@@ -49,7 +49,7 @@ class Msgvote:
         else:
             self.settings["channels_enabled"].remove(channel.id)
             dataIO.save_json(self.settings_path, self.settings)
-            await self.bot.say("Msgvote mode is off in this channel.")
+            await self.bot.say("Msgvote mode is now off in this channel.")
 
     @msgvote.command(name="upemoji", pass_context=True, no_pm=True)
     async def _msgvote_upemoji(self, ctx, emoji):
