@@ -55,7 +55,7 @@ class Msgvote:
     async def _msgvote_upemoji(self, ctx, emoji):
         """Set the upvote emoji"""
 
-        emoji = str(self.fix_custom_emoji(emoji))
+        emoji = str(self.fix_custom_emoji(ctx.message.server, emoji))
         self.settings["up_emoji"] = emoji
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say("Upvote emoji set to: " + emoji)
@@ -64,7 +64,7 @@ class Msgvote:
     async def _msgvote_downemoji(self, ctx, emoji):
         """Set the downvote emoji"""
 
-        emoji = str(self.fix_custom_emoji(emoji))
+        emoji = str(self.fix_custom_emoji(ctx.message.server, emoji))
         self.settings["dn_emoji"] = emoji
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say("Downvote emoji set to: " + emoji)
@@ -117,10 +117,10 @@ class Msgvote:
             await self.bot.say("Messages will be deleted if [downvotes - "
                                "upvotes] reaches {}.".format(threshold))
 
-    def fix_custom_emoji(self, emoji):
+    def fix_custom_emoji(self, server, emoji):
         if emoji[:2] != "<:":
             return emoji
-        return [r for server in self.bot.servers for r in server.emojis if r.id == emoji.split(':')[2][:-1]][0]
+        return [r for r in server.emojis if r.name == emoji.split(':')[1]][0]
 
     # From Twentysix26's trigger.py cog
     def is_command(self, msg):
@@ -138,8 +138,8 @@ class Msgvote:
     # I just wanted to experiment with tasks at the moment :)
     async def count_votes(self, channel, msg_id: str):
         timer = 0
-        up_emoji = self.fix_custom_emoji(self.settings["up_emoji"])
-        dn_emoji = self.fix_custom_emoji(self.settings["dn_emoji"])
+        up_emoji = self.fix_custom_emoji(channel.server, self.settings["up_emoji"])
+        dn_emoji = self.fix_custom_emoji(channel.server, self.settings["dn_emoji"])
         while timer < self.settings["duration"]:
             await asyncio.sleep(self.settings["interval"])
             timer += self.settings["interval"]
@@ -157,8 +157,8 @@ class Msgvote:
                 try:
                     await self.bot.delete_message(msg)
                 except discord.errors.Forbidden:
-                    await self.bot.say("I require the 'manage messages' permission "
-                                       "to delete downvoted messages!")
+                    await self.bot.send_message(channel, "I require the 'manage messages' permission "
+                                                "to delete downvoted messages!")
                 return
 
     async def msg_listener(self, message):
@@ -169,8 +169,8 @@ class Msgvote:
         if self.is_command(message):
             return
         try:
-            await self.bot.add_reaction(message, self.fix_custom_emoji(self.settings["up_emoji"]))
-            await self.bot.add_reaction(message, self.fix_custom_emoji(self.settings["dn_emoji"]))
+            await self.bot.add_reaction(message, self.fix_custom_emoji(message.server, self.settings["up_emoji"]))
+            await self.bot.add_reaction(message, self.fix_custom_emoji(message.server, self.settings["dn_emoji"]))
             self.bot.loop.create_task(self.count_votes(message.channel, message.id))
         except discord.errors.HTTPException:
             # Implement a non-spammy way to alert users in future
