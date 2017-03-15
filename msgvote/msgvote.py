@@ -99,9 +99,8 @@ class Msgvote:
 
     @msgvote.command(name="threshold", pass_context=True, no_pm=True)
     async def _msgvote_threshold(self, ctx, threshold: int):
-        """Set the threshold of [downvotes - upvotes] that must be
-        reached for a message to be deleted. Must be a positive integer.
-        Or, set to 0 to disable message deletion."""
+        """Set the threshold of [downvotes - upvotes] for msg deletion.
+        Must be a positive integer. Or, set to 0 to disable deletion."""
 
         if threshold < 0:
             await self.bot.say("Invalid threshold. Must be a positive "
