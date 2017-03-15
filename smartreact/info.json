@@ -6,5 +6,5 @@
     "INSTALL_MSG" : "Thanks for installing SmartReact.",
     "REQUIREMENTS" : [],
     "TAGS" : ["reaction", "smart", "auto"],
-    "DISABLED" : false,
+    "DISABLED" : false
 }
