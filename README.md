@@ -7,13 +7,14 @@
 These are cogs I have written for Red Bot.  
 View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/)
 
-- **Spoiler** - Hide spoilers using animated GIFs.
-- **ReactPoll** - Functions exactly like Red's built-in polls, but uses numeric reactions instead of typed responses.
 - **Blizzard** - Fetches and prints latest patch notes and some (limited) user data from current Blizzard games.
 - **ColorMe** - Allows users to manage the color of their own name through custom roles with default permissions.
 - **Defcon** - A nod to the 1983 film War Games. Maintain a DEFCON system on your server, displayed through creative use of embeds.
-- **Dongers** - Fetches and prints a random donger from www.dongerlist.com.
-- **SmartReact** - Set up automatic emoji reactions to specific words in chat.
+- **Dongers** - Fetches and prints a random Donger from www.dongerlist.com.
+- **Msgvote** - Turn a Discord channel into a Reddit thread... if that's something you're into...
+- **ReactPoll** - Functions exactly like Red's built-in polls, but uses numeric reactions instead of typed responses.
+- **SmartReact** - Set up automatic emoji reactions to specific words in chat. Like trigger, but with emojis.
+- **Spoiler** - Hide spoilers in chat using animated GIFs that require a mouseover.
 - **gtts** - Experimental cog using the Google TTS service and tmerc's playsound code to play TTS in a voice channel.
 
 ## Dependencies
