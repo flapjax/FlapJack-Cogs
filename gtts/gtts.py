@@ -20,6 +20,7 @@ class GTTS:
         self.temp_filepath = "data/gtts/temp.mp3"
 
     # Using code from tmerc's playsound for proof of concept
+    # (with permission of course -- thank you tmerc!)
     def voice_channel_full(self, voice_channel: discord.Channel) -> bool:
         return (voice_channel.user_limit != 0 and
                 len(voice_channel.voice_members) >= voice_channel.user_limit)
