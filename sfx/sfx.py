@@ -176,7 +176,7 @@ class SFX:
 
         await self.enqueue_tts(vchan, " ".join(text))
 
-    @commands.command(no_pm=True, pass_context=True, aliases=['d', 'playsound'])
+    @commands.command(no_pm=True, pass_context=True)
     async def sfx(self, ctx, soundname: str):
         """Plays the specified sound."""
 
