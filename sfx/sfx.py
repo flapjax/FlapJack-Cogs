@@ -112,7 +112,7 @@ class SFX:
         else:
             vc_current.audio_player.resume()
 
-    async def suspend_audio(self, vc, cid):
+    def suspend_audio(self, vc, cid):
         channel = self.bot.get_channel(cid)
         vc.audio_player.pause()
         self.vc_buffers[channel.server.id] = SuspendedPlayer(vc)
@@ -145,7 +145,7 @@ class SFX:
         else:
             # We already have a client, use it
             if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
-                await self.suspend_audio(vc, cid)
+                self.suspend_audio(vc, cid)
 
             if vc.channel.id != cid:
                 await vc.move_to(channel)
@@ -170,6 +170,9 @@ class SFX:
     async def tts(self, ctx, *text: str):
         """Play a TTS clip in your current channel"""
 
+        if not gTTS_avail:
+            await self.bot.say("You do not have gTTS installed.")
+            return
         vchan = ctx.message.author.voice_channel
         if vchan is None:
             await self.bot.say("You are not connected to a voice channel.")
@@ -480,7 +483,4 @@ def check_folders():
 
 def setup(bot):
     check_folders()
-    if not gTTS_avail:
-        raise RuntimeError("You need to run `pip3 install gTTS`")
-    else:
-        bot.add_cog(SFX(bot))
+    bot.add_cog(SFX(bot))
