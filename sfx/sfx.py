@@ -65,20 +65,17 @@ class SFX:
 
     async def check_for_disconnect(self, server: discord.Server):
 
-        await asyncio.sleep(0.1)
         timeout = 0
         # Timeout period can be made adjustable
-        while timeout <= 49:
+        while timeout < 10:
+            await asyncio.sleep(0.1)
             vc = self.bot.voice_client_in(server)
             if vc is None:
                 return
-            if hasattr(vc, 'audio_player'):
+            if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
                 return
             # This seems like overkill, but somehow it is preventing
             # some early disconnects. Need to look into this
-            if self.audio_players[server.id].is_playing():
-                return
-            await asyncio.sleep(0.1)
             timeout += 1
 
         await vc.disconnect()
@@ -119,10 +116,6 @@ class SFX:
         channel = self.bot.get_channel(cid)
         vc.audio_player.pause()
         self.vc_buffers[channel.server.id] = SuspendedPlayer(vc)
-        print('suspendedplayer created!')
-
-        if vc.channel.id != cid:
-            await vc.move_to(channel)
 
     async def play_next_sound(self, sid):
 
@@ -134,6 +127,7 @@ class SFX:
             return
 
         cid = next_sound['cid']
+        channel = self.bot.get_channel(cid)
         path = next_sound['path']
         vol = next_sound['vol']
         server = self.bot.get_server(sid)
@@ -141,7 +135,7 @@ class SFX:
 
         if vc is None:
             # Voice not in use, we can connect to a voice channel
-            vc = await self.bot.join_voice_channel(self.bot.get_channel(cid))
+            vc = await self.bot.join_voice_channel(channel)
             # TODO: ffmpeg options
             options = "-filter \"volume=volume={}\"".format(str(vol/100))
             self.audio_players[sid] = vc.create_ffmpeg_player(
@@ -150,8 +144,11 @@ class SFX:
 
         else:
             # We already have a client, use it
-            if hasattr(vc, 'audio_player'): #and self.vc_buffers.get(sid) is None:
+            if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
                 await self.suspend_audio(vc, cid)
+
+            if vc.channel.id != cid:
+                await vc.move_to(channel)
 
             options = "-filter \"volume=volume={}\"".format(str(vol/100))
             self.audio_players[sid] = vc.create_ffmpeg_player(
