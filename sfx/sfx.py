@@ -165,9 +165,6 @@ class SFX:
                 # It looks like this does not raise an exception if bot
                 # fails to join channel. Need to add a manual check.
                 await vc.move_to(channel)
-                if vc.channel.id != cid:
-                    print("Could not join channel '{}'".format(channel.name))
-                    self.dequeue_sfx(server, path, next_sound['delete'])
 
             options = "-filter \"volume=volume={}\"".format(str(vol/100))
             self.audio_players[sid] = vc.create_ffmpeg_player(
@@ -193,7 +190,7 @@ class SFX:
 
         await self.enqueue_tts(vchan, " ".join(text))
 
-    @commands.command(no_pm=True, pass_context=True)
+    @commands.command(no_pm=True, pass_context=True, aliases=['playsound'])
     async def sfx(self, ctx, soundname: str):
         """Plays the specified sound."""
 
@@ -250,7 +247,7 @@ class SFX:
 
         await self.enqueue_sfx(vchan, f[0], vol)
 
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, aliases=['allsounds'])
     async def allsfx(self, ctx):
         """Sends a list of every sound in a PM."""
 
@@ -287,7 +284,7 @@ class SFX:
 
         await self.bot.reply("Check your PMs!")
 
-    @commands.command(no_pm=True, pass_context=True)
+    @commands.command(no_pm=True, pass_context=True, aliases=['addsound'])
     @checks.mod_or_permissions(administrator=True)
     async def addsfx(self, ctx, link: str=None):
         """Adds a new sound.
@@ -349,7 +346,7 @@ class SFX:
         await self.bot.say(
             cf.info("Sound {} added.".format(os.path.splitext(filename)[0])))
 
-    @commands.command(no_pm=True, pass_context=True)
+    @commands.command(no_pm=True, pass_context=True, aliases=['soundvol'])
     @checks.mod_or_permissions(administrator=True)
     async def sfxvol(self, ctx, soundname: str, percent: int=None):
         """Sets the volume for the specified sound.
@@ -397,7 +394,7 @@ class SFX:
         await self.bot.say("Volume for {} set to {}.".format(soundname,
                                                                percent))
 
-    @commands.command(no_pm=True, pass_context=True)
+    @commands.command(no_pm=True, pass_context=True, aliases=['delsound'])
     @checks.mod_or_permissions(administrator=True)
     async def delsfx(self, ctx, soundname: str):
         """Deletes an existing sound."""
@@ -431,7 +428,7 @@ class SFX:
 
         await self.bot.say(cf.info("Sound {} deleted.".format(soundname)))
 
-    @commands.command(no_pm=True, pass_context=True)
+    @commands.command(no_pm=True, pass_context=True, aliases=['getsound'])
     async def getsfx(self, ctx, soundname: str):
         """Gets the given sound."""
 
