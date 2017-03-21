@@ -495,6 +495,14 @@ def check_folders():
         os.makedirs(folder)
 
 
+def check_files():
+    f = "data/sfx/settings.json"
+    if not dataIO.is_valid_json(f):
+        print("Creating data/playsound/settings.json...")
+        dataIO.save_json(f, {})
+
+
 def setup(bot):
     check_folders()
+    check_files()
     bot.add_cog(SFX(bot))
