@@ -1,9 +1,9 @@
 {
     "NAME" : "sfx",
     "AUTHOR" : "FlapJack & tmerc",
-    "SHORT" : "sfx when?",
-    "DESCRIPTION" : "Inject sound effects or custom text-to-speech into voice channels, without breaking existing music streams. A collaboration with a little bit of tmerc's sound effects management code, and a little bit of FlapJack's magic spaghetti code. Just kidding, it was hard work ¯\\_(ツ)_/¯. Not guaranteed to work with future versions of the core audio cog, or 3rd party audio cogs.\n\nDependencies:\ngTTS :: https://pypi.python.org/pypi/gTTS (for TTS functions only)",
-    "INSTALL_MSG" : "Thanks for installing sfx. This cog was designed to be compatible with the current version of the core audio cog. It is not gauranteed to work with future versions of audio, or 3rd party audio cogs.",
+    "SHORT" : "Inject sound effects into voice channels",
+    "DESCRIPTION" : "sfx when? (give it a rest already, Red!!)\n\nInject sound effects or custom text-to-speech into voice channels, without breaking existing music streams. A collaboration with a little bit of tmerc's sound effects code, and a little bit of FlapJack's magic spaghetti code. Just kidding, it was hard work ¯\\_(ツ)_/¯. At present, it works with the core audio cog, and *should* respect any other playing voice client as well.\n\nThis cog is backwards compatible with playsound! Just rename (don't forget to back it up!) your /data/playsound/ folder to /data/sfx/.\n\nDependencies: gTTS :: https://pypi.python.org/pypi/gTTS (for TTS functions only, cog should still load without it)",
+    "INSTALL_MSG" : "Thanks for installing sfx. This cog was designed to be compatible with the current version of the core audio cog. If you are using my gTTS cog, please [p]unload it before loading this one, as the TTS functions have been implemented in this cog.",
     "REQUIREMENTS" : ["gTTS"],
     "TAGS" : ["sfx", "tts", "gtts", "text", "speech"],
     "DISABLED" : false
