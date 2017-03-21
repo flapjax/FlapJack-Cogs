@@ -101,6 +101,14 @@ class SFX:
             self.queue[server.id] = []
         self.queue[server.id].append({'cid': vchan.id, 'path': path, 'vol': vol, 'delete': False})
 
+    def dequeue_sfx(self, server, path, delete: bool):
+        if delete:
+            os.remove(path)
+        self.queue[server.id].pop(0)
+        if not self.queue[server.id]:
+            # Queue is now empty, try a cautious disconnect
+            self.bot.loop.create_task(self.check_for_disconnect(server))
+
     def revive_audio(self, sid):
         server = self.bot.get_server(sid)
         vc_current = self.bot.voice_client_in(server)
@@ -135,7 +143,13 @@ class SFX:
 
         if vc is None:
             # Voice not in use, we can connect to a voice channel
-            vc = await self.bot.join_voice_channel(channel)
+            try:
+                vc = await self.bot.join_voice_channel(channel)
+            except asyncio.TimeoutError:
+                print("Could not join channel '{}'".format(channel.name))
+                self.dequeue_sfx(server, path, next_sound['delete'])
+                return
+
             # TODO: ffmpeg options
             options = "-filter \"volume=volume={}\"".format(str(vol/100))
             self.audio_players[sid] = vc.create_ffmpeg_player(
@@ -148,7 +162,12 @@ class SFX:
                 self.suspend_audio(vc, cid)
 
             if vc.channel.id != cid:
+                # It looks like this does not raise an exception if bot
+                # fails to join channel. Need to add a manual check.
                 await vc.move_to(channel)
+                if vc.channel.id != cid:
+                    print("Could not join channel '{}'".format(channel.name))
+                    self.dequeue_sfx(server, path, next_sound['delete'])
 
             options = "-filter \"volume=volume={}\"".format(str(vol/100))
             self.audio_players[sid] = vc.create_ffmpeg_player(
@@ -159,12 +178,7 @@ class SFX:
         while self.audio_players[sid].is_playing():
             await asyncio.sleep(0.1)
 
-        if next_sound['delete']:
-            os.remove(path)
-        self.queue[sid].pop(0)
-        if not self.queue[sid]:
-            # Queue is now empty, try a cautious disconnect
-            self.bot.loop.create_task(self.check_for_disconnect(server))
+        self.dequeue_sfx(server, path, next_sound['delete'])
 
     @commands.command(pass_context=True, no_pm=True, aliases=['gtts'])
     async def tts(self, ctx, *text: str):
