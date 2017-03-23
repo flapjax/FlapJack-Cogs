@@ -23,8 +23,8 @@ class Spoiler:
         self.margin = (9, 9)
         self.font = "data/spoiler/UbuntuMono-Regular.ttf"
         self.font_size = 14
-        self.font_color = (255, 255, 255)
-        self.bg_color = (0, 0, 0)
+        self.font_color = 150
+        self.bg_color = 20
 
     @commands.command(pass_context=True, no_pm=True)
     async def spoiler(self, ctx, *text: str):
@@ -53,8 +53,8 @@ class Spoiler:
         width = self.width
         spoil_text = ["Mouseover to reveal spoiler",
                       "\n".join(text)]
-        spoil_img = [Image.new("RGB", (width, height), self.bg_color),
-                     Image.new("RGB", (width, height), self.bg_color)]
+        spoil_img = [Image.new("L", (width, height), self.bg_color),
+                     Image.new("L", (width, height), self.bg_color)]
 
         for i in range(0, 2):
             ImageDraw.Draw(spoil_img[i]).text(self.margin, spoil_text[i],
