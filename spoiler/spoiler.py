@@ -23,7 +23,7 @@ class Spoiler:
         self.margin = (9, 9)
         self.font = "data/spoiler/UbuntuMono-Regular.ttf"
         self.font_size = 14
-        self.font_color = (255, 255, 255)
+        self.font_color = (128, 128, 128)
         self.bg_color = (0, 0, 0)
 
     @commands.command(pass_context=True, no_pm=True)
