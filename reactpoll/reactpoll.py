@@ -39,7 +39,7 @@ class ReactPoll:
                 self.poll_sessions.append(p)
                 await p.start()
             else:
-                await self.bot.say("poll question;option1;option2...;t=60")
+                await self.bot.say("`[p]rpoll question;option1;option2...;t=60`")
         else:
             await self.bot.say("A reaction poll is already ongoing in this channel.")
 
@@ -86,6 +86,11 @@ class ReactPoll:
 
             await self.bot.remove_reaction(message, emoji, user)
 
+    def __unload(self):
+        for poll in self.poll_sessions:
+            if poll.wait_task is not None:
+                poll.wait_task.cancel()
+
 
 class NewReactPoll():
     # This can be made a subclass of NewPoll()
@@ -96,14 +101,17 @@ class NewReactPoll():
         self.client = main.bot
         self.poll_sessions = main.poll_sessions
         self.duration = 60  # Default duration
+        self.wait_task = None
         msg = message.content[6:]
         msg = msg.split(";")
         # Detect optional duration parameter
         if len(msg[-1].strip().split("t=")) == 2:
             dur = msg[-1].strip().split("t=")[1]
-            if re.match(r'[0-9]{1,4}$', dur):
+            if re.match(r'[0-9]{1,18}$', dur):
                 self.duration = int(dur)
-                msg.pop()
+            else:
+                self.duration = 60
+            msg.pop()
         # Reaction poll supports maximum of 9 answers and minimum of 2
         if len(msg) < 2 or len(msg) > 10:
             self.valid = False
@@ -126,6 +134,11 @@ class NewReactPoll():
             i += 1
         self.message = None
 
+    async def poll_wait(self):
+        await asyncio.sleep(self.duration)
+        if self.valid:
+            await self.endPoll()
+
     # Override NewPoll methods for starting and stopping polls
     async def start(self):
         msg = "**POLL STARTED!**\n\n{}\n\n".format(self.question)
@@ -137,12 +150,12 @@ class NewReactPoll():
         for emoji in self.emojis:
             await self.client.add_reaction(self.message, emoji)
             await asyncio.sleep(0.5)
-        await asyncio.sleep(self.duration)
-        if self.valid:
-            await self.endPoll()
+
+        self.wait_task = self.client.loop.create_task(self.poll_wait())
 
     async def endPoll(self):
         self.valid = False
+        self.wait_task.cancel()
         # Need a fresh message object
         self.message = await self.client.get_message(self.channel, self.message.id)
         msg = "**POLL ENDED!**\n\n{}\n\n".format(self.question)
