@@ -8,22 +8,18 @@ from datetime import datetime
 from json import JSONDecodeError
 import hashlib
 import aiohttp
-# Believe these are not needed. Check in next revision
-import re
-import asyncio
 
 
 class Smite:
 
-    """Smite Game Data"""
+    """Smite Game Utilities"""
 
     def __init__(self, bot):
         self.bot = bot
         self.settings_path = "data/smite/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
         self.url_pc = 'http://api.smitegame.com/smiteapi.svc'
-        self.smite_abbr = 'xxxx'
-        self.header = {"User-Agent": "Put User Agent Here/1.0"}
+        self.header = {"User-Agent": "flapjackcogs/1.0"}
 
     @commands.group(name="smite", pass_context=True)
     async def smite(self, ctx):
@@ -45,6 +41,7 @@ class Smite:
         await self.bot.say('API access credentials set.')
 
     @smite.command(name="ping", pass_context=True)
+    @checks.is_owner()
     async def _ping_smite(self, ctx):
         """Ping the Smite API"""
 
@@ -70,29 +67,22 @@ class Smite:
             await self.bot.say("I had no Smite name stored for you.")
         dataIO.save_json(self.settings_path, self.settings)
 
-    @smite.command(name="open", pass_context=True)
-    @checks.is_owner()
-    async def _open_smite(self, ctx):
-        """Open an API session. Troubleshooting only"""
-
-        await self.bot.say("creating session...")
-
-        if await self.create_session():
-            await self.bot.say("successful!")
-        else:
-            await self.bot.say("unsuccessful!")
-
     @smite.command(name="stats", pass_context=True)
-    @checks.is_owner()
     async def _stats_smite(self, ctx, name: str=None):
         """Smite stats for your in game name.
         If name is ommitted, bot will use your name if stored.
 
-        Example: [p]smite stats CoolDude
+        Example: [p]smite stats Wood
         """
 
-        uid = ctx.message.author.id
+        if not await self.test_session():
+            if not await self.create_session():
+                await self.bot.say("I could not establish a connection "
+                                   "to the Smite API. Has my owner input "
+                                   "valid credentials?")
+                return
 
+        uid = ctx.message.author.id
         if name is None:
             if uid in self.settings['smitenames']:
                 name = self.settings['smitenames'][uid]
@@ -100,14 +90,6 @@ class Smite:
                 await self.bot.say('You did not provide a name '
                                    'and I do not have one stored for you.')
                 return
-
-        await self.bot.say("testing session...")
-
-        if await self.test_session():
-            await self.bot.say("successful!")
-        else:
-            await self.bot.say("unsuccessful!")
-            return
 
         dev_id = self.settings['devid']
         key = self.settings['authkey']
@@ -127,24 +109,51 @@ class Smite:
             async with session.get(url) as resp:
                 re = await resp.json()
 
-        #msg = 'response:\n'
-        #for key in re[0]:
-        #    msg += "key: {}, value: {}\n".format(key, re[0][key])
-        #await self.bot.say(msg)
-
         icon_url = 'https://hzweb.hi-rezgame.net/hirezstudios/wp-content/uploads/2015/12/smite-logo-hzcom1.png'
         url = 'https://www.smitegame.com/player-stats/?set_platform_preference=pc&player-name=' + name
 
-        stats = ''.join(['**Wins:** ', str(re[0]['Wins']),
-                         '\n**Losses:** ', str(re[0]['Losses']),
-                         '\n**Leaves:** ', str(re[0]['Leaves']),
-                         '\n**Mastery:** ', str(re[0]['MasteryLevel'])])
-
-        embed = discord.Embed(title='Team: ' + re[0]['Team_Name'], color=0x4E66A3)
+        embed = discord.Embed(color=0x4E66A3)
         embed.set_author(name=re[0]['Name'], url=url, icon_url=icon_url)
         embed.set_thumbnail(url=re[0]['Avatar_URL'])
-        embed.add_field(name='Smite Stats', value=stats, inline=False)
+        embed.add_field(name='Team', value=re[0]['Team_Name'], inline=False)
+        embed.add_field(name='Wins', value=str(re[0]['Wins']), inline=False)
+        embed.add_field(name='Losses', value=str(re[0]['Losses']), inline=True)
+        embed.add_field(name='Leaves', value=str(re[0]['Leaves']), inline=True)
+        embed.add_field(name='Mastery', value=str(re[0]['MasteryLevel']), inline=True)
+        embed.add_field(name='Ranked Conquest', value=self.league_tier(re[0]['RankedConquest']['Tier']), inline=True)
+        embed.add_field(name='Ranked Joust', value=self.league_tier(re[0]['RankedJoust']['Tier']), inline=True)
+        embed.add_field(name='Ranked Duel', value=self.league_tier(re[0]['RankedDuel']['Tier']), inline=True)
         await self.bot.say(embed=embed)
+
+    def league_tier(self, tier: int):
+        return {
+            1: 'Bronze V',
+            2: 'Bronze IV',
+            3: 'Bronze III',
+            4: 'Bronze II',
+            5: 'Bronze I',
+            6: 'Silver V',
+            7: 'Silver IV',
+            8: 'Silver III',
+            9: 'Silver II',
+            10: 'Silver I',
+            11: 'Gold V',
+            12: 'Gold IV',
+            13: 'Gold III',
+            14: 'Gold II',
+            15: 'Gold I',
+            16: 'Platinum V',
+            17: 'Platinum IV',
+            18: 'Platinum III',
+            19: 'Platinum II',
+            20: 'Platinum I',
+            21: 'Diamond V',
+            22: 'Diamond IV',
+            23: 'Diamond III',
+            24: 'Diamond II',
+            25: 'Diamond I',
+            26: 'Masters I'
+        }.get(tier, 'None')
 
     async def ping(self):
 
@@ -175,24 +184,14 @@ class Smite:
                 try:
                     re = await resp.json()
                 except JSONDecodeError:
-                    await self.bot.say('No response from API. '
-                                       'Did my owner input credentials?')
+                    # Response was not JSON. Could be bad/missing credentials.
                     return False
-
-        #msg = 'response:\n'
-        #for key in re:
-        #    msg += "key: {}, value: {}\n".format(key, re[key])
-        #await self.bot.say(msg)
 
         if re['ret_msg'] == "Approved":
             self.settings['session_id'] = re['session_id']
             dataIO.save_json(self.settings_path, self.settings)
-
             return True
-
-        await self.bot.say('API request rejected. '
-                           'Did my owner input valid credentials?')
-
+        # Response received, but request rejected. Could be bad credentials.
         return False
 
     async def test_session(self):
@@ -212,17 +211,14 @@ class Smite:
         url = '/'.join([self.url_pc, 'testsessionJson', dev_id, str_hash, session, time])
         async with aiohttp.ClientSession(headers=self.header) as session:
             async with session.get(url) as resp:
-                #await self.bot.say(await resp.text())
                 text = await resp.text()
 
         if text.startswith('"Invalid'):
-            await self.bot.say("Session is no longer valid.")
             return False
         elif text.startswith('"This'):
-            await self.bot.say("Session is still valid.")
             return True
-        await self.bot.say('No response from API. '
-                           'Did my owner input credentials?')
+        # Response was something unexpected. Could be bad credentials,
+        # or the Smite API has changed.
         return False
 
 
@@ -241,7 +237,6 @@ def check_files():
 
 
 def setup(bot):
-
     check_folders()
     check_files()
     n = Smite(bot)

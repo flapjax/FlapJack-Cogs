@@ -2,8 +2,8 @@
     "NAME" : "Smite",
     "AUTHOR" : "FlapJack",
     "SHORT" : "Smite game utilities",
-    "DESCRIPTION" : "Displays Smite statistics in chat.\n\nDependencies:\nNone",
-    "INSTALL_MSG" : "Thanks for installing FlapJack's Smite cog. You must obtain a HiRez API key at https://fs12.formsite.com/HiRez/form48/secure_index.html to fully use this cog.",
+    "DESCRIPTION" : "Displays Smite player statistics in chat.\n\nYou must obtain a HiRez API key at https://fs12.formsite.com/HiRez/form48/secure_index.html to use the API functions in this cog.\n\nDependencies:\nNone",
+    "INSTALL_MSG" : "Thanks for installing FlapJack's Smite cog. You must obtain a HiRez API key at https://fs12.formsite.com/HiRez/form48/secure_index.html to use the API functions in this cog.",
     "REQUIREMENTS" : [],
     "TAGS" : ["smite", "stats", "games", "hirez"],
     "DISABLED" : false
