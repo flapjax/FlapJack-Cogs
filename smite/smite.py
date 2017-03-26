@@ -9,6 +9,9 @@ from json import JSONDecodeError
 import hashlib
 import aiohttp
 
+# Special thanks to Kunkulada for suggesting this cog and
+# contributing to the design of the embeds.
+
 
 class Smite:
 
@@ -72,7 +75,7 @@ class Smite:
         """Smite stats for your in game name.
         If name is ommitted, bot will use your name if stored.
 
-        Example: [p]smite stats Wood
+        Example: [p]smite stats Kunkulada
         """
 
         if not await self.test_session():
