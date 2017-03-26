@@ -112,7 +112,12 @@ class Smite:
             async with session.get(url) as resp:
                 re = await resp.json()
 
-        icon_url = 'https://hzweb.hi-rezgame.net/hirezstudios/wp-content/uploads/2015/12/smite-logo-hzcom1.png'
+        if not re:
+            await self.bot.say("That profile is hidden or was not found.")
+            return
+
+        # Smite - Icon by J1mB091 on DeviantArt (http://j1mb091.deviantart.com/art/Smite-Icon-314198305)
+        icon_url = 'http://orig09.deviantart.net/6fc3/f/2013/095/9/a/smite___icon_by_j1mb091-d572cyp.png'
         url = 'https://www.smitegame.com/player-stats/?set_platform_preference=pc&player-name=' + name
 
         embed = discord.Embed(color=0x4E66A3)
@@ -121,10 +126,10 @@ class Smite:
         embed.add_field(name='Team', value=re[0]['Team_Name'], inline=False)
         embed.add_field(name='Wins', value=str(re[0]['Wins']), inline=False)
         embed.add_field(name='Losses', value=str(re[0]['Losses']), inline=True)
-        embed.add_field(name='Leaves', value=str(re[0]['Leaves']), inline=True)
-        embed.add_field(name='Mastery', value=str(re[0]['MasteryLevel']), inline=True)
         embed.add_field(name='Ranked Conquest', value=self.league_tier(re[0]['RankedConquest']['Tier']), inline=True)
+        embed.add_field(name='Leaves', value=str(re[0]['Leaves']), inline=True)
         embed.add_field(name='Ranked Joust', value=self.league_tier(re[0]['RankedJoust']['Tier']), inline=True)
+        embed.add_field(name='Mastery', value=str(re[0]['MasteryLevel']), inline=True)
         embed.add_field(name='Ranked Duel', value=self.league_tier(re[0]['RankedDuel']['Tier']), inline=True)
         await self.bot.say(embed=embed)
 
