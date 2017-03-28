@@ -105,6 +105,8 @@ class SmartReact:
         if self.is_command(message):
             return
         server = message.server
+        if server.id not in self.settings.keys():
+            return
         react_dict = copy.deepcopy(self.settings[server.id])
         words = message.content.lower().split()
         for emoji in react_dict:
