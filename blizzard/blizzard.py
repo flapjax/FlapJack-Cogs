@@ -667,23 +667,24 @@ class Blizzard:
         note_list = []
         for note in notes:
             # Format each patch note into an array of messages using Paginator
-            # save for later: Asciidoc [] for red, ini [] for blue
-            pager = formatter.Paginator(prefix='```ini\n[...\n', suffix='...]```', max_size=1000)
+            pager = formatter.Paginator(prefix='```asciidoc', suffix='```', max_size=1000)
             for child in note.children:
                 if child.name == 'h1':
                     # This is a patch notes title, with date.
-                    pager.add_line(child.get_text() + '\n')
+                    pager.add_line('[' + child.get_text() + ']')
                 elif child.name == 'h2':
                     # Thid is a patch notes section heading.
-                    pager.add_line(child.get_text() + '\n')
+                    pager.add_line('\n[' + child.get_text() + ']')
                 elif child.name == 'p':
                     # This is a plain paragraph of patch notes.
-                    pager.add_line(child.get_text() + '\n')
+                    text = child.get_text()
+                    if text.strip():
+                        text = '.' + text if len(text) < 80 else text
+                        pager.add_line('\n' + text)
                 elif child.name == 'li':
                     # A list is about to follow.
-                    # Need to add a function to recursively walk the list
-                    self.walk_list(child, pager)
-                    pager.add_line('-' + child.get_text() + '\n')
+                    pager.add_line('')
+                    self.walk_list(child, pager, 0)
                 else:
                     # It's something different, treat like a paragraph and hope.
                     #pager.add_line(child.get_text())
@@ -695,8 +696,13 @@ class Blizzard:
         # Can say full notes with:
         #await self.say_full_notes(note_list[0])
 
-    def walk_list(self, child, pager):
-        pass
+    def walk_list(self, child, pager, count):
+        try:
+            for grandchild in child.contents:
+                self.walk_list(grandchild, pager, count + 1)
+        except AttributeError:
+            if child.string.strip():
+                pager.add_line('*'*(count) + ' ' + child.string.strip())
 
 
     async def say_full_notes(self, pages):
