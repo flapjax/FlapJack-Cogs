@@ -3,10 +3,6 @@ import discord
 from discord.ext import commands
 from .utils.dataIO import dataIO
 
-blank_char = "\u2063"
-icon_url = 'http://i.imgur.com/MfDcOEU.gif'
-valid_defcons = ['1', '2', '3', '4', '5']
-
 
 class Defcon:
 
@@ -16,6 +12,7 @@ class Defcon:
         self.bot = bot
         self.settings_path = "data/defcon/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
+        self.valid_defcons = ['1', '2', '3', '4', '5']
 
     @commands.command(name="defcon", no_pm=True, pass_context=True)
     async def defcon(self, ctx):
@@ -64,7 +61,7 @@ class Defcon:
         member = ctx.message.author
         self.load_settings(server)
 
-        if level in valid_defcons:
+        if level in self.valid_defcons:
             self.settings[server.id]["defcon"] = int(level)
             self.settings[server.id]["authority"] = member.display_name
             self.save_settings(server)
@@ -75,56 +72,55 @@ class Defcon:
                                "you seen War Games?")
 
     async def post_defcon(self, level, nick):
+
+        icon_url = 'http://i.imgur.com/MfDcOEU.gif'
+
         if level == '5':
             color = 0x0080ff
             thumbnail_url = 'http://i.imgur.com/uTPeW7N.gif'
             author = "This server is at DEFCON LEVEL {}.".format(level)
             subtitle = ("No known threats to your self esteem "
                         "exist at this time.")
-            instructions = ''.join([("- Partipaction in online games is "
-                                     "encouraged\n"),
-                                    "- Remain vigilant of insider threats\n",
-                                    "- Report all suspicious activity"])
+            instructions = ("- Partipaction in online games is encouraged\n"
+                            "- Remain vigilant of insider threats\n"
+                            "- Report all suspicious activity")
         elif level == '4':
             color = 0x00ff00
             thumbnail_url = 'http://i.imgur.com/siIWL5V.gif'
             author = "This server is at DEFCON LEVEL {}.".format(level)
             subtitle = 'Trace amounts of sodium have been detected.'
-            instructions = ''.join([("- Inhale deeply through your nose and "
-                                     "count to 5\n"),
-                                    "- Take short breaks between games\n",
-                                    "- Do not encourage trolls"])
+            instructions = ("- Inhale deeply through your nose and "
+                            "count to 5\n"
+                            "- Take short breaks between games\n"
+                            "- Do not encourage trolls")
         elif level == '3':
             color = 0xffff00
             thumbnail_url = 'http://i.imgur.com/E71VSBE.gif'
             author = "This server is at DEFCON LEVEL {}.".format(level)
             subtitle = 'Sodium levels may exceed OSHA exposure limits.'
-            instructions = ''.join([("- Use extreme caution when playing "
-                                     "ranked games\n"),
-                                    ("- Log off non-essential communication "
-                                     "channels\n"),
-                                    "- Put on your big boy pants"])
+            instructions = ("- Use extreme caution when playing ranked games\n"
+                            "- Log off non-essential communication channels\n"
+                            "- Put on your big boy pants")
         elif level == '2':
             color = 0xff0000
             thumbnail_url = 'http://i.imgur.com/PxKhT7h.gif'
             author = "This server is at DEFCON LEVEL {}.".format(level)
             subtitle = 'Sodium levels are approaching critical mass'
-            instructions = ''.join(["- Avoid ranked game modes at all costs\n",
-                                    "- Mute all hostile voice channels\n",
-                                    "- Queue up some relaxing jazz music"])
+            instructions = ("- Avoid ranked game modes at all costs\n"
+                            "- Mute all hostile voice channels\n"
+                            "- Queue up some relaxing jazz music")
         elif level == '1':
             color = 0xffffff
             thumbnail_url = 'http://i.imgur.com/wzXSNWi.gif'
             author = "This server is at DEFCON LEVEL {}.".format(level)
             subtitle = 'Total destruction is IMMINENT.'
-            instructions = ''.join([("- Do not participate in any online "
-                                     "games\n"),
-                                    "- Log off all social media immediately\n",
-                                    ("- Take shelter outdoors until the "
-                                     "all-clear is given")])
+            instructions = ("- Do not participate in any online games\n"
+                            "- Log off all social media immediately\n"
+                            "- Take shelter outdoors until the "
+                            "all-clear is given")
 
-        if level in valid_defcons:
-            embed = discord.Embed(title=blank_char, color=color)
+        if level in self.valid_defcons:
+            embed = discord.Embed(title="\u2063", color=color)
             embed.set_author(name=author, icon_url=icon_url)
             embed.set_thumbnail(url=thumbnail_url)
             embed.add_field(name=subtitle, value=instructions, inline=False)

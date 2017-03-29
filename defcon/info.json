@@ -6,5 +6,5 @@
     "INSTALL_MSG" : "Thanks for installing DEFCON. Remember... sometimes the only winning move is not to play!",
     "REQUIREMENTS" : [],
     "TAGS" : ["defcon", "embed", "war"],
-    "DISABLED" : false,
+    "DISABLED" : false
 }

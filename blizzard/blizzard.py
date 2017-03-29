@@ -29,17 +29,6 @@ except:
 # pypandoc :: https://pypi.python.org/pypi/pypandoc
 # Pandoc :: http://pandoc.org/
 
-# Patch note strings
-base_url = 'https://us.battle.net/connect/en/app/'
-product_url = '/patch-notes?productType='
-hearthstone_abbr = 'wtcg'
-overwatch_abbr = 'Pro'
-starcraft2_abbr = 'sc2'
-warcraft_abbr = 'WoW'
-diablo_abbr = 'd3'
-hots_abbr = 'heroes'
-headers = {'User-Agent': 'Battle.net/1.0.8.4217'}
-
 
 class Blizzard:
 
@@ -49,6 +38,17 @@ class Blizzard:
         self.bot = bot
         self.settings_path = "data/blizzard/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
+        self.base_url = 'https://us.battle.net/connect/en/app/'
+        self.wowtoken_url = 'https://wowtoken.info/'
+        self.product_url = '/patch-notes?productType='
+        self.hearthstone_abbr = 'wtcg'
+        self.overwatch_abbr = 'Pro'
+        self.starcraft2_abbr = 'sc2'
+        self.warcraft_abbr = 'WoW'
+        self.diablo_abbr = 'd3'
+        self.hots_abbr = 'heroes'
+        self.header = {"User-Agent": "flapjackcogs/1.0"}
+        self.patch_header = {'User-Agent': 'Battle.net/1.0.8.4217'}
 
     @commands.group(name="blizzard", pass_context=True)
     async def blizzard(self, ctx):
@@ -79,7 +79,7 @@ class Blizzard:
     async def _set_battletag(self, ctx, tag: str):
         """Set your battletag"""
 
-        pattern = re.compile(r'.#\d{4}\Z')
+        pattern = re.compile(r'.#\d{4,5}\Z')
         if pattern.search(tag) is None:
             await self.bot.say("That doesn't look like a valid battletag.")
             return
@@ -109,10 +109,10 @@ class Blizzard:
     @hearthstone.command(name="notes", pass_context=True)
     async def _notes_hearthstone(self, ctx):
         """Latest Hearthstone patch notes"""
-        url = ''.join([base_url,
-                       hearthstone_abbr,
-                       product_url,
-                       hearthstone_abbr])
+        url = ''.join([self.base_url,
+                       self.hearthstone_abbr,
+                       self.product_url,
+                       self.hearthstone_abbr])
 
         await self.print_patch_notes(url)
 
@@ -142,24 +142,23 @@ class Blizzard:
             if uid in self.settings['battletags']:
                 tag = self.settings['battletags'][uid]
             else:
-                await self.bot.say(''.join(['You did not provide a battletag ',
-                                            'and I do not have one stored for you.']))
+                await self.bot.say('You did not provide a battletag '
+                                   'and I do not have one stored for you.')
                 return
 
         tag = tag.replace("#", "-")
         url = 'https://owapi.net/api/v3/u/' + tag + '/stats'
-        header = {"User-Agent": "flapjackcogs/1.0"}
-        async with aiohttp.ClientSession(headers=header) as session:
+        async with aiohttp.ClientSession(headers=self.header) as session:
             async with session.get(url) as resp:
                 stats = await resp.json()
 
         if 'error' in stats:
-            await self.bot.say(''.join(['Could not fetch your statistics. ',
-                                        'Battletags are case sensitive ',
-                                        'and require a 4-digit identifier ',
-                                        '(e.g. CoolDude#1234)',
-                                        'Or, you may have an invalid tag ',
-                                        'on file.']))
+            await self.bot.say('Could not fetch your statistics. '
+                               'Battletags are case sensitive '
+                               'and require a 4 or 5-digit identifier '
+                               '(e.g. CoolDude#1234)'
+                               'Or, you may have an invalid tag '
+                               'on file.')
             return
 
         if region is None:
@@ -177,11 +176,11 @@ class Blizzard:
                 return
 
         if stats[region] is None:
-            await self.bot.say(''.join(['That battletag exists, but I could not ',
-                                        'find stats for the region specified. ',
-                                        'Try a different region ',
-                                        '<us/eu/kr> or leave that field blank '
-                                        'so I can autodetect the region.']))
+            await self.bot.say('That battletag exists, but I could not '
+                               'find stats for the region specified. '
+                               'Try a different region '
+                               '<us/eu/kr> or leave that field blank '
+                               'so I can autodetect the region.')
             return
 
         url = 'https://playoverwatch.com/en-us/career/pc/' + region + '/' + tag
@@ -229,10 +228,10 @@ class Blizzard:
     @overwatch.command(name="notes", pass_context=True)
     async def _notes_overwatch(self, ctx):
         """Latest Overwatch patch notes"""
-        url = ''.join([base_url,
-                       overwatch_abbr,
-                       product_url,
-                       overwatch_abbr])
+        url = ''.join([self.base_url,
+                       self.overwatch_abbr,
+                       self.product_url,
+                       self.overwatch_abbr])
 
         await self.print_patch_notes(url)
 
@@ -246,10 +245,10 @@ class Blizzard:
     @starcraft2.command(name="notes", pass_context=True)
     async def _notes_starcraft2(self, ctx):
         """Latest Starcraft2 patch notes"""
-        url = ''.join([base_url,
-                       starcraft2_abbr,
-                       product_url,
-                       starcraft2_abbr])
+        url = ''.join([self.base_url,
+                       self.starcraft2_abbr,
+                       self.product_url,
+                       self.starcraft2_abbr])
 
         await self.print_patch_notes(url)
 
@@ -264,12 +263,24 @@ class Blizzard:
     async def _notes_warcraft(self, ctx):
         """Latest World of Warcraft patch notes"""
 
-        url = ''.join([base_url,
-                       warcraft_abbr,
-                       product_url,
-                       warcraft_abbr])
+        url = ''.join([self.base_url,
+                       self.warcraft_abbr,
+                       self.product_url,
+                       self.warcraft_abbr])
 
         await self.print_patch_notes(url)
+
+    @warcraft.command(name="token", pass_context=True)
+    async def _token_warcraft(self, ctx, realm: str='na'):
+        """WoW Token Prices"""
+
+        url = ''.join([self.wowtoken_url])
+
+        if realm.lower() not in ['na', 'eu', 'cn', 'tw', 'kr']:
+            await self.bot.say("'" + realm + "' is not a valid realm.")
+            return
+
+        await self.print_token(url, realm)
 
     @commands.group(name="diablo3", pass_context=True)
     async def diablo3(self, ctx):
@@ -281,10 +292,10 @@ class Blizzard:
     @diablo3.command(name="notes", pass_context=True)
     async def _notes_diablo3(self, ctx):
         """Latest Diablo3 patch notes"""
-        url = ''.join([base_url,
-                       diablo_abbr,
-                       product_url,
-                       diablo_abbr])
+        url = ''.join([self.base_url,
+                       self.diablo_abbr,
+                       self.product_url,
+                       self.diablo_abbr])
 
         await self.print_patch_notes(url)
 
@@ -301,21 +312,21 @@ class Blizzard:
             if uid in self.settings['battletags']:
                 tag = self.settings['battletags'][uid]
             else:
-                await self.bot.say(''.join(['You did not provide a battletag ',
-                                            'and I do not have one stored for you.']))
+                await self.bot.say('You did not provide a battletag '
+                                   'and I do not have one stored for you.')
                 return
 
         if 'apikey' not in self.settings:
-            await self.bot.say(''.join(['The bot owner has not provided a ',
-                                        'battle.net API key, which is ',
-                                        'required for Diablo 3 stats.']))
+            await self.bot.say('The bot owner has not provided a '
+                               'battle.net API key, which is '
+                               'required for Diablo 3 stats.')
             return
 
         key = self.settings['apikey']
         tag = tag.replace("#", "-")
         url = 'https://us.api.battle.net/d3/profile/' + tag + '/?locale=en_US&apikey=' + key
-        header = {"User-Agent": "flapjackcogs/1.0"}
-        async with aiohttp.ClientSession(headers=header) as session:
+
+        async with aiohttp.ClientSession(headers=self.header) as session:
             async with session.get(url) as resp:
                 stats = await resp.json()
 
@@ -333,7 +344,10 @@ class Blizzard:
 
         hero_txt = ''
         for hero in stats['heroes']:
-            hero_txt += ''.join([':leaves:' if hero['seasonal'] else '', hero['name'], ' - lvl ', str(hero['level']), ' ', hero['class'], ' - hardcore' if hero['hardcore'] else '', ' (RIP)\n' if hero['dead'] else '\n'])
+            hero_txt += ''.join([':leaves:' if hero['seasonal'] else '', hero['name'],
+                                 ' - lvl ', str(hero['level']), ' ', hero['class'],
+                                 ' - hardcore' if hero['hardcore'] else '',
+                                 ' (RIP)\n' if hero['dead'] else '\n'])
 
         if not hero_txt:
             await self.bot.say("You don't have any Diablo 3 heroes.")
@@ -359,16 +373,16 @@ class Blizzard:
     @hots.command(name="notes", pass_context=True)
     async def _notes_hots(self, ctx):
         """Latest Heroes of the Storm patch notes"""
-        url = ''.join([base_url,
-                       hots_abbr,
-                       product_url,
-                       hots_abbr])
+        url = ''.join([self.base_url,
+                       self.hots_abbr,
+                       self.product_url,
+                       self.hots_abbr])
 
         await self.print_patch_notes(url)
 
     async def print_patch_notes(self, url):
         try:
-            async with aiohttp.get(url, headers=headers) as response:
+            async with aiohttp.get(url, headers=self.patch_header) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
             html_notes = soup.find('div', {"class": "patch-notes-interior"})
@@ -385,6 +399,31 @@ class Blizzard:
 
         except:
             await self.bot.say("I couldn't find any patch notes.")
+
+    async def print_token(self, url, realm):
+
+        thumb_url = 'http://wowtokenprices.com/assets/wowtokeninterlaced.png'
+
+        try:
+            async with aiohttp.get(url, headers=self.header) as response:
+                soup = BeautifulSoup(await response.text(), "html.parser")
+
+            desc = soup.find('div', {"class": "mui-panel realm-panel", "id": realm.lower() + "-panel"}).h2.string
+            buy_price = soup.find('td', {"class": "buy-price", "id": realm.upper() + "-buy"}).string
+            day_lo = soup.find('span', {"id": realm.upper() + "-24min"}).string
+            day_hi = soup.find('span', {"id": realm.upper() + "-24max"}).string
+            updated = soup.find('td', {"id": realm.upper() + "-updatedhtml"}).string
+
+            embed = discord.Embed(title='WoW Token Info', description=desc, colour=0xFFD966)
+            embed.set_thumbnail(url=thumb_url)
+            embed.add_field(name='Buy Price', value=buy_price, inline=False)
+            embed.add_field(name='24-Hour Range', value=day_lo + ' - ' + day_hi, inline=False)
+            embed.set_footer(text='Updated: ' + updated)
+
+            await self.bot.say(embed=embed)
+
+        except:
+            await self.bot.say("Error finding WoW token prices.")
 
 
 def check_folders():

@@ -4,23 +4,33 @@
 
 ![FlapJack Cogs](https://raw.githubusercontent.com/ptoast/freecodecamp/master/portfolio/img/flapjackcogs_sm.png "FlapJack Cogs")
 
-These are cogs I have written for Red Bot.  
-View them on the [Red Portal (beta)](https://cogs.red/cogs/ptoast/FlapJack-Cogs/)
+A collection of cogs I have developed for Red Bot.  
+View them on the [Red Cogs Portal](https://cogs.red/cogs/flapjax/FlapJack-Cogs/), where you will also find installation instructions.
 
 - **Blizzard** - Fetches and prints latest patch notes and some (limited) user data from current Blizzard games.
 - **ColorMe** - Allows users to manage the color of their own name through custom roles with default permissions.
 - **Defcon** - A nod to the 1983 film War Games. Maintain a DEFCON system on your server, displayed through creative use of embeds.
-- **Dongers** - Fetches and prints a random donger from www.dongerlist.com.
-- **SmartReact** - Set up automatic emoji reactions to specific words in chat.
+- **Dongers** - Fetches and prints a random Donger from www.dongerlist.com.
+- **gtts** - Experimental cog using the Google TTS service and tmerc's playsound code to play TTS in a voice channel.
+- **Msgvote** - Turn a Discord channel into a Reddit thread... if that's something you're into...
+- **ReactPoll** - Functions exactly like Red's built-in polls, but uses numeric reactions instead of typed responses.
+- **SFX** - Inject sound effects into voice channels. Compatible with other audio, and backwards compatible with tmerc's playsound!
+- **SmartReact** - Set up automatic emoji reactions to specific words in chat. Like trigger, but with emojis.
+- **Spoiler** - Hide spoilers in chat using animated GIFs that require a mouseover.  
+
 
 ## Dependencies
 
+**BlizzPatchNotes** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), [pypandoc](https://github.com/bebraw/pypandoc), and [Pandoc](http://pandoc.org/).  
 **Dongers** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).  
-**BlizzPatchNotes** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), [pypandoc](https://github.com/bebraw/pypandoc), and [Pandoc](http://pandoc.org/).
+**gtts** requires [gTTS](https://pypi.python.org/pypi/gTTS).  
+**SFX** requires [gTTS](https://pypi.python.org/pypi/gTTS) for TTS only.  
+**Spoiler** requires [Pillow](https://python-pillow.org/).
+
 
 ## Contact Me
 
-Contact me on discord [**FlapJack#5505**] with any questions or suggestions. Collaboration is awesome! Don't hesitate to suggest new features, or code them yourself!
+For technical support, visit #support_flapjack-cogs in the [3rd Party Cog Support Server](https://discord.gg/GET4DVk). You may also contact me on discord [**FlapJack#5505**] with any suggestions or collaboration opportunities. Don't hesitate to suggest new features, or code them yourself!
 
 ## Credits
 

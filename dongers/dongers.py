@@ -10,9 +10,6 @@ try:  # check if BeautifulSoup4 is installed
 except:
     soupAvailable = False
 
-# Update this if more donger pages are added in the future.
-donger_pages = 40
-
 
 class Dongers:
 
@@ -20,14 +17,14 @@ class Dongers:
 
     def __init__(self, bot):
         self.bot = bot
+        self.donger_pages = 40
 
     @commands.command()
     async def donger(self):
         """Print a random donger in chat"""
 
         # Access random donger page
-        url = "http://dongerlist.com/page/" + str(random.randint(1,
-                                                                 donger_pages))
+        url = "http://dongerlist.com/page/" + str(random.randint(1, self.donger_pages))
 
         async with aiohttp.get(url) as response:
             soup = BeautifulSoup(await response.text(), "html.parser")
