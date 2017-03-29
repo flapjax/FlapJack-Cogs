@@ -31,7 +31,7 @@ class Blizzard:
 
     """Blizzard Game Utilities"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.settings_path = "data/blizzard/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
@@ -328,7 +328,7 @@ class Blizzard:
                        self.product_url,
                        self.hearthstone_abbr])
 
-        notes = await self.format_patch_notes(url)
+        notes = await self.format_patch_notes(url, 'wtcg')
 
         result = await self.menu(ctx, 3, notes)
         if result[0] == "no":
@@ -452,7 +452,7 @@ class Blizzard:
                        self.product_url,
                        self.overwatch_abbr])
 
-        notes = await self.format_patch_notes(url)
+        notes = await self.format_patch_notes(url, 'ow')
 
         result = await self.menu(ctx, 3, notes)
         if result[0] == "no":
@@ -502,7 +502,7 @@ class Blizzard:
                        self.product_url,
                        self.starcraft2_abbr])
 
-        notes = await self.format_patch_notes(url)
+        notes = await self.format_patch_notes(url, 'sc2')
 
         result = await self.menu(ctx, 3, notes)
         if result[0] == "no":
@@ -526,7 +526,7 @@ class Blizzard:
                        self.product_url,
                        self.warcraft_abbr])
 
-        notes = await self.format_patch_notes(url)
+        notes = await self.format_patch_notes(url, 'WoW')
 
         result = await self.menu(ctx, 3, notes)
         if result[0] == "no":
@@ -561,7 +561,7 @@ class Blizzard:
                        self.product_url,
                        self.diablo_abbr])
 
-        notes = await self.format_patch_notes(url)
+        notes = await self.format_patch_notes(url, 'd3')
 
         result = await self.menu(ctx, 3, notes)
         if result[0] == "no":
@@ -648,7 +648,7 @@ class Blizzard:
                        self.product_url,
                        self.hots_abbr])
 
-        notes = await self.format_patch_notes(url)
+        notes = await self.format_patch_notes(url, 'hots')
 
         result = await self.menu(ctx, 3, notes)
         if result[0] == "no":
@@ -656,35 +656,58 @@ class Blizzard:
         else:
             await self.bot.edit_message(result[1], embed=self.expired_embed)
 
-    async def format_patch_notes(self, url):
-        tags = ['h1', 'h2', 'p', 'li', 'div']
+    async def format_patch_notes(self, url, game: str=None):
+        tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'div']
         attr = {'div': 'class'}
         async with aiohttp.get(url, headers=self.patch_header) as response:
             dirty = await response.text()
         clean = bleach.clean(dirty, tags=tags, attributes=attr, strip=True)
         soup = BeautifulSoup(clean, "html.parser")
+        # Preserving this list structure, in case we ever want to switch to
+        # scraping the actual game websites for multiple notes
         notes = soup.find_all('div', class_="patch-notes-interior")
         note_list = []
         for note in notes:
             # Format each patch note into an array of messages using Paginator
-            pager = formatter.Paginator(prefix='```asciidoc', suffix='```', max_size=1000)
+            pager = formatter.Paginator(prefix='```markdown', suffix='```', max_size=1000)
+            # Custom headers for sucky patch notes that have None
+            if game == "sc2":
+                text = "STARCRAFT 2 PATCH NOTES"
+                pager.add_line(text + '\n' + '='*len(text))
+            elif game == "WoW":
+                text = "WORLD OF WARCRAFT PATCH NOTES"
+                pager.add_line(text + '\n' + '='*len(text))
+            elif game == "wtcg":
+                # Convert first paragraph to h1
+                note.p.name = 'h1'
+            elif game == "ow":
+                pass
+            elif game == "d3":
+                text = "DIABLO 3 PATCH NOTES"
+                pager.add_line(text + '\n' + '='*len(text))
+            elif game == "hots":
+                text = "HEROES OF THE STORM PATCH NOTES"
+                pager.add_line(text + '\n' + '='*len(text))            
+
             for child in note.children:
                 if child.name == 'h1':
                     # This is a patch notes title, with date.
-                    pager.add_line('[' + child.get_text() + ']')
-                elif child.name == 'h2':
+                    text = child.get_text()
+                    pager.add_line(text + '\n' + '='*len(text))
+                elif str(child.name).startswith('h'):
                     # Thid is a patch notes section heading.
-                    pager.add_line('\n[' + child.get_text() + ']')
+                    text = child.get_text()
+                    pager.add_line('\n' + text + '\n' + '-'*len(text))
                 elif child.name == 'p':
                     # This is a plain paragraph of patch notes.
                     text = child.get_text()
                     if text.strip():
-                        text = '.' + text if len(text) < 80 else text
+                        text = '> ' + text if len(text) < 80 else text
                         pager.add_line('\n' + text)
                 elif child.name == 'li':
                     # A list is about to follow.
                     pager.add_line('')
-                    self.walk_list(child, pager, 0)
+                    self.walk_list(child, pager, -1)
                 else:
                     # It's something different, treat like a paragraph and hope.
                     #pager.add_line(child.get_text())
@@ -702,7 +725,7 @@ class Blizzard:
                 self.walk_list(grandchild, pager, count + 1)
         except AttributeError:
             if child.string.strip():
-                pager.add_line('*'*(count) + ' ' + child.string.strip())
+                pager.add_line('  '*count + '*' + ' ' + child.string.strip())
 
 
     async def say_full_notes(self, pages):
