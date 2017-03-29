@@ -35,6 +35,7 @@ class Blizzard:
         self.bot = bot
         self.settings_path = "data/blizzard/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
+        self.timeout = 3600
         self.base_url = 'https://us.battle.net/connect/en/app/'
         self.wowtoken_url = 'https://wowtoken.info/'
         self.product_url = '/patch-notes?productType='
@@ -330,7 +331,7 @@ class Blizzard:
 
         notes = await self.format_patch_notes(url, 'wtcg')
 
-        result = await self.menu(ctx, 3, notes)
+        result = await self.menu(ctx, 3, notes, timeout=self.timeout)
         if result[0] == "no":
             await self.bot.delete_messages([result[1], ctx.message])
         else:
@@ -454,7 +455,7 @@ class Blizzard:
 
         notes = await self.format_patch_notes(url, 'ow')
 
-        result = await self.menu(ctx, 3, notes)
+        result = await self.menu(ctx, 3, notes, timeout=self.timeout)
         if result[0] == "no":
             await self.bot.delete_messages([result[1], ctx.message])
         else:
@@ -504,7 +505,7 @@ class Blizzard:
 
         notes = await self.format_patch_notes(url, 'sc2')
 
-        result = await self.menu(ctx, 3, notes)
+        result = await self.menu(ctx, 3, notes, timeout=self.timeout)
         if result[0] == "no":
             await self.bot.delete_messages([result[1], ctx.message])
         else:
@@ -528,7 +529,7 @@ class Blizzard:
 
         notes = await self.format_patch_notes(url, 'WoW')
 
-        result = await self.menu(ctx, 3, notes)
+        result = await self.menu(ctx, 3, notes, timeout=self.timeout)
         if result[0] == "no":
             await self.bot.delete_messages([result[1], ctx.message])
         else:
@@ -563,7 +564,7 @@ class Blizzard:
 
         notes = await self.format_patch_notes(url, 'd3')
 
-        result = await self.menu(ctx, 3, notes)
+        result = await self.menu(ctx, 3, notes, timeout=self.timeout)
         if result[0] == "no":
             await self.bot.delete_messages([result[1], ctx.message])
         else:
@@ -650,7 +651,7 @@ class Blizzard:
 
         notes = await self.format_patch_notes(url, 'hots')
 
-        result = await self.menu(ctx, 3, notes)
+        result = await self.menu(ctx, 3, notes, timeout=self.timeout)
         if result[0] == "no":
             await self.bot.delete_messages([result[1], ctx.message])
         else:
