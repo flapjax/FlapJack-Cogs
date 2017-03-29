@@ -120,6 +120,13 @@ class Smite:
         icon_url = 'http://orig09.deviantart.net/6fc3/f/2013/095/9/a/smite___icon_by_j1mb091-d572cyp.png'
         url = 'https://www.smitegame.com/player-stats/?set_platform_preference=pc&player-name=' + name
 
+        # Fixes for empty string as team name or avatar url
+        if not re[0]['Team_Name']:
+            re[0]['Team_Name'] = "*none*"
+
+        if not re[0]['Avatar_URL']:
+            re[0]['Avatar_URL'] = "https://i.gyazo.com/af5f81163d9ee64586c0a3c19a9da769.png"
+
         embed = discord.Embed(color=0x4E66A3)
         embed.set_author(name=re[0]['Name'], url=url, icon_url=icon_url)
         embed.set_thumbnail(url=re[0]['Avatar_URL'])
