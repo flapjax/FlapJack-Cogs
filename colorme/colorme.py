@@ -6,11 +6,12 @@ from .utils.dataIO import dataIO
 from .utils import checks
 from __main__ import send_cmd_help
 
-# NOTE: This cog creates/edits roles to let users set custom name colors.
-# Since only top_role determines the name color, things can get a bit wonky.
-# (this is a Discord 'feature').
+# This cog creates/edits roles to let users set custom name colors.
+# Since only top_role determines the name color, things are a bit tricky.
 # Your bot must have permission to edit roles AND be placed above other roles
-# in order to edit them (another Discord 'feature')
+# in order to edit them.
+# The bot should also have permissions that are equal to, or greather than,
+# those of the roles it is trying to edit.
 # Use [p]colorme protect <role> to protect certrain roles from color changes.
 # For example, administrator roles, or roles for 'punished' users.
 
