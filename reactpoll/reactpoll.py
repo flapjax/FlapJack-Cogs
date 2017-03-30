@@ -22,8 +22,8 @@ class ReactPoll:
     async def rpoll(self, ctx, *text):
         """Starts/stops a reaction poll
         Usage example (time argument is optional)
-        poll Is this a poll?;Yes;No;Maybe;t=60
-        poll stop"""
+        rpoll Is this a poll?;Yes;No;Maybe;t=60
+        rpoll stop"""
         message = ctx.message
         if len(text) == 1:
             if text[0].lower() == "stop":
