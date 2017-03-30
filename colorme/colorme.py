@@ -58,6 +58,10 @@ class ColorMe:
                     break
         return roles
 
+    def _already_has_colorme(self, ctx, rolename):
+        server = ctx.message.server
+        return discord.utils.get(server.roles, name=rolename)
+
     @commands.group(name="colorme", pass_context=True)
     async def colorme(self, ctx):
         """Change the color of your name via custom roles."""
@@ -92,8 +96,16 @@ class ColorMe:
             return
 
         if not self._could_be_colorme(ctx, top_role):
-            # Make a new role for this person, using top role as template
             rolename = "{}#{}{}".format(name, disc, self.suffix)
+            if self._already_has_colorme(ctx, rolename):
+                await self.bot.say("It looks like the server already has "
+                                   "a ColorMe role for you, but it's not "
+                                   "applied to you, or it's not your top "
+                                   "role. To be safe, I'm not going to "
+                                   "make a new one. Please talk to your "
+                                   "server admin about fixing this!")
+                return
+            # Make a new role for this person, using top role as template
             try:
                 new_role = await self.bot.create_role(server, name=rolename,
                                         permissions=top_role.permissions,
