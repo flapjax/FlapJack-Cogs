@@ -2,8 +2,8 @@
     "NAME" : "ColorMe",
     "AUTHOR" : "FlapJack",
     "SHORT" : "Allow users to manage the color of their own name.",
-    "DESCRIPTION" : "Creates a custom role for each user based on their current top_role permissions and allows them to manage the color of their own name.\nTo use this cog properly, your bot needs permission to edit roles and must be placed above other roles on the hierarchy in order to edit them. You may also want to disable the separate displaying of roles.\n\nDependencies: None",
-    "INSTALL_MSG" : "Thanks for installing ColorMe. Due to Discord constraining name color to the top_role color, full use of this cog requires that your bot have permission to edit roles and must be placed above other roles on the hierarchy in order to edit them. You may also want to disable the separate displaying of roles. Please read the source code, info.json file, or visit https://cogs.red/cogs/ptoast/FlapJack-Cogs/colorme/ for more information.",
+    "DESCRIPTION" : "Creates a custom role for each user based on their current top_role permissions and allows them to manage the color of their own name.\nFor this cog to work, please ensure your bot has permission to edit roles, and is placed higher on the role hierarchy than the roles you want to edit. The bot should also have permissions equal to or greater than the roles you want to edit. Be advised that Discord limits the number of roles per server, so this cog may not work well on larger servers.\n\nDependencies: None",
+    "INSTALL_MSG" : "Thanks for installing ColorMe. For this cog to work, please ensure your bot has permission to edit roles, and is placed higher on the role hierarchy than the roles you want to edit. The bot should also have permissions equal to or greater than the roles you want to edit.",
     "REQUIREMENTS" : [],
     "TAGS" : ["color", "name", "role", "custom"],
     "DISABLED" : false
