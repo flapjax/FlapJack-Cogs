@@ -20,14 +20,17 @@ class Wat:
         if len(content) != 1:
             return
         if re.match(r'w+h*[aeiou]+t+', content[0]):
-            async for before in self.bot.logs_from(message.channel, limit=1,
+            async for before in self.bot.logs_from(message.channel, limit=10,
                                                    before=message):
                 author = before.author.display_name
                 content = before.clean_content
-                emoji = "\N{CHEERING MEGAPHONE}"
-                msg = "**{0} said, {1}   {2}   {1}**".format(author, emoji, 
+                if author != self.bot.user and not re.match(r'w+h*[aeiou]+t+',
+                                                            content):
+                    emoji = "\N{CHEERING MEGAPHONE}"
+                    msg = "**{0} said, {1}   {2}   {1}**".format(author, emoji, 
                                                              content)
-                await self.bot.send_message(message.channel, msg)
+                    await self.bot.send_message(message.channel, msg)
+                    break
 
     # Credit to Twentysix26's trigger cog
     def is_command(self, msg):
