@@ -11,24 +11,25 @@ class Wat:
         self.bot = bot
 
     async def msg_listener(self, message):
-
-        if message.author == self.bot.user:
+        if message.author.bot:
             return
         if self.is_command(message):
             return
         content = message.content.lower().split()
         if len(content) != 1:
             return
-        if re.match(r'w+h*[aeiou]+t+', content[0]):
+        pattern = re.compile(r'w+h*[aou]+t+')
+        if pattern.match(content[0]):
             async for before in self.bot.logs_from(message.channel, limit=10,
                                                    before=message):
-                author = before.author.display_name
+                author = before.author
+                name = author.display_name
                 content = before.clean_content
-                if author != self.bot.user and not re.match(r'w+h*[aeiou]+t+',
-                                                            content):
+                if not author.bot and not pattern.match(content)\
+                        and not self.is_command(before):
                     emoji = "\N{CHEERING MEGAPHONE}"
-                    msg = "**{0} said, {1}   {2}   {1}**".format(author, emoji, 
-                                                             content)
+                    msg = "**{0} said, {1}   {2}   {1}**".format(name, emoji,
+                                                                 content)
                     await self.bot.send_message(message.channel, msg)
                     break
 
