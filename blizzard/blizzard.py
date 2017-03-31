@@ -1,54 +1,134 @@
+import asyncio
 import os
+import re
+
+import aiohttp
 import discord
 from discord.ext import commands
-from .utils.chat_formatting import pagify
-from cogs.utils import checks
-from .utils.dataIO import dataIO
-from __main__ import send_cmd_help
-import re
-import aiohttp
-import asyncio
+from discord.ext.commands import formatter
 
-try:  # check if BeautifulSoup4 is installed
+import bleach
+from __main__ import send_cmd_help
+from cogs.utils import checks
+
+from .utils.dataIO import dataIO
+
+try:
     from bs4 import BeautifulSoup
     soup_available = True
 except:
     soup_available = False
 
-try:  # check if pypandoc is installed
-    import pypandoc
-    pypandoc_available = True
-except:
-    pypandoc_available = False
-
-# Special thanks to judge2020 for telling me about pandoc, and offering their
-# code as a reference: https://github.com/judge2020/BattleNetUpdateChecker
-
-# This cog requires:
-# BeautifulSoup4 :: https://www.crummy.com/software/BeautifulSoup/bs4/doc/
-# pypandoc :: https://pypi.python.org/pypi/pypandoc
-# Pandoc :: http://pandoc.org/
+# Special thanks to judge2020 for telling me about this method for getting
+# patch notes. https://github.com/judge2020/BattleNetUpdateChecker
+# Embed menus are modified version of the menu cog written by Awoonar Dust#7332
+# https://github.com/Lunar-Dust/Dusty-Cogs/
 
 
 class Blizzard:
 
-    """Blizzard Game Data"""
+    """Blizzard Game Utilities"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.settings_path = "data/blizzard/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
         self.base_url = 'https://us.battle.net/connect/en/app/'
-        self.wowtoken_url = 'https://wowtoken.info/'
         self.product_url = '/patch-notes?productType='
-        self.hearthstone_abbr = 'wtcg'
-        self.overwatch_abbr = 'Pro'
-        self.starcraft2_abbr = 'sc2'
-        self.warcraft_abbr = 'WoW'
-        self.diablo_abbr = 'd3'
-        self.hots_abbr = 'heroes'
+        self.wowtoken_url = 'https://wowtoken.info/'
+        self.patch_urls = {
+            'hearthstone': 'https://us.battle.net/hearthstone/en/blog/',
+            'overwatch': 'https://playoverwatch.com/en-us/game/patch-notes/pc/',
+            'starcraft2': 'https://us.battle.net/sc2/en/game/patch-notes/',
+            'warcraft': 'https://us.battle.net/wow/en/game/patch-notes/',
+            'diablo3': 'https://us.battle.net/d3/en/game/patch-notes/',
+            'hots': 'https://us.battle.net/heroes/en/blog/'
+        }
         self.header = {"User-Agent": "flapjackcogs/1.0"}
         self.patch_header = {'User-Agent': 'Battle.net/1.0.8.4217'}
+        self.abbr = {
+            'hearthstone': 'wtcg',
+            'overwatch': 'Pro',
+            'starcraft2': 'sc2',
+            'warcraft': 'WoW',
+            'diablo3': 'd3',
+            'hots': 'heroes'
+        }
+        self.thumbs = {
+            'hearthstone': 'http://i.imgur.com/uK0AlGb.png',
+            'overwatch': 'https://i.imgur.com/YZ4w2ey.png',
+            'starcraft2': 'https://i.imgur.com/ErDVIMO.png',
+            'warcraft': 'https://i.imgur.com/nrGZdB7.png',
+            'diablo3': 'https://i.imgur.com/5WYDHHZ.png',
+            'hots': 'https://i.imgur.com/NSMkOsA.png'
+        }
+        self.emoji = {
+            "next": "\N{BLACK RIGHTWARDS ARROW}",
+            "back": "\N{LEFTWARDS BLACK ARROW}",
+            "no": "\N{CROSS MARK}"
+        }
+        self.expired_embed = discord.Embed(title="This menu has exipred due "
+                                           "to inactivity.")
+
+    async def show_menu(self, ctx, message, messages, page):
+        if message:
+            return await self.bot.edit_message(message, messages[page])
+        else:
+            return await self.bot.send_message(ctx.message.channel,
+                                               messages[page])
+
+    async def _info_menu(self, ctx, messages, **kwargs):
+        page = kwargs.get("page", 0)
+        timeout = kwargs.get("timeout", 60)
+        emoji = kwargs.get("emoji", self.emoji)
+        message = kwargs.get("message", None)
+        choices = len(messages)
+
+        reactions_needed = True if message is None else False
+
+        message = await self.show_menu(ctx, message, messages, page)
+
+        if reactions_needed:
+            await self.bot.add_reaction(message, str(emoji['back']))
+            await self.bot.add_reaction(message, str(emoji['no']))
+            await self.bot.add_reaction(message, str(emoji['next']))
+
+        r = await self.bot.wait_for_reaction(
+            message=message,
+            user=ctx.message.author,
+            timeout=timeout)
+        if r is None:
+            return [None, message]
+
+        reacts = {v: k for k, v in emoji.items()}
+        react = reacts[r.reaction.emoji]
+
+        if react == "next":
+            page += 1
+        elif react == "back":
+            page -= 1
+        elif react == "no":
+            return ["no", message]
+
+        if page < 0:
+            page = choices - 1
+
+        if page == choices:
+            page = 0
+
+        try:
+            await self.bot.remove_reaction(message, emoji[react], r.user)
+        except discord.errors.Forbidden:
+            await self.bot.say('I require the "manage messages" permission '
+                               'to make these menus work.')
+            return ["no", message]
+
+        return await self._info_menu(
+            ctx, messages,
+            page=page,
+            timeout=timeout,
+            emoji=emoji,
+            message=message)
 
     @commands.group(name="blizzard", pass_context=True)
     async def blizzard(self, ctx):
@@ -60,13 +140,47 @@ class Blizzard:
     @blizzard.command(name="apikey", pass_context=True)
     @checks.is_owner()
     async def _apikey_blizzard(self, ctx, key: str):
-        """Set the cog's battle.net API key, required for some statistics.
+        """Set the cog's battle.net API key, required for Diablo statistics.
         (get one at https://dev.battle.net/)
         Use a direct message to keep the key secret."""
 
         self.settings['apikey'] = key
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say('API key set.')
+
+    @blizzard.command(name="noteformat", pass_context=True)
+    @checks.is_owner()
+    async def _noteformat_blizzard(self, ctx, form: str):
+        """Set the format of the patch notes posted in chat.
+        paged: post a single message with navigation menu
+        full: post full notes in multiple messages
+        embed: post a summary with link to full notes"""
+
+        accept = ['paged', 'full', 'embed']
+        if form in accept:
+            self.settings['notes_format'] = form
+            dataIO.save_json(self.settings_path, self.settings)
+            await self.bot.say("Patch notes format set to `{}`.".format(form))
+        else:
+            await self.bot.say("`{}` is not a valid format. Please choose "
+                               "`{}`, `{}`, or `{}`.".format(form, accept[0],
+                                                             accept[1], accept[2]))
+
+    @blizzard.command(name="notetimeout", pass_context=True)
+    @checks.is_owner()
+    async def _notetimeout_blizzard(self, ctx, timeout: int):
+        """Set the timeout period (sec) of the patch notes reaction menus.
+        Only relevant for 'paged' or 'embed' mode."""
+
+        min_max = (5, 3600)
+        if min_max[0] <= timeout <= min_max[1]:
+            self.settings['notes_timeout'] = timeout
+            dataIO.save_json(self.settings_path, self.settings)
+            # Need str() casting?
+            await self.bot.say("Timeout period set to `{} sec`.".format(timeout))
+        else:
+            await self.bot.say("Please choose a duration between "
+                               "{} and {} seconds.".format(min_max[0], min_max[1]))
 
     @commands.group(name="battletag", pass_context=True)
     async def battletag(self, ctx):
@@ -109,12 +223,7 @@ class Blizzard:
     @hearthstone.command(name="notes", pass_context=True)
     async def _notes_hearthstone(self, ctx):
         """Latest Hearthstone patch notes"""
-        url = ''.join([self.base_url,
-                       self.hearthstone_abbr,
-                       self.product_url,
-                       self.hearthstone_abbr])
-
-        await self.print_patch_notes(url)
+        await self.format_patch_notes(ctx, 'hearthstone')
 
     @commands.group(name="overwatch", pass_context=True)
     async def overwatch(self, ctx):
@@ -139,9 +248,8 @@ class Blizzard:
             tag = None
 
         if tag is None:
-            if uid in self.settings['battletags']:
-                tag = self.settings['battletags'][uid]
-            else:
+            tag = self.settings['battletags'].get(uid)
+            if tag is None:
                 await self.bot.say('You did not provide a battletag '
                                    'and I do not have one stored for you.')
                 return
@@ -185,55 +293,61 @@ class Blizzard:
 
         url = 'https://playoverwatch.com/en-us/career/pc/' + region + '/' + tag
         tag = tag.replace("-", "#")
-        comp = stats[region]['stats']['competitive']
+
         qplay = stats[region]['stats']['quickplay']
-        thumb_url = comp['overall_stats']['avatar']
-        tier = comp['overall_stats']['tier']
-        if tier == 'bronze':
-            icon_url = 'http://i.imgur.com/B4IR72H.png'
-        elif tier == 'silver':
-            icon_url = 'http://i.imgur.com/1mOpjRc.png'
-        elif tier == 'gold':
-            icon_url = 'http://i.imgur.com/lCTsNwo.png'
-        elif tier == 'platinum':
-            icon_url = 'http://i.imgur.com/nDVHAbp.png'
-        elif tier == 'diamond':
-            icon_url = 'http://i.imgur.com/fLmIC70.png'
-        elif tier == 'master':
-            icon_url = 'http://i.imgur.com/wjf0lEc.png'
-        elif tier == 'grandmaster':
-            icon_url = 'http://i.imgur.com/5ApGiZs.png'
+        if qplay is None:
+            qplay_stats = "*No matches played*"
+            thumb_url = self.thumbs['overwatch']
         else:
-            icon_url = 'http://i.imgur.com/xU2iv6U.png'
+            thumb_url = qplay['overall_stats']['avatar']
+            qplay_stats = ''.join(['**Wins:** ', str(int(round(qplay['game_stats']['games_won']))),
+                                   '\n**Avg Elim:** ', str(int(round(qplay['average_stats']['eliminations_avg']))),
+                                   '\n**Avg Death:** ', str(int(round(qplay['average_stats']['deaths_avg']))),
+                                   '\n**Avg Dmg:** ', str(int(round(qplay['average_stats']['damage_done_avg']))),
+                                   '\n**Avg Heal:** ', str(int(round(qplay['average_stats']['healing_done_avg'])))])
 
-        comp_stats = ''.join(['**Wins:** ', str(int(round(comp['game_stats']['games_won']))),
-                              '\n**Avg Elim:** ', str(int(round(comp['average_stats']['eliminations_avg']))),
-                              '\n**Avg Death:** ', str(int(round(comp['average_stats']['deaths_avg']))),
-                              '\n**Avg Dmg:** ', str(int(round(comp['average_stats']['damage_done_avg']))),
-                              '\n**Avg Heal:** ', str(int(round(comp['average_stats']['healing_done_avg'])))])
+        comp = stats[region]['stats']['competitive']
+        footer = None
+        if comp is None:
+            comp_stats = "*No matches played*"
+            tier = None
+        elif comp['overall_stats']['comprank'] is None:
+            comp_stats = "*Not ranked*"
+            tier = None
+        else:
+            tier = comp['overall_stats']['tier']
+            footer = 'SR: ' + str(comp['overall_stats']['comprank'])
+            comp_stats = ''.join(['**Wins:** ', str(int(round(comp['game_stats']['games_won']))),
+                                  '\n**Avg Elim:** ', str(int(round(comp['average_stats']['eliminations_avg']))),
+                                  '\n**Avg Death:** ', str(int(round(comp['average_stats']['deaths_avg']))),
+                                  '\n**Avg Dmg:** ', str(int(round(comp['average_stats']['damage_done_avg']))),
+                                  '\n**Avg Heal:** ', str(int(round(comp['average_stats']['healing_done_avg'])))])
 
-        qplay_stats = ''.join(['**Wins:** ', str(int(round(qplay['game_stats']['games_won']))),
-                               '\n**Avg Elim:** ', str(int(round(qplay['average_stats']['eliminations_avg']))),
-                               '\n**Avg Death:** ', str(int(round(qplay['average_stats']['deaths_avg']))),
-                               '\n**Avg Dmg:** ', str(int(round(qplay['average_stats']['damage_done_avg']))),
-                               '\n**Avg Heal:** ', str(int(round(qplay['average_stats']['healing_done_avg'])))])
+        icon_url = self.ow_tier_icon(tier)
 
         embed = discord.Embed(title='Overwatch Stats (PC-' + region_full + ')', color=0xFAA02E)
         embed.set_author(name=tag, url=url, icon_url=icon_url)
         embed.set_thumbnail(url=thumb_url)
         embed.add_field(name='__Competitive__', value=comp_stats, inline=True)
         embed.add_field(name='__Quick Play__', value=qplay_stats, inline=True)
+        if footer is not None:
+            embed.set_footer(text=footer)
         await self.bot.say(embed=embed)
+
+    def ow_tier_icon(self, tier: str):
+        return {
+            'bronze': 'https://i.imgur.com/B4IR72H.png',
+            'silver': 'https://i.imgur.com/1mOpjRc.png',
+            'gold': 'https://i.imgur.com/lCTsNwo.png',
+            'platinum': 'https://i.imgur.com/nDVHAbp.png',
+            'diamond': 'https://i.imgur.com/fLmIC70.png',
+            'master': 'https://i.imgur.com/wjf0lEc.png',
+            'grandmaster': 'https://i.imgur.com/5ApGiZs.png',
+        }.get(tier, self.thumbs['overwatch'])
 
     @overwatch.command(name="notes", pass_context=True)
     async def _notes_overwatch(self, ctx):
-        """Latest Overwatch patch notes"""
-        url = ''.join([self.base_url,
-                       self.overwatch_abbr,
-                       self.product_url,
-                       self.overwatch_abbr])
-
-        await self.print_patch_notes(url)
+        await self.format_patch_notes(ctx, 'overwatch')
 
     @commands.group(name="starcraft2", pass_context=True)
     async def starcraft2(self, ctx):
@@ -245,12 +359,7 @@ class Blizzard:
     @starcraft2.command(name="notes", pass_context=True)
     async def _notes_starcraft2(self, ctx):
         """Latest Starcraft2 patch notes"""
-        url = ''.join([self.base_url,
-                       self.starcraft2_abbr,
-                       self.product_url,
-                       self.starcraft2_abbr])
-
-        await self.print_patch_notes(url)
+        await self.format_patch_notes(ctx, 'starcraft2')
 
     @commands.group(name="warcraft", pass_context=True)
     async def warcraft(self, ctx):
@@ -262,19 +371,13 @@ class Blizzard:
     @warcraft.command(name="notes", pass_context=True)
     async def _notes_warcraft(self, ctx):
         """Latest World of Warcraft patch notes"""
-
-        url = ''.join([self.base_url,
-                       self.warcraft_abbr,
-                       self.product_url,
-                       self.warcraft_abbr])
-
-        await self.print_patch_notes(url)
+        await self.format_patch_notes(ctx, 'warcraft')
 
     @warcraft.command(name="token", pass_context=True)
     async def _token_warcraft(self, ctx, realm: str='na'):
         """WoW Token Prices"""
 
-        url = ''.join([self.wowtoken_url])
+        url = self.wowtoken_url
 
         if realm.lower() not in ['na', 'eu', 'cn', 'tw', 'kr']:
             await self.bot.say("'" + realm + "' is not a valid realm.")
@@ -292,12 +395,7 @@ class Blizzard:
     @diablo3.command(name="notes", pass_context=True)
     async def _notes_diablo3(self, ctx):
         """Latest Diablo3 patch notes"""
-        url = ''.join([self.base_url,
-                       self.diablo_abbr,
-                       self.product_url,
-                       self.diablo_abbr])
-
-        await self.print_patch_notes(url)
+        await self.format_patch_notes(ctx, 'diablo3')
 
     @diablo3.command(name="stats", pass_context=True)
     async def _stats_diablo3(self, ctx, tag: str=None):
@@ -335,7 +433,7 @@ class Blizzard:
             return
 
         tag = tag.replace("-", "#")
-        thumb_url = 'http://i.imgur.com/5WYDHHZ.png'
+        thumb_url = self.thumbs['diablo3']
 
         paragon = ''.join([':leaves:Seasonal: ', str(stats['paragonLevelSeason']),
                            '\n:leaves:Seasonal Hardcore: ', str(stats['paragonLevelSeasonHardcore']),
@@ -373,32 +471,101 @@ class Blizzard:
     @hots.command(name="notes", pass_context=True)
     async def _notes_hots(self, ctx):
         """Latest Heroes of the Storm patch notes"""
+        await self.format_patch_notes(ctx, 'hots')
+
+    async def format_patch_notes(self, ctx, game: str=None):
         url = ''.join([self.base_url,
-                       self.hots_abbr,
+                       self.abbr[game],
                        self.product_url,
-                       self.hots_abbr])
+                       self.abbr[game]])
+        tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'div']
+        attr = {'div': 'class'}
+        async with aiohttp.get(url, headers=self.patch_header) as response:
+            dirty = await response.text()
+        clean = bleach.clean(dirty, tags=tags, attributes=attr, strip=True)
+        soup = BeautifulSoup(clean, "html.parser")
+        # Preserving this list structure, in case we ever want to switch to
+        # scraping the actual game websites for multiple notes
+        notes = soup.find_all('div', class_="patch-notes-interior")
+        note_list = []
+        for note in notes:
+            # Format each patch note into an array of messages using Paginator
+            pager = formatter.Paginator(prefix='```markdown', suffix='```', max_size=1000)
+            # Custom headers for sucky patch notes that have none
+            if game == "starcraft2":
+                text = "STARCRAFT 2 PATCH NOTES"
+                pager.add_line(text + '\n' + '='*len(text))
+            elif game == "warcraft":
+                text = "WORLD OF WARCRAFT PATCH NOTES"
+                pager.add_line(text + '\n' + '='*len(text))
+            elif game == "hearthstone":
+                # Convert first paragraph to h1
+                note.p.name = 'h1'
+            elif game == "overwatch":
+                pass
+            elif game == "diablo3":
+                text = "DIABLO 3 PATCH NOTES"
+                pager.add_line(text + '\n' + '='*len(text))
+            elif game == "hots":
+                text = "HEROES OF THE STORM PATCH NOTES"
+                pager.add_line(text + '\n' + '='*len(text))
 
-        await self.print_patch_notes(url)
+            for child in note.children:
+                if child.name == 'h1':
+                    # This is a patch notes title, with date.
+                    text = child.get_text()
+                    pager.add_line(text + '\n' + '='*len(text))
+                elif str(child.name).startswith('h'):
+                    # Thid is a patch notes section heading.
+                    text = child.get_text()
+                    pager.add_line('\n' + text + '\n' + '-'*len(text))
+                elif child.name == 'p':
+                    # This is a plain paragraph of patch notes.
+                    text = child.get_text()
+                    if text.strip():
+                        text = '> ' + text if len(text) < 80 else text
+                        pager.add_line('\n' + text)
+                elif child.name == 'li':
+                    # A list is about to follow.
+                    pager.add_line('')
+                    self.walk_list(child, pager, -1)
+                else:
+                    # Space reserved for future cases of "something else"
+                    pass
+            note_list.append(pager.pages)
 
-    async def print_patch_notes(self, url):
+        if self.settings.setdefault('notes_format', 'paged') == 'paged':
+            result = await self._info_menu(ctx, note_list[0],
+                timeout=self.settings.setdefault('notes_timeout', 60))
+            if result[0] == "no":
+                await self.bot.delete_message(result[1])
+            else:
+                await self.bot.edit_message(result[1], embed=self.expired_embed)
+        elif self.settings['notes_format'] == 'full':
+            await self.say_full_notes(note_list[0])
+        else:
+            # Extract title and body, remove markdown formatting line between
+            split = note_list[0][0].split('\n', 3)
+            title = split[1]
+            # Remove \n```
+            body = split[3][:-4]
+            embed = discord.Embed(title=title, url=self.patch_urls[game], color=0x00B4FF)
+            embed.set_thumbnail(url=self.thumbs[game])
+            embed.add_field(name='Summary', value=body, inline=False)
+            await self.bot.say(embed=embed)
+
+    def walk_list(self, child, pager, count):
         try:
-            async with aiohttp.get(url, headers=self.patch_header) as response:
-                soup = BeautifulSoup(await response.text(), "html.parser")
+            for grandchild in child.contents:
+                self.walk_list(grandchild, pager, count + 1)
+        except AttributeError:
+            if child.string.strip():
+                pager.add_line('  '*count + '*' + ' ' + child.string.strip())
 
-            html_notes = soup.find('div', {"class": "patch-notes-interior"})
-            text_notes = pypandoc.convert_text(html_notes, 'plain',
-                                               format='html',
-                                               extra_args=['--wrap=none'])
-            # Removal/replacement of odd characters
-            text_notes = text_notes.replace('&nbsp;', ' ')
-            text_notes = text_notes.replace('&apos;', "'")
-            msg_list = pagify(text_notes, delims=["\n"])
-            for msg in msg_list:
-                await self.bot.say(msg)
-                await asyncio.sleep(1)
-
-        except:
-            await self.bot.say("I couldn't find any patch notes.")
+    async def say_full_notes(self, pages):
+        for page in pages:
+            await self.bot.say(page)
+            await asyncio.sleep(1)
 
     async def print_token(self, url, realm):
 
@@ -441,14 +608,11 @@ def check_files():
 
 
 def setup(bot):
-    if soup_available and pypandoc_available:
+    if soup_available:
         check_folders()
         check_files()
         n = Blizzard(bot)
         bot.add_cog(n)
     else:
-        if not soup_available:
-            error_text += "You need to run `pip install beautifulsoup4`\n"
-        if not pypandoc_available:
-            error_text += "You need to run `pip install pypandoc`\n"
+        error_text = "You need to run `pip install beautifulsoup4`"
         raise RuntimeError(error_text)
