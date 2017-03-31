@@ -11,7 +11,6 @@ import bleach
 from __main__ import send_cmd_help
 from cogs.utils import checks
 
-from .utils import chat_formatting as cf
 from .utils.dataIO import dataIO
 
 try:
@@ -56,81 +55,31 @@ class Blizzard:
             'hots': 'heroes'
         }
         self.thumbs = {
-            'hearthstone': '',
+            'hearthstone': 'http://i.imgur.com/uK0AlGb.png',
             'overwatch': 'https://i.imgur.com/YZ4w2ey.png',
-            'starcraft2': '',
-            'warcraft': '',
+            'starcraft2': 'https://i.imgur.com/ErDVIMO.png',
+            'warcraft': 'https://i.imgur.com/nrGZdB7.png',
             'diablo3': 'https://i.imgur.com/5WYDHHZ.png',
-            'hots': ''
+            'hots': 'https://i.imgur.com/NSMkOsA.png'
         }
         self.emoji = {
-            "up": "⬆️",
-            "down": "⬇️",
-            "next": "➡",
-            "back": "⬅",
-            "yes": "✅",
-            "no": "❌"
+            "next": "\N{BLACK RIGHTWARDS ARROW}",
+            "back": "\N{LEFTWARDS BLACK ARROW}",
+            "no": "\N{CROSS MARK}"
         }
         self.expired_embed = discord.Embed(title="This menu has exipred due "
                                            "to inactivity.")
 
-    def perms(self, ctx):
-        user = ctx.message.server.get_member(self.bot.user.id)
-        return ctx.message.channel.permissions_for(user)
-
-    async def menu(self, ctx, _type: int, messages, choices: int = 1, **kwargs):
-        """Creates and manages a new menu
-        Required arguments:
-            Type:
-                1- number menu
-                2- confirmation menu
-                3- info menu (basically menu pagination)
-            Messages:
-                Strings or embeds to use for the menu.
-                Pass as a list for number menu
-        Optional agruments:
-            page (Defaults to 0):
-                The message in messages that will be displayed
-            timeout (Defaults to 15):
-                The number of seconds until the menu automatically expires
-            check (Defaults to default_check):
-                The same check that wait_for_reaction takes
-            is_open (Defaults to False):
-                Whether or not the menu can take input from any user
-            emoji (Decaults to self.emoji):
-                A dictionary containing emoji to use for the menu.
-                If you pass this, use the same naming scheme as self.emoji
-            message (Defaults to None):
-                The discord.Message to edit if present
-            loop (Defaults to False):
-                Whether or not the pages loop to the first page at the end"""
-        result = None
-        if _type == 1:
-            result = await self._number_menu(ctx, messages, choices, **kwargs)
-        if _type == 2:
-            result = await self._confirm_menu(ctx, messages, **kwargs)
-        if _type == 3:
-            result = await self._info_menu(ctx, messages, **kwargs)
-
-        return result
-
-    async def show_menu(self,
-                        ctx,
-                        message,
-                        messages,
-                        page):
+    async def show_menu(self, ctx, message, messages, page):
         if message:
             return await self.bot.edit_message(message, messages[page])
         else:
-            # This must be the initial post
             return await self.bot.send_message(ctx.message.channel,
                                                messages[page])
 
     async def _info_menu(self, ctx, messages, **kwargs):
         page = kwargs.get("page", 0)
-        timeout = kwargs.get("timeout", 15)
-        is_open = kwargs.get("is_open", False)
-        check = kwargs.get("check", default_check)
+        timeout = kwargs.get("timeout", 60)
         emoji = kwargs.get("emoji", self.emoji)
         message = kwargs.get("message", None)
         choices = len(messages)
@@ -147,7 +96,6 @@ class Blizzard:
         r = await self.bot.wait_for_reaction(
             message=message,
             user=ctx.message.author,
-            check=default_check,
             timeout=timeout)
         if r is None:
             return [None, message]
@@ -168,18 +116,19 @@ class Blizzard:
         if page == choices:
             page = 0
 
-        if self.perms(ctx).manage_messages:
+        try:
             await self.bot.remove_reaction(message, emoji[react], r.user)
-        else:
-            await self.bot.delete_message(message)
-            message = None
+        except discord.errors.Forbidden:
+            await self.bot.say('I require the "manage messages" permission '
+                               'to make these menus work.')
+            return ["no", message]
 
         return await self._info_menu(
             ctx, messages,
             page=page,
             timeout=timeout,
-            check=check, is_open=is_open,
-            emoji=emoji, message=message)
+            emoji=emoji,
+            message=message)
 
     @commands.group(name="blizzard", pass_context=True)
     async def blizzard(self, ctx):
@@ -191,7 +140,7 @@ class Blizzard:
     @blizzard.command(name="apikey", pass_context=True)
     @checks.is_owner()
     async def _apikey_blizzard(self, ctx, key: str):
-        """Set the cog's battle.net API key, required for some statistics.
+        """Set the cog's battle.net API key, required for Diablo statistics.
         (get one at https://dev.battle.net/)
         Use a direct message to keep the key secret."""
 
@@ -207,14 +156,15 @@ class Blizzard:
         full: post full notes in multiple messages
         embed: post a summary with link to full notes"""
 
-        accepted = ('paged', 'full', 'embed')
-        if form in accepted:
+        accept = ['paged', 'full', 'embed']
+        if form in accept:
             self.settings['notes_format'] = form
             dataIO.save_json(self.settings_path, self.settings)
-            await self.bot.say("Patch notes format set to `{}`".format(form))
+            await self.bot.say("Patch notes format set to `{}`.".format(form))
         else:
             await self.bot.say("`{}` is not a valid format. Please choose "
-                               "`{}`, `{}`, or `{}`.".format(form + accepted))
+                               "`{}`, `{}`, or `{}`.".format(form, accept[0],
+                                                             accept[1], accept[2]))
 
     @blizzard.command(name="notetimeout", pass_context=True)
     @checks.is_owner()
@@ -222,19 +172,15 @@ class Blizzard:
         """Set the timeout period (sec) of the patch notes reaction menus.
         Only relevant for 'paged' or 'embed' mode."""
 
-        # I think there is a max value for timeout in wait_for_reaction, need to check
-        # Also reaction polls needs to set a minimum time of like 5 sec to allow
-        # for all reactions to be placed
         min_max = (5, 3600)
-        # Awesome if this works
-        if timeout in range(min_max):
+        if min_max[0] <= timeout <= min_max[1]:
             self.settings['notes_timeout'] = timeout
             dataIO.save_json(self.settings_path, self.settings)
             # Need str() casting?
-            await self.bot.say("Timeout period set to `{} sec`".format(timeout))
+            await self.bot.say("Timeout period set to `{} sec`.".format(timeout))
         else:
             await self.bot.say("Please choose a duration between "
-                               "{} and {} seconds".format(min_max))
+                               "{} and {} seconds.".format(min_max[0], min_max[1]))
 
     @commands.group(name="battletag", pass_context=True)
     async def battletag(self, ctx):
@@ -277,7 +223,7 @@ class Blizzard:
     @hearthstone.command(name="notes", pass_context=True)
     async def _notes_hearthstone(self, ctx):
         """Latest Hearthstone patch notes"""
-        self.format_patch_notes(ctx, 'hearthstone')
+        await self.format_patch_notes(ctx, 'hearthstone')
 
     @commands.group(name="overwatch", pass_context=True)
     async def overwatch(self, ctx):
@@ -361,15 +307,16 @@ class Blizzard:
                                    '\n**Avg Heal:** ', str(int(round(qplay['average_stats']['healing_done_avg'])))])
 
         comp = stats[region]['stats']['competitive']
+        footer = None
         if comp is None:
             comp_stats = "*No matches played*"
             tier = None
-        # Possible fix for detecting outdated stats from prior season(s)
         elif comp['overall_stats']['comprank'] is None:
             comp_stats = "*Not ranked*"
             tier = None
         else:
             tier = comp['overall_stats']['tier']
+            footer = 'SR: ' + str(comp['overall_stats']['comprank'])
             comp_stats = ''.join(['**Wins:** ', str(int(round(comp['game_stats']['games_won']))),
                                   '\n**Avg Elim:** ', str(int(round(comp['average_stats']['eliminations_avg']))),
                                   '\n**Avg Death:** ', str(int(round(comp['average_stats']['deaths_avg']))),
@@ -383,6 +330,8 @@ class Blizzard:
         embed.set_thumbnail(url=thumb_url)
         embed.add_field(name='__Competitive__', value=comp_stats, inline=True)
         embed.add_field(name='__Quick Play__', value=qplay_stats, inline=True)
+        if footer is not None:
+            embed.set_footer(text=footer)
         await self.bot.say(embed=embed)
 
     def ow_tier_icon(self, tier: str):
@@ -391,7 +340,7 @@ class Blizzard:
             'silver': 'https://i.imgur.com/1mOpjRc.png',
             'gold': 'https://i.imgur.com/lCTsNwo.png',
             'platinum': 'https://i.imgur.com/nDVHAbp.png',
-            'diamond': 'https://i.imgur.com/fLmIC70.png'
+            'diamond': 'https://i.imgur.com/fLmIC70.png',
             'master': 'https://i.imgur.com/wjf0lEc.png',
             'grandmaster': 'https://i.imgur.com/5ApGiZs.png',
         }.get(tier, self.thumbs['overwatch'])
@@ -542,7 +491,7 @@ class Blizzard:
         for note in notes:
             # Format each patch note into an array of messages using Paginator
             pager = formatter.Paginator(prefix='```markdown', suffix='```', max_size=1000)
-            # Custom headers for sucky patch notes that have None
+            # Custom headers for sucky patch notes that have none
             if game == "starcraft2":
                 text = "STARCRAFT 2 PATCH NOTES"
                 pager.add_line(text + '\n' + '='*len(text))
@@ -581,24 +530,25 @@ class Blizzard:
                     pager.add_line('')
                     self.walk_list(child, pager, -1)
                 else:
-                    #pager.add_line(child.get_text())
+                    # Space reserved for future cases of "something else"
                     pass
             note_list.append(pager.pages)
 
         if self.settings.setdefault('notes_format', 'paged') == 'paged':
-            result = await self.menu(ctx, 3, note_list[0],
+            result = await self._info_menu(ctx, note_list[0],
                 timeout=self.settings.setdefault('notes_timeout', 60))
             if result[0] == "no":
-                await self.bot.delete_messages([result[1], ctx.message])
+                await self.bot.delete_message(result[1])
             else:
                 await self.bot.edit_message(result[1], embed=self.expired_embed)
         elif self.settings['notes_format'] == 'full':
             await self.say_full_notes(note_list[0])
         else:
             # Extract title and body, remove markdown formatting line between
-            split = note_list[0].split('\n', 2)
-            title = split[0]
-            body = split[2]
+            split = note_list[0][0].split('\n', 3)
+            title = split[1]
+            # Remove \n```
+            body = split[3][:-4]
             embed = discord.Embed(title=title, url=self.patch_urls[game], color=0x00B4FF)
             embed.set_thumbnail(url=self.thumbs[game])
             embed.add_field(name='Summary', value=body, inline=False)
@@ -641,13 +591,6 @@ class Blizzard:
 
         except:
             await self.bot.say("Error finding WoW token prices.")
-
-
-def default_check(reaction, user):
-        if user.bot:
-            return False
-        else:
-            return True
 
 
 def check_folders():
