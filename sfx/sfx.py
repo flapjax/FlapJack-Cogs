@@ -118,6 +118,7 @@ class SFX:
     async def play_next_sound(self, queue, sid):
         server = self.bot.get_server(sid)
         timeout_counter = 0
+        audio_cog = self.bot.get_cog('Audio')
         while True:
             # Hopefully this is also enough delay to not miss the first queued item.
             #print('hi this is slave task reporting in')
@@ -206,12 +207,21 @@ class SFX:
             # Wait for current sound to finish playing
             while self.audio_players[sid].is_playing():
                 await asyncio.sleep(0.1)
+                # I REALLY didn't want to do this, but here comes the Canadian queue thing
+                audio_vc = audio_cog.voice_client(server)
+                if vc is not None:
+                    if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
+                        # Audio cog is playing again, how rude :c
+                        # Lets be polite and destroy our queue and go home.
+                        self.audio_players[sid].stop()
+                        return
 
             if delete:
                 os.remove(path)
 
 
     @commands.command(pass_context=True, no_pm=True, aliases=['gtts'])
+    @commands.cooldown(1, 1, commands.BucketType.server)
     async def tts(self, ctx, *text: str):
         """Play a TTS clip in your current channel"""
 
@@ -225,6 +235,7 @@ class SFX:
         await self.enqueue_tts(vchan, " ".join(text))
 
     @commands.command(no_pm=True, pass_context=True, aliases=['playsound'])
+    @commands.cooldown(1, 1, commands.BucketType.server)
     async def sfx(self, ctx, soundname: str):
         """Plays the specified sound."""
 
