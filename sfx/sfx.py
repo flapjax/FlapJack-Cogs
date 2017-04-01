@@ -51,6 +51,10 @@ class SFX:
         self.queue = {}
         self.server_tasks = {}
         self.vc_buffers = {}
+        self.master_queue = asyncio.Queue()
+        # combine these 2
+        self.slave_queues = {}
+        self.slave_tasks = {}
         self.queue_task = bot.loop.create_task(self.queue_manager())
 
     def list_sounds(self, server_id: str) -> List[str]:
@@ -63,23 +67,6 @@ class SFX:
         await vc.move_to(channel)
         vc.audio_player.resume()
 
-    async def check_for_disconnect(self, server: discord.Server):
-
-        timeout = 0
-        # Timeout period can be made adjustable
-        while timeout < 10:
-            await asyncio.sleep(0.1)
-            vc = self.bot.voice_client_in(server)
-            if vc is None:
-                return
-            if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
-                return
-            # This seems like overkill, but somehow it is preventing
-            # some early disconnects. Need to look into this
-            timeout += 1
-
-        await vc.disconnect()
-
     async def enqueue_tts(self, vchan, text: str):
 
         server = vchan.server
@@ -88,9 +75,13 @@ class SFX:
         path = self.temp_filepath + ''.join(random.choice('0123456789ABCDEF') for i in range(12)) + ".mp3"
         tts.save(path)
 
-        if server.id not in self.queue:
-            self.queue[server.id] = []
-        self.queue[server.id].append({'cid': vchan.id, 'path': path, 'vol': self.tts_volume, 'delete': True})
+        try:
+            item = {'cid': vchan.id, 'path': path, 'vol': self.tts_volume, 'priority': 1, 'delete': True}
+            self.master_queue.put_nowait(item)
+        except asyncio.QueueFull:
+            print('queue was full')
+            # put an error message here you lazy ass
+            return
 
     async def enqueue_sfx(self, vchan, path, vol: int):
 
@@ -98,16 +89,15 @@ class SFX:
         path = path
 
         if server.id not in self.queue:
-            self.queue[server.id] = []
-        self.queue[server.id].append({'cid': vchan.id, 'path': path, 'vol': vol, 'delete': False})
-
-    def dequeue_sfx(self, server, path, delete: bool):
-        if delete:
-            os.remove(path)
-        self.queue[server.id].pop(0)
-        if not self.queue[server.id]:
-            # Queue is now empty, try a cautious disconnect
-            self.bot.loop.create_task(self.check_for_disconnect(server))
+            # Create an async queue!
+            self.queue[server.id] = asyncio.PriorityQueue(maxsize=5)
+        try:
+            item = {'cid': vchan.id, 'path': path, 'vol': vol, 'priority': 1, 'delete': False}
+            self.master_queue.put_nowait(item)
+        except asyncio.QueueFull:
+            print('queue was full')
+            # put an error message here you lazy ass
+            return
 
     def revive_audio(self, sid):
         server = self.bot.get_server(sid)
@@ -125,57 +115,101 @@ class SFX:
         vc.audio_player.pause()
         self.vc_buffers[channel.server.id] = SuspendedPlayer(vc)
 
-    async def play_next_sound(self, sid):
-
-        try:
-            next_sound = self.queue[sid][0]
-        except IndexError:
-            # Just get out of here, this could be an async problem
-            # we'll work on this later
-            return
-
-        cid = next_sound['cid']
-        channel = self.bot.get_channel(cid)
-        path = next_sound['path']
-        vol = next_sound['vol']
+    async def play_next_sound(self, queue, sid):
         server = self.bot.get_server(sid)
-        vc = self.bot.voice_client_in(server)
-
-        if vc is None:
-            # Voice not in use, we can connect to a voice channel
-            try:
-                vc = await self.bot.join_voice_channel(channel)
-            except asyncio.TimeoutError:
-                print("Could not join channel '{}'".format(channel.name))
-                self.dequeue_sfx(server, path, next_sound['delete'])
-                return
-
-            # TODO: ffmpeg options
-            options = "-filter \"volume=volume={}\"".format(str(vol/100))
-            self.audio_players[sid] = vc.create_ffmpeg_player(
-                path, options=options)
-            self.audio_players[sid].start()
-
-        else:
-            # We already have a client, use it
-            if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
-                self.suspend_audio(vc, cid)
-
-            if vc.channel.id != cid:
-                # It looks like this does not raise an exception if bot
-                # fails to join channel. Need to add a manual check.
-                await vc.move_to(channel)
-
-            options = "-filter \"volume=volume={}\"".format(str(vol/100))
-            self.audio_players[sid] = vc.create_ffmpeg_player(
-                path, options=options)
-            self.audio_players[sid].start()
-
-        # Wait for current sound to finish playing
-        while self.audio_players[sid].is_playing():
+        timeout_counter = 0
+        while True:
+            # Hopefully this is also enough delay to not miss the first queued item.
+            #print('hi this is slave task reporting in')
             await asyncio.sleep(0.1)
+            try:
+                next_sound = queue.get_nowait()
+                # New sound was found, restart the timer!
+                timeout_counter = 0
+                #next_sound = self.queue[sid][0]
+                #print('ok this is slave I found a thing')
+            except asyncio.QueueEmpty:
+                #print('my slave queue was empty')
+                # Start the wait for disconnect task here?
+                #self.bot.loop.create_task(self.check_for_disconnect(server))
+                # or, start a timer and take the place of check for disconnect
+                timeout_counter += 1
+                # give back control to any prior vcs
+                if self.vc_buffers.get(sid) is not None:
+                    self.revive_audio(sid)
+                # Any way to check if this vc = our vc?
+                vc = self.bot.voice_client_in(server)
+                if vc is not None:
+                    if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
+                        # This should never happen unless some other cog has stolen vc
+                        # so its safe to kill the task
+                        return
+                else:
+                    # Something else has shit on our voice client, so its also safe
+                    # to kill the task
+                    return
+                # If we're here, queue is still empty, a voice client exists
+                # It's probably ours and we're responsible for disconnecting it
+                # Assuming 0.1 second sleep -> 5 sec disconnect
+                timeout_counter += 1
+                if timeout_counter > 50:
+                    # Do the disconnect thing
+                    await vc.disconnect()
+                    return
+                # We made it here, its safe to start another iteration
+                continue
 
-        self.dequeue_sfx(server, path, next_sound['delete'])
+            # item looks like: item = {'cid': vchan.id, 'path': path, 'vol': vol, 'delete': False}
+            #print('slave here, about to get the attributes for the thing')
+            # It's pretty much ok to block from here on out.
+            cid = next_sound['cid']
+            channel = self.bot.get_channel(cid)
+            path = next_sound['path']
+            vol = next_sound['vol']
+            delete = next_sound['delete']
+            #print('ok got all the attributes')
+            vc = self.bot.voice_client_in(server)
+
+
+            if vc is None:
+                # Voice not in use, we can connect to a voice channel
+                try:
+                    vc = await self.bot.join_voice_channel(channel)
+                except asyncio.TimeoutError:
+                    print("Could not join channel '{}'".format(channel.name))
+                    if delete:
+                        os.remove(path)
+                    continue
+                    #return
+
+                # TODO: ffmpeg options
+                options = "-filter \"volume=volume={}\"".format(str(vol/100))
+                self.audio_players[sid] = vc.create_ffmpeg_player(
+                    path, options=options)
+                self.audio_players[sid].start()
+
+            else:
+                # We already have a client, use it
+                if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
+                    self.suspend_audio(vc, cid)
+
+                if vc.channel.id != cid:
+                    # It looks like this does not raise an exception if bot
+                    # fails to join channel. Need to add a manual check.
+                    await vc.move_to(channel)
+
+                options = "-filter \"volume=volume={}\"".format(str(vol/100))
+                self.audio_players[sid] = vc.create_ffmpeg_player(
+                    path, options=options)
+                self.audio_players[sid].start()
+
+            # Wait for current sound to finish playing
+            while self.audio_players[sid].is_playing():
+                await asyncio.sleep(0.1)
+
+            if delete:
+                os.remove(path)
+
 
     @commands.command(pass_context=True, no_pm=True, aliases=['gtts'])
     async def tts(self, ctx, *text: str):
@@ -458,31 +492,69 @@ class SFX:
 
     async def queue_manager(self):
         await self.bot.wait_until_ready()
-        try:
-            while True:
-                await self.check_queues()
-                await asyncio.sleep(0.1)
-        except asyncio.CancelledError:
-            # TODO: add better exception handling
-            pass
+        while True:
+            # Experimental delay to reduce overhead
+            await asyncio.sleep(0.1)
+            #print('loop')
+            # First check for empty queues to be destroyed
+            for slave in self.slave_tasks:
+                # Task is only done when slave queue is empty
+                if self.slave_tasks[slave] is not None and self.slave_tasks[slave].done():
+                    # Task is not completed until:
+                    # Slave queue is empty, and timeout is reached / vc disconnected / someone else stole vc
+                    self.slave_tasks[slave] = None
+                    self.slave_queues[slave] = None
 
-    async def check_queues(self):
+            # Next we can check for new items
+            item = None
+            try:
+                item = self.master_queue.get_nowait()
+                #print('something found in master queue')
+            except asyncio.QueueEmpty:
+                # If it's empty, we're done, move along
+                #print('master queue was empty')
+                continue
+            #print(str(item))
+            # Must have been an item in queue
+            # Need to handle integrity checking of the item, probable in enqueue function
+            # So assume this is a good item
+            channel = self.bot.get_channel(item['cid'])
+            #print(str(channel))
+            server = channel.server
+            #print(str(server))
+            sid = server.id
+            #print(sid)
+            priority = item['priority']
 
-        for sid in self.queue:
-            if not self.queue[sid]:
-                # Queue is empty,hand control back to previous client if needed
-                if self.vc_buffers.get(sid) is not None:
-                    self.revive_audio(sid)
+            #print(str(priority))
 
-            else:
-                if self.server_tasks.get(sid) is None:
-                    self.server_tasks[sid] = self.bot.loop.create_task(self.play_next_sound(sid))
-                else:
-                    if self.server_tasks[sid].done():
-                        self.server_tasks[sid] = None
+            if self.slave_tasks.get(sid) is None:
+                # Create slave. Find out if need loop
+                #print('creating slave queue')
+                queue = asyncio.Queue(maxsize=10)
+                self.slave_queues[sid] = queue
+                # Start the task to handle this queue
+                # Play next sound should be renamed to some thing like slave queue task
+                #print('slave queue was created')
+                self.slave_tasks[sid] = self.bot.loop.create_task(self.play_next_sound(queue, sid))
+                #print('slave task was launched')
+
+            try:
+                self.slave_queues[sid].put_nowait(item)
+                #Sprint('put item in slave queue')
+            except asyncio.QueueFull:
+                print('queue was full')
+                # await self.bot.send_message(channel, 'sfx queue is full! stop spamming! :c')
+                # put a better error message here you lazy ass
+                # will need to propogate this back to whoever tried to enqueue
+
+        # Do we need an asyncio cancelled error exception handler? Dunno!
 
     def __unload(self):
         self.queue_task.cancel()
+        for slave in self.slave_queues:
+            if self.slave_queues[slave] is not None:
+                self.slave_queues[slave].cancel()
 
 
 def check_folders():
