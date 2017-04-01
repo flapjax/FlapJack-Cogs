@@ -7,7 +7,6 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import formatter
 
-import bleach
 from __main__ import send_cmd_help
 from cogs.utils import checks
 
@@ -18,6 +17,12 @@ try:
     soup_available = True
 except:
     soup_available = False
+
+try:
+    import bleach
+    bleach_available = True
+except:
+    bleach_available = False
 
 # Special thanks to judge2020 for telling me about this method for getting
 # patch notes. https://github.com/judge2020/BattleNetUpdateChecker
@@ -608,11 +613,13 @@ def check_files():
 
 
 def setup(bot):
-    if soup_available:
+    if soup_available and bleach_available:
         check_folders()
         check_files()
         n = Blizzard(bot)
         bot.add_cog(n)
     else:
-        error_text = "You need to run `pip install beautifulsoup4`"
+        error_text = ("Make sure beautifulsoup4 and bleach are installed."
+                      "\n`pip install beautifulsoup4`"
+                      "\n`pip install bleach`")
         raise RuntimeError(error_text)
