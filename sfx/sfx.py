@@ -1,16 +1,18 @@
-import discord
-from discord.ext import commands
-from .utils.dataIO import dataIO
-from .utils import checks, chat_formatting as cf
-from typing import List
-import random
-import os
 import asyncio
 import copy
-import random
-import os.path
-import aiohttp
 import glob
+import os
+import os.path
+import random
+from typing import List
+
+import aiohttp
+import discord
+from discord.ext import commands
+
+from .utils import chat_formatting as cf
+from .utils import checks
+from .utils.dataIO import dataIO
 
 try:
     from gtts import gTTS
@@ -34,7 +36,7 @@ class SuspendedPlayer:
         self.vc_ap = voice_client.audio_player
 
 
-class SFX:
+class Sfx:
 
     """Inject sound effects into a voice channel"""
 
@@ -48,136 +50,175 @@ class SFX:
         self.language = "en"
         self.default_volume = 75
         self.tts_volume = 100
-        self.queue = {}
-        self.server_tasks = {}
         self.vc_buffers = {}
-        self.queue_task = bot.loop.create_task(self.queue_manager())
+        self.master_queue = asyncio.Queue()
+        # Combine slave_queues and slave_tasks into a single dict, maybe
+        self.slave_queues = {}
+        self.slave_tasks = {}
+        self.queue_task = bot.loop.create_task(self._queue_manager())
 
-    def list_sounds(self, server_id: str) -> List[str]:
+    # Other cogs may use the following two functions as an easy API for sfx.
+    # The function definitions probably violate every possible style guide,
+    # But I like it :)
+    def enqueue_tts(self, vchan: discord.Channel,
+                           text: str,
+                            vol: int=None,
+                       priority: int=5,
+                          tchan: discord.Channel=None,
+                       language: str=None):
+        if vol is None:
+            vol = self.tts_volume
+        if language is None:
+            language = self.language
+        tts = gTTS(text=text, lang=language)
+        path = self.temp_filepath + ''.join(random.choice(
+                   '0123456789ABCDEF') for i in range(12)) + ".mp3"
+        tts.save(path)
+
+        try:
+            item = {'cid': vchan.id, 'path': path, 'vol': vol,
+                    'priority': priority, 'delete': True, 'tchan': tchan}
+            self.master_queue.put_nowait(item)
+            return True
+        except asyncio.QueueFull:
+            return False
+
+    def enqueue_sfx(self, vchan: discord.Channel,
+                           path: str,
+                            vol: int=None,
+                       priority: int=5,
+                         delete: bool=False,
+                          tchan: discord.Channel=None):
+        if vol is None:
+            vol = self.default_volume
+        try:
+            item = {'cid': vchan.id, 'path': path, 'vol': vol,
+                    'priority': priority, 'delete': delete, 'tchan': tchan}
+            self.master_queue.put_nowait(item)
+            return True
+        except asyncio.QueueFull:
+            return False
+
+    def _list_sounds(self, server_id: str) -> List[str]:
         return sorted(
             [os.path.splitext(s)[0] for s in os.listdir(os.path.join(
                 self.sound_base, server_id))],
             key=lambda s: s.lower())
 
-    async def change_and_resume(self, vc, channel: discord.Channel):
+    async def _change_and_resume(self, vc, channel: discord.Channel):
         await vc.move_to(channel)
         vc.audio_player.resume()
 
-    async def check_for_disconnect(self, server: discord.Server):
-
-        timeout = 0
-        # Timeout period can be made adjustable
-        while timeout < 10:
-            await asyncio.sleep(0.1)
-            vc = self.bot.voice_client_in(server)
-            if vc is None:
-                return
-            if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
-                return
-            # This seems like overkill, but somehow it is preventing
-            # some early disconnects. Need to look into this
-            timeout += 1
-
-        await vc.disconnect()
-
-    async def enqueue_tts(self, vchan, text: str):
-
-        server = vchan.server
-        tts = gTTS(text=text, lang=self.language)
-
-        path = self.temp_filepath + ''.join(random.choice('0123456789ABCDEF') for i in range(12)) + ".mp3"
-        tts.save(path)
-
-        if server.id not in self.queue:
-            self.queue[server.id] = []
-        self.queue[server.id].append({'cid': vchan.id, 'path': path, 'vol': self.tts_volume, 'delete': True})
-
-    async def enqueue_sfx(self, vchan, path, vol: int):
-
-        server = vchan.server
-        path = path
-
-        if server.id not in self.queue:
-            self.queue[server.id] = []
-        self.queue[server.id].append({'cid': vchan.id, 'path': path, 'vol': vol, 'delete': False})
-
-    def dequeue_sfx(self, server, path, delete: bool):
-        if delete:
-            os.remove(path)
-        self.queue[server.id].pop(0)
-        if not self.queue[server.id]:
-            # Queue is now empty, try a cautious disconnect
-            self.bot.loop.create_task(self.check_for_disconnect(server))
-
-    def revive_audio(self, sid):
+    def _revive_audio(self, sid):
         server = self.bot.get_server(sid)
         vc_current = self.bot.voice_client_in(server)
         vc_current.audio_player = self.vc_buffers[sid].vc_ap
         vchan_old = self.vc_buffers[sid].vchan
         self.vc_buffers[sid] = None
         if vc_current.channel.id != vchan_old.id:
-            self.bot.loop.create_task(self.change_and_resume(vc_current, vchan_old))
+            self.bot.loop.create_task(self._change_and_resume(vc_current,
+                                                              vchan_old))
         else:
             vc_current.audio_player.resume()
 
-    def suspend_audio(self, vc, cid):
+    def _suspend_audio(self, vc, cid):
         channel = self.bot.get_channel(cid)
         vc.audio_player.pause()
         self.vc_buffers[channel.server.id] = SuspendedPlayer(vc)
 
-    async def play_next_sound(self, sid):
-
-        try:
-            next_sound = self.queue[sid][0]
-        except IndexError:
-            # Just get out of here, this could be an async problem
-            # we'll work on this later
-            return
-
-        cid = next_sound['cid']
-        channel = self.bot.get_channel(cid)
-        path = next_sound['path']
-        vol = next_sound['vol']
+    async def _slave_queue_manager(self, queue, sid):
         server = self.bot.get_server(sid)
-        vc = self.bot.voice_client_in(server)
-
-        if vc is None:
-            # Voice not in use, we can connect to a voice channel
-            try:
-                vc = await self.bot.join_voice_channel(channel)
-            except asyncio.TimeoutError:
-                print("Could not join channel '{}'".format(channel.name))
-                self.dequeue_sfx(server, path, next_sound['delete'])
-                return
-
-            # TODO: ffmpeg options
-            options = "-filter \"volume=volume={}\"".format(str(vol/100))
-            self.audio_players[sid] = vc.create_ffmpeg_player(
-                path, options=options)
-            self.audio_players[sid].start()
-
-        else:
-            # We already have a client, use it
-            if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
-                self.suspend_audio(vc, cid)
-
-            if vc.channel.id != cid:
-                # It looks like this does not raise an exception if bot
-                # fails to join channel. Need to add a manual check.
-                await vc.move_to(channel)
-
-            options = "-filter \"volume=volume={}\"".format(str(vol/100))
-            self.audio_players[sid] = vc.create_ffmpeg_player(
-                path, options=options)
-            self.audio_players[sid].start()
-
-        # Wait for current sound to finish playing
-        while self.audio_players[sid].is_playing():
+        timeout_counter = 0
+        audio_cog = self.bot.get_cog('Audio')
+        while True:
             await asyncio.sleep(0.1)
+            try:
+                next_sound = queue.get_nowait()
+                # New sound was found, restart the timer!
+                timeout_counter = 0
+            except asyncio.QueueEmpty:
+                timeout_counter += 1
+                # give back control to any prior voice clients
+                if self.vc_buffers.get(sid) is not None:
+                    self._revive_audio(sid)
+                vc = self.bot.voice_client_in(server)
+                if vc is not None:
+                    if (hasattr(vc, 'audio_player') and
+                            vc.audio_player.is_playing()):
+                        # This should not happen unless some other cog has
+                        # stolen voice client so its safe to kill the task
+                        return
+                else:
+                    # Something else killed our voice client, 
+                    # so its also safe to kill the task
+                    return
+                # If we're here, we still have control of the voice client,
+                # So it's our job to wait for disconnect
+                timeout_counter += 1
+                if timeout_counter > 10:
+                    await vc.disconnect()
+                    return
+                continue
 
-        self.dequeue_sfx(server, path, next_sound['delete'])
+            # This function can block itself from here on out. Our only job
+            # is to play the sound and watch for Audio stealing back control
+            cid = next_sound['cid']
+            channel = self.bot.get_channel(cid)
+            path = next_sound['path']
+            vol = next_sound['vol']
+            delete = next_sound['delete']
+            vc = self.bot.voice_client_in(server)
+
+            if vc is None:
+                # Voice not in use, we can connect to a voice channel
+                try:
+                    vc = await self.bot.join_voice_channel(channel)
+                except asyncio.TimeoutError:
+                    print("Could not join channel '{}'".format(channel.name))
+                    if delete:
+                        os.remove(path)
+                    continue
+
+                options = "-filter \"volume=volume={}\"".format(str(vol/100))
+                self.audio_players[sid] = vc.create_ffmpeg_player(
+                    path, options=options)
+                self.audio_players[sid].start()
+
+            else:
+                # We already have a client, use it
+                if (hasattr(vc, 'audio_player') and
+                        vc.audio_player.is_playing()):
+                    self._suspend_audio(vc, cid)
+
+                if vc.channel.id != cid:
+                    # It looks like this does not raise an exception if bot
+                    # fails to join channel. Need to add a manual check.
+                    await vc.move_to(channel)
+
+                options = "-filter \"volume=volume={}\"".format(str(vol/100))
+                self.audio_players[sid] = vc.create_ffmpeg_player(
+                    path, options=options)
+                self.audio_players[sid].start()
+
+            # Wait for current sound to finish playing
+            # Watch for audio interrupts
+            while self.audio_players[sid].is_playing():
+                await asyncio.sleep(0.1)
+                # if audio_cog is not None:
+                audio_cog.voice_client(server)
+                if vc is not None:
+                    if (hasattr(vc, 'audio_player') and
+                            vc.audio_player.is_playing()):
+                        # We were interrupted, how rude :c
+                        # Let's be polite and destroy our queue and go home.
+                        self.audio_players[sid].stop()
+                        return
+
+            if delete:
+                os.remove(path)
 
     @commands.command(pass_context=True, no_pm=True, aliases=['gtts'])
+    @commands.cooldown(1, 1, commands.BucketType.server)
     async def tts(self, ctx, *text: str):
         """Play a TTS clip in your current channel"""
 
@@ -188,9 +229,10 @@ class SFX:
         if vchan is None:
             await self.bot.say("You are not connected to a voice channel.")
 
-        await self.enqueue_tts(vchan, " ".join(text))
+        self.enqueue_tts(vchan, " ".join(text))
 
     @commands.command(no_pm=True, pass_context=True, aliases=['playsound'])
+    @commands.cooldown(1, 1, commands.BucketType.server)
     async def sfx(self, ctx, soundname: str):
         """Plays the specified sound."""
 
@@ -245,7 +287,7 @@ class SFX:
             self.settings[server.id][soundname] = {"volume": vol}
             dataIO.save_json(self.settings_path, self.settings)
 
-        await self.enqueue_sfx(vchan, f[0], vol)
+        self.enqueue_sfx(vchan, f[0], vol=vol)
 
     @commands.command(pass_context=True, aliases=['allsounds'])
     async def allsfx(self, ctx):
@@ -262,7 +304,7 @@ class SFX:
             self.settings[server.id] = {}
             dataIO.save_json(self.settings_path, self.settings)
 
-        strbuffer = self.list_sounds(server.id)
+        strbuffer = self._list_sounds(server.id)
 
         if len(strbuffer) == 0:
             await self.bot.say(cf.warning(
@@ -328,7 +370,7 @@ class SFX:
 
         filepath = os.path.join(self.sound_base, server.id, filename)
 
-        if os.path.splitext(filename)[0] in self.list_sounds(server.id):
+        if os.path.splitext(filename)[0] in self._list_sounds(server.id):
             await self.bot.say(
                 cf.error("A sound with that filename already exists."
                          " Please change the filename and try again."))
@@ -456,33 +498,52 @@ class SFX:
 
         await self.bot.upload(f[0])
 
-    async def queue_manager(self):
+    async def _queue_manager(self):
         await self.bot.wait_until_ready()
-        try:
-            while True:
-                await self.check_queues()
-                await asyncio.sleep(0.1)
-        except asyncio.CancelledError:
-            # TODO: add better exception handling
-            pass
+        while True:
+            await asyncio.sleep(0.1)
+            # First check for empty queues
+            for slave in self.slave_tasks:
+                if (self.slave_tasks[slave] is not None and
+                        self.slave_tasks[slave].done()):
+                    # Task is not completed until:
+                    # Slave queue is empty, and timeout is reached /
+                    # vc disconnected / someone else stole vc
+                    self.slave_tasks[slave] = None
+                    self.slave_queues[slave] = None
 
-    async def check_queues(self):
+            # Next we can check for new items
+            item = None
+            try:
+                item = self.master_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                continue
+            # This does not really check to make sure the queued item
+            # is valid. Should probably check that with the enqueue function.
+            channel = self.bot.get_channel(item['cid'])
+            server = channel.server
+            sid = server.id
+            priority = item['priority']
 
-        for sid in self.queue:
-            if not self.queue[sid]:
-                # Queue is empty,hand control back to previous client if needed
-                if self.vc_buffers.get(sid) is not None:
-                    self.revive_audio(sid)
-
-            else:
-                if self.server_tasks.get(sid) is None:
-                    self.server_tasks[sid] = self.bot.loop.create_task(self.play_next_sound(sid))
-                else:
-                    if self.server_tasks[sid].done():
-                        self.server_tasks[sid] = None
+            if self.slave_tasks.get(sid) is None:
+                # Create slave queue
+                queue = asyncio.Queue(maxsize=20)
+                self.slave_queues[sid] = queue
+                self.slave_tasks[sid] = self.bot.loop.create_task(
+                                            self._slave_queue_manager(queue,
+                                                                        sid))
+            try:
+                self.slave_queues[sid].put_nowait(item)
+            except asyncio.QueueFull:
+                # It's possible to add a way to handle full queue situation.
+                pass
+        # Need to add cancelled task exception handler?
 
     def __unload(self):
         self.queue_task.cancel()
+        for slave in self.slave_tasks:
+            if self.slave_tasks[slave] is not None:
+                self.slave_tasks[slave].cancel()
 
 
 def check_folders():
@@ -490,6 +551,13 @@ def check_folders():
     if not os.path.exists(folder):
         print("Creating {} folder...".format(folder))
         os.makedirs(folder)
+    files = glob.glob(folder + '/*')
+    for f in files:
+        try:
+            os.remove(f)
+        except PermissionError:
+            print("Could not delete file '{}'. "
+                  "Check your file permissions.".format(f))
 
 
 def check_files():
@@ -502,4 +570,4 @@ def check_files():
 def setup(bot):
     check_folders()
     check_files()
-    bot.add_cog(SFX(bot))
+    bot.add_cog(Sfx(bot))
