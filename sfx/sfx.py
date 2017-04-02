@@ -1,16 +1,18 @@
-import discord
-from discord.ext import commands
-from .utils.dataIO import dataIO
-from .utils import checks, chat_formatting as cf
-from typing import List
-import random
-import os
 import asyncio
 import copy
-import random
-import os.path
-import aiohttp
 import glob
+import os
+import os.path
+import random
+from typing import List
+
+import aiohttp
+import discord
+from discord.ext import commands
+
+from .utils import chat_formatting as cf
+from .utils import checks
+from .utils.dataIO import dataIO
 
 try:
     from gtts import gTTS
@@ -34,7 +36,7 @@ class SuspendedPlayer:
         self.vc_ap = voice_client.audio_player
 
 
-class SFX:
+class Sfx:
 
     """Inject sound effects into a voice channel"""
 
@@ -53,30 +55,24 @@ class SFX:
         # Combine slave_queues and slave_tasks into a single dict, maybe
         self.slave_queues = {}
         self.slave_tasks = {}
-        self.queue_task = bot.loop.create_task(self.queue_manager())
+        self.queue_task = bot.loop.create_task(self._queue_manager())
 
-    def list_sounds(self, server_id: str) -> List[str]:
-        return sorted(
-            [os.path.splitext(s)[0] for s in os.listdir(os.path.join(
-                self.sound_base, server_id))],
-            key=lambda s: s.lower())
-
-    async def change_and_resume(self, vc, channel: discord.Channel):
-        await vc.move_to(channel)
-        vc.audio_player.resume()
-
-    async def enqueue_tts(self, vchan: discord.Channel,
-                          text: str,
-                          vol: int=None,
-                          priority: int=5,
+    # Other cogs may use the following two functions as an easy API for sfx.
+    # The function definitions probably violate every possible style guide,
+    # But I like it :)
+    def enqueue_tts(self, vchan: discord.Channel,
+                           text: str,
+                            vol: int=None,
+                       priority: int=5,
                           tchan: discord.Channel=None,
-                          language: str=None):
+                       language: str=None):
         if vol is None:
             vol = self.tts_volume
         if language is None:
             language = self.language
         tts = gTTS(text=text, lang=language)
-        path = self.temp_filepath + ''.join(random.choice('0123456789ABCDEF') for i in range(12)) + ".mp3"
+        path = self.temp_filepath + ''.join(random.choice(
+                   '0123456789ABCDEF') for i in range(12)) + ".mp3"
         tts.save(path)
 
         try:
@@ -87,11 +83,11 @@ class SFX:
         except asyncio.QueueFull:
             return False
 
-    async def enqueue_sfx(self, vchan: discord.Channel,
-                          path: str,
-                          vol: int=None,
-                          priority: int=5,
-                          delete: bool=False,
+    def enqueue_sfx(self, vchan: discord.Channel,
+                           path: str,
+                            vol: int=None,
+                       priority: int=5,
+                         delete: bool=False,
                           tchan: discord.Channel=None):
         if vol is None:
             vol = self.default_volume
@@ -103,23 +99,34 @@ class SFX:
         except asyncio.QueueFull:
             return False
 
-    def revive_audio(self, sid):
+    def _list_sounds(self, server_id: str) -> List[str]:
+        return sorted(
+            [os.path.splitext(s)[0] for s in os.listdir(os.path.join(
+                self.sound_base, server_id))],
+            key=lambda s: s.lower())
+
+    async def _change_and_resume(self, vc, channel: discord.Channel):
+        await vc.move_to(channel)
+        vc.audio_player.resume()
+
+    def _revive_audio(self, sid):
         server = self.bot.get_server(sid)
         vc_current = self.bot.voice_client_in(server)
         vc_current.audio_player = self.vc_buffers[sid].vc_ap
         vchan_old = self.vc_buffers[sid].vchan
         self.vc_buffers[sid] = None
         if vc_current.channel.id != vchan_old.id:
-            self.bot.loop.create_task(self.change_and_resume(vc_current, vchan_old))
+            self.bot.loop.create_task(self._change_and_resume(vc_current,
+                                                              vchan_old))
         else:
             vc_current.audio_player.resume()
 
-    def suspend_audio(self, vc, cid):
+    def _suspend_audio(self, vc, cid):
         channel = self.bot.get_channel(cid)
         vc.audio_player.pause()
         self.vc_buffers[channel.server.id] = SuspendedPlayer(vc)
 
-    async def slave_queue_manager(self, queue, sid):
+    async def _slave_queue_manager(self, queue, sid):
         server = self.bot.get_server(sid)
         timeout_counter = 0
         audio_cog = self.bot.get_cog('Audio')
@@ -133,10 +140,11 @@ class SFX:
                 timeout_counter += 1
                 # give back control to any prior voice clients
                 if self.vc_buffers.get(sid) is not None:
-                    self.revive_audio(sid)
+                    self._revive_audio(sid)
                 vc = self.bot.voice_client_in(server)
                 if vc is not None:
-                    if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
+                    if (hasattr(vc, 'audio_player') and
+                            vc.audio_player.is_playing()):
                         # This should not happen unless some other cog has
                         # stolen voice client so its safe to kill the task
                         return
@@ -178,8 +186,9 @@ class SFX:
 
             else:
                 # We already have a client, use it
-                if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
-                    self.suspend_audio(vc, cid)
+                if (hasattr(vc, 'audio_player') and
+                        vc.audio_player.is_playing()):
+                    self._suspend_audio(vc, cid)
 
                 if vc.channel.id != cid:
                     # It looks like this does not raise an exception if bot
@@ -195,9 +204,11 @@ class SFX:
             # Watch for audio interrupts
             while self.audio_players[sid].is_playing():
                 await asyncio.sleep(0.1)
+                # if audio_cog is not None:
                 audio_cog.voice_client(server)
                 if vc is not None:
-                    if hasattr(vc, 'audio_player') and vc.audio_player.is_playing():
+                    if (hasattr(vc, 'audio_player') and
+                            vc.audio_player.is_playing()):
                         # We were interrupted, how rude :c
                         # Let's be polite and destroy our queue and go home.
                         self.audio_players[sid].stop()
@@ -293,7 +304,7 @@ class SFX:
             self.settings[server.id] = {}
             dataIO.save_json(self.settings_path, self.settings)
 
-        strbuffer = self.list_sounds(server.id)
+        strbuffer = self._list_sounds(server.id)
 
         if len(strbuffer) == 0:
             await self.bot.say(cf.warning(
@@ -359,7 +370,7 @@ class SFX:
 
         filepath = os.path.join(self.sound_base, server.id, filename)
 
-        if os.path.splitext(filename)[0] in self.list_sounds(server.id):
+        if os.path.splitext(filename)[0] in self._list_sounds(server.id):
             await self.bot.say(
                 cf.error("A sound with that filename already exists."
                          " Please change the filename and try again."))
@@ -487,13 +498,14 @@ class SFX:
 
         await self.bot.upload(f[0])
 
-    async def queue_manager(self):
+    async def _queue_manager(self):
         await self.bot.wait_until_ready()
         while True:
             await asyncio.sleep(0.1)
             # First check for empty queues
             for slave in self.slave_tasks:
-                if self.slave_tasks[slave] is not None and self.slave_tasks[slave].done():
+                if (self.slave_tasks[slave] is not None and
+                        self.slave_tasks[slave].done()):
                     # Task is not completed until:
                     # Slave queue is empty, and timeout is reached /
                     # vc disconnected / someone else stole vc
@@ -517,7 +529,9 @@ class SFX:
                 # Create slave queue
                 queue = asyncio.Queue(maxsize=20)
                 self.slave_queues[sid] = queue
-                self.slave_tasks[sid] = self.bot.loop.create_task(self.slave_queue_manager(queue, sid))
+                self.slave_tasks[sid] = self.bot.loop.create_task(
+                                            self._slave_queue_manager(queue,
+                                                                        sid))
             try:
                 self.slave_queues[sid].put_nowait(item)
             except asyncio.QueueFull:
@@ -542,7 +556,8 @@ def check_folders():
         try:
             os.remove(f)
         except PermissionError:
-            print('Could not delete file {}. Check your file permissions.'.format(f))
+            print("Could not delete file '{}'. "
+                  "Check your file permissions.".format(f))
 
 
 def check_files():
@@ -555,4 +570,4 @@ def check_files():
 def setup(bot):
     check_folders()
     check_files()
-    bot.add_cog(SFX(bot))
+    bot.add_cog(Sfx(bot))
