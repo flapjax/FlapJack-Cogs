@@ -229,7 +229,7 @@ class Sfx:
         if vchan is None:
             await self.bot.say("You are not connected to a voice channel.")
 
-        await self.enqueue_tts(vchan, " ".join(text))
+        self.enqueue_tts(vchan, " ".join(text))
 
     @commands.command(no_pm=True, pass_context=True, aliases=['playsound'])
     @commands.cooldown(1, 1, commands.BucketType.server)
@@ -287,7 +287,7 @@ class Sfx:
             self.settings[server.id][soundname] = {"volume": vol}
             dataIO.save_json(self.settings_path, self.settings)
 
-        await self.enqueue_sfx(vchan, f[0], vol)
+        self.enqueue_sfx(vchan, f[0], vol=vol)
 
     @commands.command(pass_context=True, aliases=['allsounds'])
     async def allsfx(self, ctx):
