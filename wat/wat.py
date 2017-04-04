@@ -1,6 +1,9 @@
 import re
+
 import discord
 from discord.ext import commands
+
+from .utils.chat_formatting import escape_mass_mentions
 
 
 class Wat:
@@ -18,17 +21,20 @@ class Wat:
         content = message.content.lower().split()
         if len(content) != 1:
             return
-        pattern = re.compile(r'w+h*[aou]+t+')
-        if pattern.match(content[0]):
-            async for before in self.bot.logs_from(message.channel, limit=10,
+
+        pattern = re.compile(r'w+h*[aou]+t+[?!]*', re.IGNORECASE)
+        if pattern.fullmatch(content[0]):
+            async for before in self.bot.logs_from(message.channel, limit=5,
                                                    before=message):
                 author = before.author
                 name = author.display_name
-                content = before.clean_content
-                if not author.bot and not pattern.match(content)\
-                        and not self.is_command(before):
+                content = escape_mass_mentions(before.content)
+                if not author.bot\
+                        and not self.is_command(before)\
+                        and not author == message.author\
+                        and not pattern.fullmatch(content):
                     emoji = "\N{CHEERING MEGAPHONE}"
-                    msg = "**{0} said, {1}   {2}   {1}**".format(name, emoji,
+                    msg = "{0} said, **{1}   {2}**".format(name, emoji,
                                                                  content)
                     await self.bot.send_message(message.channel, msg)
                     break
