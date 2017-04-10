@@ -84,8 +84,6 @@ class ReactPoll:
                     p.already_voted[user.id] = str(emoji)
                     return
 
-            await self.bot.remove_reaction(message, emoji, user)
-
     def __unload(self):
         for poll in self.poll_sessions:
             if poll.wait_task is not None:
