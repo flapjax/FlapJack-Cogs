@@ -84,8 +84,6 @@ class ReactPoll:
                     p.already_voted[user.id] = str(emoji)
                     return
 
-            await self.bot.remove_reaction(message, emoji, user)
-
     def __unload(self):
         for poll in self.poll_sessions:
             if poll.wait_task is not None:
@@ -137,7 +135,7 @@ class NewReactPoll():
     async def poll_wait(self):
         await asyncio.sleep(self.duration)
         if self.valid:
-            await self.endPoll()
+            await self.endPoll(expired=True)
 
     # Override NewPoll methods for starting and stopping polls
     async def start(self):
@@ -153,9 +151,10 @@ class NewReactPoll():
 
         self.wait_task = self.client.loop.create_task(self.poll_wait())
 
-    async def endPoll(self):
+    async def endPoll(self, expired=False):
         self.valid = False
-        self.wait_task.cancel()
+        if not expired:
+            self.wait_task.cancel()
         # Need a fresh message object
         self.message = await self.client.get_message(self.channel, self.message.id)
         msg = "**POLL ENDED!**\n\n{}\n\n".format(self.question)
