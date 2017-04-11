@@ -120,7 +120,8 @@ class ColorMe:
                 return
 
             try:
-                await self.bot.move_role(server, new_role, top_role.position)
+                pos = top_role.position if top_role.position else 1
+                await self.bot.move_role(server, new_role, pos)
             except discord.Forbidden:
                 await self.bot.say("Failed to move new role. (permissions)")
                 return
