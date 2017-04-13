@@ -13,14 +13,6 @@ from .utils import checks
 from .utils.dataIO import dataIO
 
 
-# This cog creates/edits roles to let users set custom name colors.
-# Since only top_role determines the name color, things are a bit tricky.
-# Your bot must have permission to edit roles AND be placed above other roles
-# in order to edit them.
-# The bot should also have permissions that are equal to, or greather than,
-# those of the roles it is trying to edit.
-
-
 class ColorMe:
 
     """Manage the color of your own name."""
@@ -53,7 +45,7 @@ class ColorMe:
         role_copy = copy.deepcopy(roles)
         for role in role_copy:
             for member in server.members:
-                if role == member.top_role:
+                if role in member.roles:
                     roles.remove(role)
                     break
         return roles
@@ -88,48 +80,45 @@ class ColorMe:
         try:
             newcolor = converter.ColourConverter(ctx, newcolor).convert()
         except commands.BadArgument:
-            await self.bot.say("Color must be a valid hexidecimal value.")
+            await self.bot.reply("Color must be a valid hexidecimal value.")
             return
 
-        if top_role.id in protected_roles:
-            await self.bot.reply("Color changes are not permitted for your role.")
-            return
+        role_to_change = None
+        for role in member.roles:
+            if role.id in protected_roles:
+                await self.bot.reply("You have a role that is protected from "
+                                     "color changes.")
+                return
+            if self._could_be_colorme(ctx, role):
+                if role_to_change is not None:
+                    await self.bot.reply("It looks like you have more than "
+                                         "one role that can be used for "
+                                         "ColorMe, so I'm not sure which one "
+                                         "to edit. Talk to your server admin "
+                                         "about fixing this!")
+                    return
+                role_to_change = role
 
-        if not self._could_be_colorme(ctx, top_role):
+        if role_to_change is None:
             rolename = "{}#{}{}".format(name, disc, self.suffix)
             if self._already_has_colorme(ctx, rolename):
                 await self.bot.say("It looks like the server already has "
                                    "a ColorMe role for you, but it's not "
-                                   "applied to you, or it's not your top "
-                                   "role. To be safe, I'm not going to "
-                                   "make a new one. Please talk to your "
-                                   "server admin about fixing this!")
+                                   "applied to you. To be safe, I'm not "
+                                   "going to make a new one. Please talk "
+                                   "to your server admin about fixing this!")
                 return
-            # Make a new role for this person, using top role as template
+            # Make a new cosmetic role for this person
             try:
                 new_role = await self.bot.create_role(server, name=rolename,
-                                        permissions=top_role.permissions,
-                                        colour=newcolor,
-                                        hoist=False,
-                                        mentionable=top_role.mentionable)
+                                                      colour=newcolor,
+                                                      hoist=False,
+                                                      permissions=discord.Permissions.none())
             except discord.Forbidden:
                 await self.bot.say("Failed to create new role. (permissions)")
                 return
             except discord.HTTPException:
                 await self.bot.say("Failed to create new role. (request failed)")
-                return
-
-            try:
-                pos = top_role.position if top_role.position else 1
-                await self.bot.move_role(server, new_role, pos)
-            except discord.Forbidden:
-                await self.bot.say("Failed to move new role. (permissions)")
-                return
-            except discord.HTTPException:
-                await self.bot.say("Failed to move new role. (request failed)")
-                return
-            except discord.InvalidArgument:
-                await self.bot.say("Failed to move new role. (invalid position)")
                 return
 
             try:
@@ -143,11 +132,11 @@ class ColorMe:
 
             await self.bot.reply("Your new color is set.")
         else:
-            # Member's top role could already be a custom role for their name
+            # Member appears to have an existing ColorMe role
             # Need to make sure they are not sharing with someone else
-            if not self._is_sharing_role(ctx, top_role):
+            if not self._is_sharing_role(ctx, role_to_change):
                 try:
-                    await self.bot.edit_role(server, top_role, colour=newcolor)
+                    await self.bot.edit_role(server, role_to_change, colour=newcolor)
                 except discord.Forbidden:
                     await self.bot.say("Failed to edit role. (permissions)")
                     return
@@ -158,9 +147,65 @@ class ColorMe:
             else:
                 await self.bot.reply("This is odd. It looks like you have a "
                                      "valid ColorMe role, but you're sharing "
-                                     "it with one or more members. To be ",
+                                     "it with one or more members. To be "
                                      "safe, I'm not going to edit it.")
                 return
+
+    @colorme.command(name="clean", pass_context=True, no_pm=True)
+    @checks.admin_or_permissions(manage_server=True)
+    async def _clean_colorme(self, ctx: commands.Context):
+        """Clean colorme roles by removing all permissions."""
+        user = ctx.message.author
+        server = ctx.message.server
+        channel = ctx.message.channel
+        dirty_roles = []
+        emoji = ('\N{WHITE HEAVY CHECK MARK}', '\N{CROSS MARK}')
+        for role in server.role_hierarchy:
+            if self._could_be_colorme(ctx, role):
+                if role.permissions != discord.Permissions.none():
+                    dirty_roles.append(role)
+        if not dirty_roles:
+            await self.bot.say("I couldn't find any ColorMe roles "
+                               "that need to be cleaned.")
+            return
+        msg_txt = ("I have scanned the list of roles on this server. "
+                   "I have detected the following roles which were "
+                   "**possibly** created by ColorMe, but still have "
+                   "permissions attached to them. Would you like me to "
+                   "remove all permissions from these roles? If you are "
+                   "unsure, **please** cancel and manually verify the roles. "
+                   "These roles could have been created by another person or "
+                   "bot, and this action is not reversible.\n\n"
+                   "{} **to confirm**\n"
+                   "{} **to cancel**\n```".format(emoji[0], emoji[1]))
+        msg_txt += '\n'.join([role.name for role in dirty_roles]) + '```'
+        msg = await self.bot.send_message(channel, msg_txt)
+        await self.bot.add_reaction(msg, emoji[0])
+        await asyncio.sleep(0.5)
+        await self.bot.add_reaction(msg, emoji[1])
+        response = await self.bot.wait_for_reaction(emoji, user=user,
+                                              timeout=600, message=msg)
+
+        if response is None or response.reaction.emoji == emoji[1]:
+            await self.bot.clear_reactions(msg)
+            return
+
+        if response.reaction.emoji == emoji[0]:
+            await self.bot.clear_reactions(msg)
+            await self.bot.say("Cleaning roles...")
+            for role in dirty_roles:
+                await asyncio.sleep(1)
+                try:
+                    await self.bot.edit_role(server, role,
+                                        permissions=discord.Permissions.none())
+                except discord.Forbidden:
+                    await self.bot.say("Failed to edit role: "
+                                       "{} (permissions)".format(role.name))
+                except discord.HTTPException:
+                    await self.bot.say("Failed to edit role: "
+                                       "{} (request failed)".format(role.name))
+
+            await self.bot.say("Finished cleaning roles!")
 
     @colorme.command(name="purge", pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_server=True)
@@ -261,26 +306,6 @@ class ColorMe:
             await self.bot.say("Users with top role '{}' are no longer protected "
                                "from color changes.".format(role))
 
-    @colorme.command(name="defaultrole", pass_context=True, no_pm=True)
-    @checks.admin_or_permissions(manage_server=True)
-    async def _defaultrole_colorme(self, ctx, role: str):
-        """Specify a role that will automatically be granted to new members
-        when they join the server. Set to "@everyone" to disable this feature.
-        ("@everyone" is the default setting)
-
-        Example: [p]colorme defaultrole member
-        """
-        server = ctx.message.server
-        default_role = discord.utils.get(server.roles, name=role)
-        if default_role is None:
-            await self.bot.say("No roles match that name.")
-            return
-        self.load_settings(server.id)
-        self.settings[server.id]["Roles"]["Default"] = default_role.id
-        dataIO.save_json(self.settings_path, self.settings)
-        await self.bot.say("Role '{}' will be applied to each user who "
-                           "joins the server.".format(role))
-
     @colorme.command(name="listprotect", pass_context=True, no_pm=True)
     async def _listprotect_colorme(self, ctx):
         """Lists roles that are protected from color changes."""
@@ -299,17 +324,8 @@ class ColorMe:
             self.add_default_settings(server_id)
 
     def add_default_settings(self, server_id):
-        self.settings[server_id] = {"Roles": {"Protected": [],
-                                    "Default": "@everyone"}}
+        self.settings[server_id] = {"Roles": {"Protected": []}}
         dataIO.save_json(self.settings_path, self.settings)
-
-    async def member_join_listener(self, member):
-        # Backwards compatibility
-        role = discord.utils.get(member.server.roles,
-                                 id=self.settings.get(member.server.id, {})
-                                 .get("Roles", {}).get("Default"))
-        if role is not None and not role.is_everyone:
-            await self.bot.add_roles(member, role)
 
 
 def check_folders():
@@ -329,6 +345,4 @@ def check_files():
 def setup(bot):
     check_folders()
     check_files()
-    n = ColorMe(bot)
-    bot.add_cog(n)
-    bot.add_listener(n.member_join_listener, "on_member_join")
+    bot.add_cog(ColorMe(bot))
