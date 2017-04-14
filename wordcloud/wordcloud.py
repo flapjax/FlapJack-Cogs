@@ -71,10 +71,10 @@ class WordCloud:
         mask_file = self.settings.get('mask', None)
         if mask_file is not None:
             mask = np.array(Image.open(mask_file))
+        if self.settings.get('colormask', False):
             coloring = ImageColorGenerator(mask)
 
         wc = WCloud(mask=mask, color_func=coloring)
-        #wc = WCloud()
         wc.generate(text)
         cloudfile = 'data/wordcloud/clouds/' + channel.id + '.png'
         wc.to_file(cloudfile)
@@ -101,12 +101,16 @@ class WordCloud:
                                    "I will still log channels specified by "
                                    "`{}wordcloud log channel`."
                                    .format(server.name, ctx.prefix))
+            else:
+                await self.bot.say("I am already logging this server.")
         else:
             if on_off or on_off is None:
                 self.settings['servers'].append(server.id)
                 await self.bot.say("I will begin logging message content "
                                    "for word clouds in all channels I can "
                                    "see on **{}**.".format(server.name))
+            else:
+                await self.bot.say("I was not logging this server.")
         dataIO.save_json(self.settings_path, self.settings)
 
     @wordlog.command(name='channel', pass_context=True, no_pm=True)
@@ -122,12 +126,16 @@ class WordCloud:
                                    "entire server is enabled via "
                                    "`{}wordcloud log server`."
                                    .format(channel.name, ctx.prefix))
+            else:
+                await self.bot.say("I am already logging this channel.")
         else:
             if on_off or on_off is None:
                 self.settings['channels'].append(channel.id)
                 await self.bot.say("I will begin logging message content "
                                    "for word clouds in **{}**."
                                    .format(channel.name))
+            else:
+                await self.bot.say("I am not logging this channel.")
         dataIO.save_json(self.settings_path, self.settings)
 
     @commands.group(name='wordmask', pass_context=True, no_pm=True)
@@ -145,7 +153,7 @@ class WordCloud:
 
     @wordmask.command(name='set', pass_context=True, no_pm=True)
     async def _wordmask_set(self, ctx, filename: str):
-        """List image files available for masking"""
+        """Set image file for masking"""
 
         if not os.path.isfile(self.mask_folder + filename):
             await self.bot.say("That's not a valid filename.")
@@ -154,6 +162,24 @@ class WordCloud:
         self.settings['mask'] = self.mask_folder + filename
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say('Mask set to {}.'.format(filename))
+
+    @wordmask.command(name='color', pass_context=True, no_pm=True)
+    async def _wordmask_color(self, ctx, on_off: bool=None):
+        """Turn color masking on/off"""
+
+        if self.settings.setdefault('colormask', False):
+            if not on_off:  # This also catches None case
+                self.settings['colormask'] = False
+                await self.bot.say('Color masking turned off.')
+            else:
+                await self.bot.say('Color masking is already on.')
+        else:
+            if on_off or on_off is None:
+                self.settings['colormask'] = True
+                await self.bot.say('Color masking turned on.')
+            else:
+                await self.bot.say('Color masking is already off.')
+        dataIO.save_json(self.settings_path, self.settings)
 
     async def on_message(self, message):
         # For now, WordCloud will log its own message content, per server
