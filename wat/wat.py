@@ -59,6 +59,8 @@ class Wat:
         dataIO.save_json(self.settings_path, self.settings)
 
     async def on_message(self, message):
+        if message.server is None:
+            return
         if message.author.bot:
             return
         if self.is_command(message):
