@@ -76,6 +76,9 @@ class WordCloud:
         max_words = self.settings.get('maxwords', 200)
         if max_words == 0:
             max_words = 200
+        excluded = self.settings.get('excluded', [])
+        if not excluded:
+            excluded = None
 
         mask_file = self.settings.get('mask', None)
         if mask_file is not None:
@@ -84,7 +87,8 @@ class WordCloud:
             coloring = ImageColorGenerator(mask)
 
         wc = WCloud(mask=mask, color_func=coloring, mode=mode,
-                    background_color=bg_color, max_words=max_words)
+                    background_color=bg_color, max_words=max_words,
+                    stopwords=excluded)
         wc.generate(text)
         cloudfile = 'data/wordcloud/clouds/' + channel.id + '.png'
         wc.to_file(cloudfile)
@@ -214,6 +218,25 @@ class WordCloud:
         self.settings['maxwords'] = count
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say('Max words set to {}.'.format(str(count)))
+
+    @wordset.command(name='exclude', pass_context=True, no_pm=True)
+    async def _wordset_exclude(self, ctx, word: str):
+        """Add a word to the excluded list.
+        This overrides the default excluded list!"""
+
+        self.settings.setdefault('excluded', [])
+        self.settings['excluded'].append(word)
+        dataIO.save_json(self.settings_path, self.settings)
+        await self.bot.say("'{}' added to excluded words.".format(word))
+
+    @wordset.command(name='clear', pass_context=True, no_pm=True)
+    async def _wordset_clear(self, ctx):
+        """Clear the excluded word list.
+        Default excluded list will be used."""
+
+        self.settings['excluded'] = []
+        dataIO.save_json(self.settings_path, self.settings)
+        await self.bot.say("Cleared the excluded word list.")
 
     async def on_message(self, message):
         # For now, WordCloud will log its own message content, per server
