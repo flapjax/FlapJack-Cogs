@@ -59,7 +59,7 @@ class WordCloud:
         # Will need to add purging and selective word clouds later
         text = ''
         try:
-            with open(fp, 'r') as f:
+            with open(fp, mode='r', encoding='utf-8') as f:
                 for line in f:
                     text += line[22:]
         except FileNotFoundError:
