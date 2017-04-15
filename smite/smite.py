@@ -8,6 +8,7 @@ from datetime import datetime
 from json import JSONDecodeError
 import hashlib
 import aiohttp
+import pprint
 
 # Special thanks to Kunkulada for suggesting this cog and
 # contributing to the design of the embeds.
@@ -140,6 +141,109 @@ class Smite:
         embed.add_field(name='Ranked Duel', value=self.league_tier(re[0]['RankedDuel']['Tier']), inline=True)
         await self.bot.say(embed=embed)
 
+    @smite.command(name="status", pass_context=True)
+    async def _status_smite(self, ctx, name: str=None):
+        """Smite player status.
+        If name is ommitted, bot will use your name if stored.
+
+        Example: [p]smite status Kunkulada
+        """
+
+        if not await self.test_session():
+            if not await self.create_session():
+                await self.bot.say("I could not establish a connection "
+                                   "to the Smite API. Has my owner input "
+                                   "valid credentials?")
+                return
+
+        uid = ctx.message.author.id
+        if name is None:
+            if uid in self.settings['smitenames']:
+                name = self.settings['smitenames'][uid]
+            else:
+                await self.bot.say('You did not provide a name '
+                                   'and I do not have one stored for you.')
+                return
+
+        dev_id = self.settings['devid']
+        key = self.settings['authkey']
+        session = self.settings['session_id']
+        time = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+
+        m = hashlib.md5()
+        m.update(dev_id.encode('utf-8'))
+        m.update('getplayerstatus'.encode('utf-8'))
+        m.update(key.encode('utf-8'))
+        m.update(time.encode('utf-8'))
+        str_hash = m.hexdigest()
+
+        url = '/'.join([self.url_pc, 'getplayerstatusJson', dev_id, str_hash, session, time, name])
+
+        async with aiohttp.ClientSession(headers=self.header) as session:
+            async with session.get(url) as resp:
+                re = await resp.json()
+
+        # Smite - Icon by J1mB091 on DeviantArt (http://j1mb091.deviantart.com/art/Smite-Icon-314198305)
+        icon_url = 'http://orig09.deviantart.net/6fc3/f/2013/095/9/a/smite___icon_by_j1mb091-d572cyp.png'
+
+        if re[0]['status'] == 0:
+            name = 'Offline'
+        elif re[0]['status'] == 1:
+            name = 'In Lobby'
+        elif re[0]['status'] == 2:
+            name = 'God Selection'
+        elif re[0]['status'] == 3:
+            name = 'In Game'
+        elif re[0]['status'] == 4:
+            name = 'Online - No Data'
+        else:
+            await self.bot.say("I could not find information on this player.")
+
+        embed = discord.Embed(color=0x4E66A3)
+        embed.set_author(name=name, icon_url=icon_url)
+        if re[0]['status'] != 3:
+            await self.bot.say(embed=embed)
+            return
+
+        # If we reach here, player is in a game, and we can show live data
+        mid = str(re[0]['Match'])
+        session = self.settings['session_id']
+        time = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+
+        m = hashlib.md5()
+        m.update(dev_id.encode('utf-8'))
+        m.update('getmatchplayerdetails'.encode('utf-8'))
+        m.update(key.encode('utf-8'))
+        m.update(time.encode('utf-8'))
+        str_hash = m.hexdigest()
+
+        url = '/'.join([self.url_pc, 'getmatchplayerdetailsJson', dev_id, str_hash, session, time, mid])
+
+        async with aiohttp.ClientSession(headers=self.header) as session:
+            async with session.get(url) as resp:
+                re = await resp.json()
+
+        pp = pprint.PrettyPrinter()
+        pp.pprint(re)
+
+        teams = ['', '']
+
+        for player in re:
+            team = player['taskForce']-1
+            teams[team] += '\n'.join(['**' + player['playerName'] + '**',
+                                      'God: ' + player['GodName'],
+                                      'Tier: ' + self.league_tier(player['Tier']),
+                                      '\n'])
+
+        name += ' - ' + self.queue_type(re[0]['Queue'])
+        embed.set_author(name=name, icon_url=icon_url)
+        embed.add_field(name='__Team 1__', value=teams[0], inline=True)
+        embed.add_field(name='__Team 2__', value=teams[1], inline=True)
+        await self.bot.say(embed=embed)
+
+        #pp = pprint.PrettyPrinter()
+        #pp.pprint(re)
+
     def league_tier(self, tier: int):
         return {
             1: 'Bronze V',
@@ -169,6 +273,29 @@ class Smite:
             25: 'Diamond I',
             26: 'Masters I'
         }.get(tier, 'None')
+
+    def queue_type(self, queue: str):
+        return {
+            '423': 'Conquest 5v5',
+            '424': 'Novice Queue',
+            '426': 'Conquest',
+            '427': 'Practice',
+            '429': 'Conquest Challenge',
+            '430': 'Conquest Ranked',
+            '433': 'Domination',
+            '434': 'MOTD',
+            '435': 'Arena',
+            '438': 'Arena Challenge',
+            '439': 'Domination Challenge',
+            '440': 'Joust League',
+            '441': 'Joust Challenge',
+            '445': 'Assault',
+            '446': 'Assault Challenge',
+            '448': 'Joust 3v3',
+            '451': 'Conquest League',
+            '452': 'Arena League',
+            '465': 'MOTD'
+        }.get(queue, 'Unknown')
 
     async def ping(self):
 
