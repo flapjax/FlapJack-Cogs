@@ -65,16 +65,26 @@ class WordCloud:
         except FileNotFoundError:
             await self.bot.say("I couldn't find a log for this channel.")
             return
-
+        # Default settings
         mask = None
         coloring = None
+        mode = 'RGB'
+        bg_color = self.settings.get('bgcolor', 'black')
+        if bg_color == 'clear':
+            mode += 'A'
+            bg_color = None
+        max_words = self.settings.get('maxwords', 200)
+        if max_words == 0:
+            max_words = 200
+
         mask_file = self.settings.get('mask', None)
         if mask_file is not None:
             mask = np.array(Image.open(mask_file))
         if self.settings.get('colormask', False):
             coloring = ImageColorGenerator(mask)
 
-        wc = WCloud(mask=mask, color_func=coloring)
+        wc = WCloud(mask=mask, color_func=coloring, mode=mode,
+                    background_color=bg_color, max_words=max_words)
         wc.generate(text)
         cloudfile = 'data/wordcloud/clouds/' + channel.id + '.png'
         wc.to_file(cloudfile)
@@ -138,21 +148,21 @@ class WordCloud:
                 await self.bot.say("I am not logging this channel.")
         dataIO.save_json(self.settings_path, self.settings)
 
-    @commands.group(name='wordmask', pass_context=True, no_pm=True)
-    async def wordmask(self, ctx):
-        """WordCloud masking settings"""
+    @commands.group(name='wordset', pass_context=True, no_pm=True)
+    async def wordset(self, ctx):
+        """WordCloud image settings"""
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
             return
 
-    @wordmask.command(name='list', pass_context=True, no_pm=True)
-    async def _wordmask_list(self, ctx):
+    @wordset.command(name='listmask', pass_context=True, no_pm=True)
+    async def _wordset_listmask(self, ctx):
         """List image files available for masking"""
 
         await self._list_masks(ctx.message.channel)
 
-    @wordmask.command(name='set', pass_context=True, no_pm=True)
-    async def _wordmask_set(self, ctx, filename: str):
+    @wordset.command(name='setmask', pass_context=True, no_pm=True)
+    async def _wordset_setmask(self, ctx, filename: str):
         """Set image file for masking"""
 
         if not os.path.isfile(self.mask_folder + filename):
@@ -163,8 +173,15 @@ class WordCloud:
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say('Mask set to {}.'.format(filename))
 
-    @wordmask.command(name='color', pass_context=True, no_pm=True)
-    async def _wordmask_color(self, ctx, on_off: bool=None):
+    @wordset.command(name='clearmask', pass_context=True, no_pm=True)
+    async def _wordset_clearmask(self, ctx):
+        """Clear image file for masking"""
+        self.settings['mask'] = None
+        dataIO.save_json(self.settings_path, self.settings)
+        await self.bot.say('Mask set to None.')
+
+    @wordset.command(name='colormask', pass_context=True, no_pm=True)
+    async def _wordset_colormask(self, ctx, on_off: bool=None):
         """Turn color masking on/off"""
 
         if self.settings.setdefault('colormask', False):
@@ -180,6 +197,23 @@ class WordCloud:
             else:
                 await self.bot.say('Color masking is already off.')
         dataIO.save_json(self.settings_path, self.settings)
+
+    @wordset.command(name='bgcolor', pass_context=True, no_pm=True)
+    async def _wordset_bgcolor(self, ctx, color: str):
+        """Set background color. Use 'clear' for transparent."""
+        # No checks for bad colors yet
+        self.settings['bgcolor'] = color
+        dataIO.save_json(self.settings_path, self.settings)
+        await self.bot.say('Background color set to {}.'.format(color))
+
+    @wordset.command(name='maxwords', pass_context=True, no_pm=True)
+    async def _wordset_maxwords(self, ctx, count: int):
+        """Set maximum number of words to appear in the word cloud (
+        Set to 0 for default)."""
+        # No checks for bad values yet
+        self.settings['maxwords'] = count
+        dataIO.save_json(self.settings_path, self.settings)
+        await self.bot.say('Max words set to {}.'.format(str(count)))
 
     async def on_message(self, message):
         # For now, WordCloud will log its own message content, per server
