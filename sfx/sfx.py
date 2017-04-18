@@ -228,6 +228,7 @@ class Sfx:
         vchan = ctx.message.author.voice_channel
         if vchan is None:
             await self.bot.say("You are not connected to a voice channel.")
+            return
 
         self.enqueue_tts(vchan, " ".join(text))
 
@@ -241,6 +242,7 @@ class Sfx:
 
         if vchan is None:
             await self.bot.say("You are not connected to a voice channel.")
+            return
 
         if server.id not in os.listdir(self.sound_base):
             os.makedirs(os.path.join(self.sound_base, server.id))
