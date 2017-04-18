@@ -403,7 +403,7 @@ class Blizzard:
         await self.format_patch_notes(ctx, 'diablo3')
 
     @diablo3.command(name="stats", pass_context=True)
-    async def _stats_diablo3(self, ctx, tag: str=None):
+    async def _stats_diablo3(self, ctx, tag: str=None, region: str=None):
         """Diablo3 stats for your battletag.
         If battletag is ommitted, bot will use your battletag if stored.
 
@@ -411,6 +411,13 @@ class Blizzard:
         """
 
         uid = ctx.message.author.id
+
+        # Little hack to detect if region was entered, but not battletag
+        if tag is not None and tag.lower() in ['kr', 'eu', 'us', 'tw']\
+                and region is None:
+            region = tag
+            tag = None
+
         if tag is None:
             if uid in self.settings['battletags']:
                 tag = self.settings['battletags'][uid]
@@ -425,9 +432,24 @@ class Blizzard:
                                'required for Diablo 3 stats.')
             return
 
+        if region is not None:
+            region = region.lower()
+        if region == 'us':
+            locale = 'en_US'
+        elif region == 'eu':
+            locale = 'en_GB'
+        elif region == 'kr':
+            locale = 'ko_KR'
+        elif region == 'tw':
+            locale = 'zh_TW'
+        else:
+            locale = 'en_US'
+            region = 'us'
+
         key = self.settings['apikey']
         tag = tag.replace("#", "-")
-        url = 'https://us.api.battle.net/d3/profile/' + tag + '/?locale=en_US&apikey=' + key
+        url = 'https://' + region + '.api.battle.net/d3/profile/'\
+              + tag + '/?locale=' + locale + '&apikey=' + key
 
         async with aiohttp.ClientSession(headers=self.header) as session:
             async with session.get(url) as resp:
@@ -437,7 +459,7 @@ class Blizzard:
             await self.bot.say("I coulnd't find Diablo 3 stats for that battletag.")
             return
 
-        tag = tag.replace("-", "#")
+        tag = tag.replace("-", "#") + ' (' + region.upper() + ')'
         thumb_url = self.thumbs['diablo3']
 
         paragon = ''.join([':leaves:Seasonal: ', str(stats['paragonLevelSeason']),

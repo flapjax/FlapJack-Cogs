@@ -16,17 +16,9 @@ View them on the [Red Cogs Portal](https://cogs.red/cogs/flapjax/FlapJack-Cogs/)
 - **ReactPoll** - Functions exactly like Red's built-in polls, but uses numeric reactions instead of typed responses.
 - **SFX** - Inject sound effects into voice channels. Compatible with other audio, and backwards compatible with tmerc's playsound!
 - **SmartReact** - Set up automatic emoji reactions to specific words in chat. Like trigger, but with emojis.
-- **Spoiler** - Hide spoilers in chat using animated GIFs that require a mouseover.  
-
-
-## Dependencies
-
-**BlizzPatchNotes** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), [pypandoc](https://github.com/bebraw/pypandoc), and [Pandoc](http://pandoc.org/).  
-**Dongers** requires [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).  
-**gtts** requires [gTTS](https://pypi.python.org/pypi/gTTS).  
-**SFX** requires [gTTS](https://pypi.python.org/pypi/gTTS) for TTS only.  
-**Spoiler** requires [Pillow](https://python-pillow.org/).
-
+- **Smite** - Smite statistics using the official Smite API.
+- **Spoiler** - Hide spoilers in chat using animated GIFs that require a mouseover.
+- **Wat** - Assist users who have trouble 'hearing' what people type! :)
 
 ## Contact Me
 
