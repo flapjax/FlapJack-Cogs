@@ -1,7 +1,9 @@
+import os
+import random
+import textwrap
+
 import discord
 from discord.ext import commands
-import os
-import textwrap
 
 try:
     from PIL import Image, ImageDraw, ImageFont
@@ -16,11 +18,9 @@ class Spoiler:
 
     def __init__(self, bot):
         self.bot = bot
-        self.temp_filepath = "data/spoiler/spoiler.gif"
+        self.temp_filepath = "data/spoiler/"
         self.line_length = 40
-        self.base_height = 18
-        self.width = 300
-        self.margin = (9, 9)
+        self.margin = (5, 5)
         self.font = "data/spoiler/UbuntuMono-Regular.ttf"
         self.font_size = 14
         self.font_color = 150
@@ -48,27 +48,43 @@ class Spoiler:
                                "in `/data/spoiler/`")
             return
 
-        spoils = '\n'.join(['\n'.join(textwrap.wrap(line, self.line_length,
-                                                    replace_whitespace=False))
-                            for line in text.splitlines()])
+        spoil_lines = []
+        for line in text.splitlines():
+            spoil_lines.extend(textwrap.wrap(line, self.line_length,
+                                             replace_whitespace=False))
 
-        height = self.base_height * (spoils.count('\n') + 1)
-        width = self.width
+        title = "Mouseover to reveal spoiler"
+        width = fnt.getsize(title)[0] + 50
+        height = 0
+
+        for line in spoil_lines:
+            size = fnt.getsize(line)
+            width = max(width, size[0])
+            height += size[1] + 2
+
+        width += self.margin[0]*2
+        height += self.margin[1]*2
+
+        spoils = '\n'.join(spoil_lines)
 
         spoil_img = [self.new_image(width, height) for _ in range(2)]
-        spoil_text = ["Mouseover to reveal spoiler", spoils]
+        spoil_text = [title, spoils]
 
         for img, txt in zip(spoil_img, spoil_text):
             canvas = ImageDraw.Draw(img)
-            canvas.text(self.margin, txt, font=fnt, fill=self.font_color)
+            canvas.text(self.margin, txt, font=fnt, fill=self.font_color, 
+                        spacing=4)
 
-        spoil_img[0].save(self.temp_filepath, format="GIF", save_all=True,
+        path = self.temp_filepath + ''.join(random.choice(
+                   '0123456789ABCDEF') for i in range(12)) + ".gif"
+
+        spoil_img[0].save(path, format="GIF", save_all=True,
                           append_images=[spoil_img[1]],
                           duration=[0, 0xFFFF], loop=0)
         content = "**" + author + "** posted this spoiler:"
-        await self.bot.send_file(ctx.message.channel, self.temp_filepath,
+        await self.bot.send_file(ctx.message.channel, path,
                                  content=content)
-        os.remove(self.temp_filepath)
+        os.remove(path)
 
     def new_image(self, width, height):
         return Image.new("L", (width, height), self.bg_color)
