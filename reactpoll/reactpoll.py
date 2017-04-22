@@ -25,6 +25,8 @@ class ReactPoll:
         rpoll Is this a poll?;Yes;No;Maybe;t=60
         rpoll stop"""
         message = ctx.message
+        channel = message.channel
+        server = message.server
         if len(text) == 1:
             if text[0].lower() == "stop":
                 await self.endpoll(message)
@@ -34,7 +36,12 @@ class ReactPoll:
             if "@everyone" in check or "@here" in check:
                 await self.bot.say("Nice try.")
                 return
-            p = NewReactPoll(message, self)
+            if not channel.permissions_for(server.me).manage_messages:
+                await self.bot.say("I require the 'Manage Messages' "
+                                   "permission in this channel to conduct "
+                                   "a reaction poll.")
+                return
+            p = NewReactPoll(message, " ".join(text), self)
             if p.valid:
                 self.poll_sessions.append(p)
                 await p.start()
@@ -93,15 +100,14 @@ class ReactPoll:
 class NewReactPoll():
     # This can be made a subclass of NewPoll()
 
-    def __init__(self, message, main):
+    def __init__(self, message, text, main):
         self.channel = message.channel
         self.author = message.author.id
         self.client = main.bot
         self.poll_sessions = main.poll_sessions
         self.duration = 60  # Default duration
         self.wait_task = None
-        msg = message.content[6:]
-        msg = msg.split(";")
+        msg = [ans.strip() for ans in text.split(";")]
         # Detect optional duration parameter
         if len(msg[-1].strip().split("t=")) == 2:
             dur = msg[-1].strip().split("t=")[1]
@@ -160,9 +166,8 @@ class NewReactPoll():
         msg = "**POLL ENDED!**\n\n{}\n\n".format(self.question)
         for reaction in self.message.reactions:
             if reaction.emoji in self.emojis:
-                # Oh god what a terrible hack
-                # Please I can explain
                 self.answers[ord(reaction.emoji[0])-48]["VOTES"] = reaction.count - 1
+        await self.client.clear_reactions(self.message)
         cur_max = 0 # Track the winning number of votes
         # Double iteration probably not the fastest way, but works for now
         for data in self.answers.values():
