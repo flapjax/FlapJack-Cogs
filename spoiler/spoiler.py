@@ -27,7 +27,7 @@ class Spoiler:
         self.bg_color = 20
 
     @commands.command(pass_context=True, no_pm=True)
-    async def spoiler(self, ctx, *text: str):
+    async def spoiler(self, ctx, *, text: str):
         """Use an animated gif to hide spoiler text"""
 
         message = ctx.message
@@ -48,17 +48,19 @@ class Spoiler:
                                "in `/data/spoiler/`")
             return
 
-        text = textwrap.wrap(" ".join(text), width=self.line_length)
-        height = self.base_height * (len(text) + 1)
-        width = self.width
-        spoil_text = ["Mouseover to reveal spoiler",
-                      "\n".join(text)]
-        spoil_img = [Image.new("L", (width, height), self.bg_color),
-                     Image.new("L", (width, height), self.bg_color)]
+        spoils = '\n'.join(['\n'.join(textwrap.wrap(line, self.line_length,
+                                                    replace_whitespace=False))
+                            for line in text.splitlines()])
 
-        for i in range(0, 2):
-            ImageDraw.Draw(spoil_img[i]).text(self.margin, spoil_text[i],
-                                              font=fnt, fill=self.font_color)
+        height = self.base_height * (spoils.count('\n') + 1)
+        width = self.width
+
+        spoil_img = [self.new_image(width, height) for _ in range(2)]
+        spoil_text = ["Mouseover to reveal spoiler", spoils]
+
+        for img, txt in zip(spoil_img, spoil_text):
+            canvas = ImageDraw.Draw(img)
+            canvas.text(self.margin, txt, font=fnt, fill=self.font_color)
 
         spoil_img[0].save(self.temp_filepath, format="GIF", save_all=True,
                           append_images=[spoil_img[1]],
@@ -67,6 +69,9 @@ class Spoiler:
         await self.bot.send_file(ctx.message.channel, self.temp_filepath,
                                  content=content)
         os.remove(self.temp_filepath)
+
+    def new_image(self, width, height):
+        return Image.new("L", (width, height), self.bg_color)
 
 
 def check_folders():
