@@ -19,7 +19,7 @@ class Spoiler:
     def __init__(self, bot):
         self.bot = bot
         self.temp_filepath = "data/spoiler/"
-        self.line_length = 40
+        self.line_length = 60
         self.margin = (5, 5)
         self.font = "data/spoiler/UbuntuMono-Regular.ttf"
         self.font_size = 14
