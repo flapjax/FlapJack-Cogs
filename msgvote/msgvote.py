@@ -1,18 +1,22 @@
-import discord
-from discord.ext import commands
-from cogs.utils import checks
-from __main__ import send_cmd_help
-from .utils.dataIO import dataIO
 import asyncio
 import os
+from datetime import datetime
 
-# Credit to JennJenn#6857 for jokingly suggesting this cancer cog!
-# I accept no responsibility for this.
+import discord
+from discord.ext import commands
+
+from __main__ import send_cmd_help
+from cogs.utils import checks
+
+from .utils.dataIO import dataIO
+
+# Credit to JennJenn#6857 for thinking up this cog.
+# It started as a joke, and people actualy use it! Who knew?
 
 
 class Msgvote:
 
-    """Turn Discord into Reddit (not recommended)"""
+    """Turn Discord channels into Reddit-like threads"""
 
     def __init__(self, bot):
         self.bot = bot
@@ -72,32 +76,15 @@ class Msgvote:
     @msgvote.command(name="duration", pass_context=True, no_pm=True)
     async def _msgvote_duration(self, ctx, duration: int):
         """Set the duration in seconds for which votes will be monitored
-        on each message. Must be an integer between 60-3600. For best results,
-        make your duration divisible by the interval."""
+        on each message."""
 
-        if 60 <= duration <= 3600:
+        if duration > 0:
             self.settings["duration"] = duration
             dataIO.save_json(self.settings_path, self.settings)
             await self.bot.say("I will monitor each message's votes until it "
                                "is {} seconds old.".format(duration))
         else:
-            await self.bot.say("Invalid duration. Must be an integer "
-                               "between 60-3600.")
-
-    @msgvote.command(name="interval", pass_context=True, no_pm=True)
-    async def _msgvote_interval(self, ctx, interval: int):
-        """Set the interval in seconds between checks for message votes
-        on each message. Must be an integer between 1-60. For best results,
-        make your duration divisible by the interval."""
-
-        if 1 <= interval <= 60:
-            self.settings["interval"] = interval
-            dataIO.save_json(self.settings_path, self.settings)
-            await self.bot.say("I will check each message's votes every "
-                               "{} seconds.".format(interval))
-        else:
-            await self.bot.say("Invalid interval. Must be an integer "
-                               "between 1-60.")
+            await self.bot.say("Invalid duration. Must be a positive integer.")
 
     @msgvote.command(name="threshold", pass_context=True, no_pm=True)
     async def _msgvote_threshold(self, ctx, threshold: int):
@@ -133,35 +120,7 @@ class Msgvote:
                 return True
         return False
 
-    # For high activity servers, it is probably better to accomplish this
-    # through an on_reaction listener. I will change this soon.
-    # I just wanted to experiment with tasks at the moment :)
-    async def count_votes(self, channel, msg_id: str):
-        timer = 0
-        up_emoji = self.fix_custom_emoji(channel.server, self.settings["up_emoji"])
-        dn_emoji = self.fix_custom_emoji(channel.server, self.settings["dn_emoji"])
-        while timer < self.settings["duration"]:
-            await asyncio.sleep(self.settings["interval"])
-            timer += self.settings["interval"]
-            # Count current votes
-            msg = await self.bot.get_message(channel, msg_id)
-            for reaction in msg.reactions:
-                if reaction.emoji == up_emoji:
-                    upvotes = reaction.count
-                elif reaction.emoji == dn_emoji:
-                    dnvotes = reaction.count
-
-            if self.settings["threshold"] == 0:
-                pass
-            elif (dnvotes - upvotes) >= self.settings["threshold"]:
-                try:
-                    await self.bot.delete_message(msg)
-                except discord.errors.Forbidden:
-                    await self.bot.send_message(channel, "I require the 'manage messages' permission "
-                                                "to delete downvoted messages!")
-                return
-
-    async def msg_listener(self, message):
+    async def on_message(self, message):
         if message.channel.id not in self.settings["channels_enabled"]:
             return
         if message.author == self.bot.user:
@@ -169,12 +128,55 @@ class Msgvote:
         if self.is_command(message):
             return
         try:
-            await self.bot.add_reaction(message, self.fix_custom_emoji(message.server, self.settings["up_emoji"]))
-            await self.bot.add_reaction(message, self.fix_custom_emoji(message.server, self.settings["dn_emoji"]))
-            self.bot.loop.create_task(self.count_votes(message.channel, message.id))
+            up_emoji = self.fix_custom_emoji(message.server,
+                                             self.settings["up_emoji"])
+            dn_emoji = self.fix_custom_emoji(message.server,
+                                             self.settings["dn_emoji"])
+            await self.bot.add_reaction(message, up_emoji)
+            await asyncio.sleep(0.5)
+            await self.bot.add_reaction(message, dn_emoji)
         except discord.errors.HTTPException:
             # Implement a non-spammy way to alert users in future
             pass
+
+    async def on_reaction_add(self, reaction, user):
+        if user == self.bot.user:
+            return
+        await self.count_votes(reaction)
+
+    async def on_reaction_remove(self, reaction, user):
+        if user == self.bot.user:
+            return
+        await self.count_votes(reaction)
+
+    async def count_votes(self, reaction):
+        message = reaction.message
+        if self.settings["threshold"] == 0:
+            return
+        if message.channel.id not in self.settings["channels_enabled"]:
+            return
+        up_emoji = self.fix_custom_emoji(message.server,
+                                         self.settings["up_emoji"])
+        dn_emoji = self.fix_custom_emoji(message.server,
+                                         self.settings["dn_emoji"])
+        if reaction.emoji not in (up_emoji, dn_emoji):
+            return
+        age = (datetime.utcnow() - message.timestamp).total_seconds()
+        if age > self.settings["duration"]:
+            return
+        # We have a valid vote so we can count the votes now
+        for react in message.reactions:
+            if react.emoji == up_emoji:
+                upvotes = react.count
+            elif react.emoji == dn_emoji:
+                dnvotes = react.count
+        if (dnvotes - upvotes) >= self.settings["threshold"]:
+            try:
+                await self.bot.delete_message(message)
+            except discord.errors.Forbidden:
+                await self.bot.send_message(channel, "I require the 'Manage "
+                                            "Messages' permission to delete "
+                                            "downvoted messages!")
 
 
 def check_folders():
@@ -186,7 +188,8 @@ def check_folders():
 
 def check_files():
     default = {"channels_enabled": [], "duration": 300, "threshold": 3,
-               "interval": 5, "up_emoji": "\ud83d\udc4d", "dn_emoji": "\ud83d\udc4e"}
+               "up_emoji": "\ud83d\udc4d",
+               "dn_emoji": "\ud83d\udc4e"}
     if not dataIO.is_valid_json("data/msgvote/settings.json"):
         print("Creating default msgvote settings.json...")
         dataIO.save_json("data/msgvote/settings.json", default)
@@ -195,6 +198,4 @@ def check_files():
 def setup(bot):
     check_folders()
     check_files()
-    n = Msgvote(bot)
-    bot.add_cog(n)
-    bot.add_listener(n.msg_listener, "on_message")
+    bot.add_cog(Msgvote(bot))
