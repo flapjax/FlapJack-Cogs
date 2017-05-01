@@ -37,7 +37,6 @@ class MuxedSource(discord.AudioSource):
 
         if not frames:
             return None
-
         elif len(frames) == 1:
             return frames[0]
         elif len(frames) == 2:
@@ -138,7 +137,7 @@ class Sfx:
                     timeout_counter = 0
                     continue
                 timeout_counter += 1
-                if timeout_counter > 10 and vc is not None:
+                if timeout_counter > 3000 and vc is not None:
                     await vc.disconnect()
                     return
                 continue
@@ -163,8 +162,11 @@ class Sfx:
 
                 vc.play(MuxedSource(FFmpegPCMAudio(path)))
 
+            elif not vc.is_playing():
+                # Have voice client but it is not playing
+                vc.play(MuxedSource(FFmpegPCMAudio(path)))
             else:
-                # Already have a voice client.
+                # Have voice client and it is playing
                 if not isinstance(vc.source, MuxedSource):
                     vc.source = MuxedSource(vc.source)
                 vc.source.mux(FFmpegPCMAudio(path))
