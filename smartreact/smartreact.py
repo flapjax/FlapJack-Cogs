@@ -1,9 +1,7 @@
 import copy
-import os
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import converter
 
 from core.utils import helpers
 
@@ -35,8 +33,11 @@ class SmartReact:
     def fix_custom_emoji(self, emoji):
         if emoji[:2] != "<:":
             return emoji
-        # Need to address IndexError for invalid emojis
-        return [r for guild in self.bot.guilds for r in guild.emojis if str(r.id) == emoji.split(':')[2][:-1]][0]
+        for guild in self.bot.guilds:
+            for e in guild.emojis:
+                if str(e.id) == emoji.split(':')[2][:-1]:
+                    return e
+        return None
 
     async def create_smart_reaction(self, guild, word, emoji, message):
         try:
@@ -48,7 +49,6 @@ class SmartReact:
                 if word.lower() in entry:
                     await message.channel.send("This smart reaction already exists.")
                     return
-                print(entry)
                 entry.append(word.lower())
                 await self.settings.set(guild, emoji, entry)
             else:
@@ -56,7 +56,7 @@ class SmartReact:
 
             await message.channel.send("Successfully added this reaction.")
 
-        except discord.errors.HTTPException:
+        except (discord.errors.HTTPException, discord.errors.InvalidArgument):
             await message.channel.send("That's not an emoji I recognize. "
                                        "(might be custom!)")
 
@@ -77,12 +77,11 @@ class SmartReact:
                 await message.channel.send("There are no smart reactions which use "
                                            "this emoji.")
 
-        except discord.errors.HTTPException:
+        except (discord.errors.HTTPException, discord.errors.InvalidArgument):
             await self.bot.say("That's not an emoji I recognize. "
                                "(might be custom!)")
 
-    # Special thanks to irdumb#1229 on discord for helping me make this method
-    # "more Pythonic"
+    # Thanks irdumb#1229 for the help making this "more Pythonic"
     async def on_message(self, message):
         if message.author == self.bot.user:
             return
