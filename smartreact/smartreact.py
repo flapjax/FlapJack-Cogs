@@ -1,8 +1,11 @@
-import os
-import discord
 import copy
+import os
+
+import discord
 from discord.ext import commands
-from .utils.dataIO import dataIO
+from discord.ext.commands import converter
+
+from core.utils import helpers
 
 
 class SmartReact:
@@ -11,87 +14,68 @@ class SmartReact:
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings_path = "data/smartreact/settings.json"
-        self.settings = dataIO.load_json(self.settings_path)
+        self.settings = helpers.JsonGuildDB("cogs/smartreact/data/settings.json")
 
-    @commands.command(name="addreact", no_pm=True, pass_context=True)
+    @commands.command(name="addreact", no_pm=True)
     async def addreact(self, ctx, word, emoji):
         """Add an auto reaction to a word"""
-        server = ctx.message.server
+        guild = ctx.message.guild
         message = ctx.message
-        self.load_settings(server.id)
         emoji = self.fix_custom_emoji(emoji)
-        await self.create_smart_reaction(server, word, emoji, message)
+        await self.create_smart_reaction(guild, word, emoji, message)
 
     @commands.command(name="delreact", no_pm=True, pass_context=True)
     async def delreact(self, ctx, word, emoji):
         """Delete an auto reaction to a word"""
-        server = ctx.message.server
+        guild = ctx.message.guild
         message = ctx.message
-        self.load_settings(server.id)
         emoji = self.fix_custom_emoji(emoji)
-        await self.remove_smart_reaction(server, word, emoji, message)
-
-    def load_settings(self, server_id):
-        self.settings = dataIO.load_json(self.settings_path)
-        if server_id not in self.settings.keys():
-            self.add_default_settings(server_id)
-
-    def add_default_settings(self, server_id):
-        self.settings[server_id] = {}
-        dataIO.save_json(self.settings_path, self.settings)
+        await self.remove_smart_reaction(guild, word, emoji, message)
 
     def fix_custom_emoji(self, emoji):
         if emoji[:2] != "<:":
             return emoji
-        return [r for server in self.bot.servers for r in server.emojis if r.id == emoji.split(':')[2][:-1]][0]
+        # Need to address IndexError for invalid emojis
+        return [r for guild in self.bot.guilds for r in guild.emojis if str(r.id) == emoji.split(':')[2][:-1]][0]
 
-    # From Twentysix26's trigger.py cog
-    def is_command(self, msg):
-        if callable(self.bot.command_prefix):
-            prefixes = self.bot.command_prefix(self.bot, msg)
-        else:
-            prefixes = self.bot.command_prefix
-        for p in prefixes:
-            if msg.content.startswith(p):
-                return True
-        return False
-
-    async def create_smart_reaction(self, server, word, emoji, message):
+    async def create_smart_reaction(self, guild, word, emoji, message):
         try:
             # Use the reaction to see if it's valid
-            await self.bot.add_reaction(message, emoji)
-            if str(emoji) in self.settings[server.id]:
-                if word.lower() in self.settings[server.id][str(emoji)]:
-                    await self.bot.say("This smart reaction already exists.")
+            await message.add_reaction(emoji)
+            emoji = str(emoji)
+            entry = self.settings.get(guild, emoji)
+            if entry:
+                if word.lower() in entry:
+                    await message.channel.send("This smart reaction already exists.")
                     return
-                self.settings[server.id][str(emoji)].append(word.lower())
+                print(entry)
+                entry.append(word.lower())
+                await self.settings.set(guild, emoji, entry)
             else:
-                self.settings[server.id][str(emoji)] = [word.lower()]
+                await self.settings.set(guild, emoji, [word.lower()])
 
-            await self.bot.say("Successfully added this reaction.")
-            dataIO.save_json(self.settings_path, self.settings)
+            await message.channel.send("Successfully added this reaction.")
 
         except discord.errors.HTTPException:
-            await self.bot.say("That's not an emoji I recognize. "
-                               "(might be custom!)")
+            await message.channel.send("That's not an emoji I recognize. "
+                                       "(might be custom!)")
 
-    async def remove_smart_reaction(self, server, word, emoji, message):
+    async def remove_smart_reaction(self, guild, word, emoji, message):
         try:
             # Use the reaction to see if it's valid
-            await self.bot.add_reaction(message, emoji)
-            if str(emoji) in self.settings[server.id]:
-                if word.lower() in self.settings[server.id][str(emoji)]:
-                    self.settings[server.id][str(emoji)].remove(word.lower())
-                    await self.bot.say("Removed this smart reaction.")
+            await message.add_reaction(emoji)
+            emoji = str(emoji)
+            entry = self.settings.get(guild, emoji)
+            if entry:
+                if word.lower() in entry:
+                    await self.settings.set(guild, emoji, entry.remove(word.lower()))
+                    await message.channel.send("Removed this smart reaction.")
                 else:
-                    await self.bot.say("That emoji is not used as a reaction "
-                                       "for that word.")
+                    await message.channel.send("That emoji is not used as a reaction "
+                                               "for that word.")
             else:
-                await self.bot.say("There are no smart reactions which use "
-                                   "this emoji.")
-
-            dataIO.save_json(self.settings_path, self.settings)
+                await message.channel.send("There are no smart reactions which use "
+                                           "this emoji.")
 
         except discord.errors.HTTPException:
             await self.bot.say("That's not an emoji I recognize. "
@@ -99,38 +83,15 @@ class SmartReact:
 
     # Special thanks to irdumb#1229 on discord for helping me make this method
     # "more Pythonic"
-    async def msg_listener(self, message):
+    async def on_message(self, message):
         if message.author == self.bot.user:
             return
-        if self.is_command(message):
+        guild = message.guild
+        reacts = copy.deepcopy(self.settings.get_all(guild))
+        if reacts is None:
             return
-        server = message.server
-        if server.id not in self.settings.keys():
-            return
-        react_dict = copy.deepcopy(self.settings[server.id])
         words = message.content.lower().split()
-        for emoji in react_dict:
-            if set(w.lower() for w in react_dict[emoji]).intersection(words):
-                await self.bot.add_reaction(message, self.fix_custom_emoji(emoji))
-
-
-def check_folders():
-    folder = "data/smartreact"
-    if not os.path.exists(folder):
-        print("Creating {} folder...".format(folder))
-        os.makedirs(folder)
-
-
-def check_files():
-    default = {}
-    if not dataIO.is_valid_json("data/smartreact/settings.json"):
-        print("Creating default smartreact settings.json...")
-        dataIO.save_json("data/smartreact/settings.json", default)
-
-
-def setup(bot):
-    check_folders()
-    check_files()
-    n = SmartReact(bot)
-    bot.add_cog(n)
-    bot.add_listener(n.msg_listener, "on_message")
+        for emoji in reacts:
+            if set(w.lower() for w in reacts[emoji]).intersection(words):
+                emoji = self.fix_custom_emoji(emoji)
+                await message.add_reaction(emoji)
