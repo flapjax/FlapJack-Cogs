@@ -12,7 +12,7 @@ class SmartReact:
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings = helpers.JsonGuildDB("cogs/smartreact/data/settings.json")
+        self.settings = helpers.JsonGuildDB("data/settings.json")
 
     @commands.command(name="addreact", no_pm=True)
     async def addreact(self, ctx, word, emoji):
