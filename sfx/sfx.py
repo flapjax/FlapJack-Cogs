@@ -57,8 +57,7 @@ class Sfx:
 
     def __init__(self, bot):
         self.bot = bot
-        self.json = helpers.JsonDB("cogs/sfx/data/settings.json",
-                                   create_dirs=True)
+        self.json = helpers.JsonDB("data/settings.json")
         self.audio_players = {}
         self.sound_base = "cogs/sfx/data/sfx"
         self.temp_filepath = self.sound_base + "/temp/"
