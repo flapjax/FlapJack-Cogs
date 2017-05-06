@@ -55,6 +55,18 @@ class Msgvote:
             dataIO.save_json(self.settings_path, self.settings)
             await self.bot.say("Msgvote mode is now off in this channel.")
 
+    @msgvote.command(name="bot", pass_context=True, no_pm=True)
+    async def _msgvote_bot(self, ctx):
+        """Turn on/off reactions to bot's own messages"""
+
+        if self.settings.get("bot", False):
+            self.settings["bot"] = False
+            await self.bot.say("Reactions to bot messages turned OFF.")
+        else:
+            self.settings["bot"] = True
+            await self.bot.say("Reactions to bot messages turned ON.")
+        dataIO.save_json(self.settings_path, self.settings)
+
     @msgvote.command(name="upemoji", pass_context=True, no_pm=True)
     async def _msgvote_upemoji(self, ctx, emoji):
         """Set the upvote emoji"""
@@ -123,7 +135,7 @@ class Msgvote:
     async def on_message(self, message):
         if message.channel.id not in self.settings["channels_enabled"]:
             return
-        if message.author == self.bot.user:
+        if message.author == self.bot.user and not self.settings.get("bot", False):
             return
         if self.is_command(message):
             return
