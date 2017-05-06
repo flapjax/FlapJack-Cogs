@@ -1,14 +1,15 @@
 import asyncio
 import os
 import re
+from copy import copy
+from numbers import Number
 
 import aiohttp
 import discord
-from discord.ext import commands
-from discord.ext.commands import formatter
-
 from __main__ import send_cmd_help
 from cogs.utils import checks
+from discord.ext import commands
+from discord.ext.commands import formatter
 
 from .utils.dataIO import dataIO
 
@@ -134,6 +135,17 @@ class Blizzard:
             timeout=timeout,
             emoji=emoji,
             message=message)
+
+    def dictgrab(self, my_dict, *keys):
+        temp_dict = copy(my_dict)
+        for key in keys:
+            temp_dict = temp_dict.get(key)
+            if temp_dict is None:
+                return '-'
+        if isinstance(temp_dict, Number):
+            return str(round(temp_dict))
+        else:
+            return '-'
 
     @commands.group(name="blizzard", pass_context=True)
     async def blizzard(self, ctx):
@@ -305,11 +317,11 @@ class Blizzard:
             thumb_url = self.thumbs['overwatch']
         else:
             thumb_url = qplay['overall_stats']['avatar']
-            qplay_stats = ''.join(['**Wins:** ', str(int(round(qplay['game_stats']['games_won']))),
-                                   '\n**Avg Elim:** ', str(int(round(qplay['average_stats']['eliminations_avg']))),
-                                   '\n**Avg Death:** ', str(int(round(qplay['average_stats']['deaths_avg']))),
-                                   '\n**Avg Dmg:** ', str(int(round(qplay['average_stats']['damage_done_avg']))),
-                                   '\n**Avg Heal:** ', str(int(round(qplay['average_stats']['healing_done_avg'])))])
+            qplay_stats = ''.join(['**Wins:** ', self.dictgrab(qplay, 'game_stats', 'games_won'),
+                                   '\n**Avg Elim:** ', self.dictgrab(qplay, 'average_stats', 'eliminations_avg'),
+                                   '\n**Avg Death:** ', self.dictgrab(qplay, 'average_stats', 'deaths_avg'),
+                                   '\n**Avg Dmg:** ', self.dictgrab(qplay, 'average_stats', 'damage_done_avg'),
+                                   '\n**Avg Heal:** ', self.dictgrab(qplay, 'average_stats', 'healing_done_avg')])
 
         comp = stats[region]['stats']['competitive']
         footer = None
@@ -322,11 +334,11 @@ class Blizzard:
         else:
             tier = comp['overall_stats']['tier']
             footer = 'SR: ' + str(comp['overall_stats']['comprank'])
-            comp_stats = ''.join(['**Wins:** ', str(int(round(comp['game_stats']['games_won']))),
-                                  '\n**Avg Elim:** ', str(int(round(comp['average_stats']['eliminations_avg']))),
-                                  '\n**Avg Death:** ', str(int(round(comp['average_stats']['deaths_avg']))),
-                                  '\n**Avg Dmg:** ', str(int(round(comp['average_stats']['damage_done_avg']))),
-                                  '\n**Avg Heal:** ', str(int(round(comp['average_stats']['healing_done_avg'])))])
+            comp_stats = ''.join(['**Wins:** ', self.dictgrab(comp, 'game_stats', 'games_won'),
+                                  '\n**Avg Elim:** ', self.dictgrab(comp, 'average_stats', 'eliminations_avg'),
+                                  '\n**Avg Death:** ', self.dictgrab(comp, 'average_stats', 'deaths_avg'),
+                                  '\n**Avg Dmg:** ', self.dictgrab(comp, 'average_stats', 'damage_done_avg'),
+                                  '\n**Avg Heal:** ', self.dictgrab(comp, 'average_stats', 'healing_done_avg')])
 
         icon_url = self.ow_tier_icon(tier)
 
