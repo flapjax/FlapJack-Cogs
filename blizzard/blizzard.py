@@ -1,28 +1,20 @@
 import asyncio
 import os
 import re
+from copy import copy
+from numbers import Number
 
 import aiohttp
 import discord
 from discord.ext import commands
 from discord.ext.commands import formatter
 
-from __main__ import send_cmd_help
-from cogs.utils import checks
+import bleach
+from bs4 import BeautifulSoup
+#from __main__ import send_cmd_help
+from core import checks
+from core.utils import helpers
 
-from .utils.dataIO import dataIO
-
-try:
-    from bs4 import BeautifulSoup
-    soup_available = True
-except:
-    soup_available = False
-
-try:
-    import bleach
-    bleach_available = True
-except:
-    bleach_available = False
 
 # Special thanks to judge2020 for telling me about this method for getting
 # patch notes. https://github.com/judge2020/BattleNetUpdateChecker
@@ -36,8 +28,7 @@ class Blizzard:
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.settings_path = "data/blizzard/settings.json"
-        self.settings = dataIO.load_json(self.settings_path)
+        self.settings = helpers.JsonDB("data/settings.json")
         self.base_url = 'https://us.battle.net/connect/en/app/'
         self.product_url = '/patch-notes?productType='
         self.wowtoken_url = 'https://wowtoken.info/'
@@ -77,10 +68,9 @@ class Blizzard:
 
     async def show_menu(self, ctx, message, messages, page):
         if message:
-            return await self.bot.edit_message(message, messages[page])
+            return await message.edit(messages[page])
         else:
-            return await self.bot.send_message(ctx.message.channel,
-                                               messages[page])
+            return await ctx.send(messages[page])
 
     async def _info_menu(self, ctx, messages, **kwargs):
         page = kwargs.get("page", 0)
@@ -94,10 +84,11 @@ class Blizzard:
         message = await self.show_menu(ctx, message, messages, page)
 
         if reactions_needed:
-            await self.bot.add_reaction(message, str(emoji['back']))
-            await self.bot.add_reaction(message, str(emoji['no']))
-            await self.bot.add_reaction(message, str(emoji['next']))
+            await ctx.message.add_reaction(str(emoji['back']))
+            await ctx.message.add_reaction(str(emoji['no']))
+            await ctx.message.add_reaction(str(emoji['next']))
 
+        # Needs update
         r = await self.bot.wait_for_reaction(
             message=message,
             user=ctx.message.author,
@@ -122,10 +113,10 @@ class Blizzard:
             page = 0
 
         try:
-            await self.bot.remove_reaction(message, emoji[react], r.user)
+            await message.remove_reaction(emoji[react], r.user)
         except discord.errors.Forbidden:
-            await self.bot.say('I require the "manage messages" permission '
-                               'to make these menus work.')
+            await ctx.send('I require the "manage messages" permission '
+                           'to make these menus work.')
             return ["no", message]
 
         return await self._info_menu(
@@ -135,12 +126,23 @@ class Blizzard:
             emoji=emoji,
             message=message)
 
+    def dictgrab(self, my_dict, *keys):
+        temp_dict = copy(my_dict)
+        for key in keys:
+            temp_dict = temp_dict.get(key)
+            if temp_dict is None:
+                return '-'
+        if isinstance(temp_dict, Number):
+            return str(round(temp_dict))
+        else:
+            return '-'
+
     @commands.group(name="blizzard", pass_context=True)
     async def blizzard(self, ctx):
         """Change blizzard cog settings."""
 
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+        #if ctx.invoked_subcommand is None:
+        #    await send_cmd_help(ctx)
 
     @blizzard.command(name="apikey", pass_context=True)
     @checks.is_owner()
@@ -149,9 +151,8 @@ class Blizzard:
         (get one at https://dev.battle.net/)
         Use a direct message to keep the key secret."""
 
-        self.settings['apikey'] = key
-        dataIO.save_json(self.settings_path, self.settings)
-        await self.bot.say('API key set.')
+        await self.settings.set('apikey', key)
+        await ctx.send('API key set.')
 
     @blizzard.command(name="noteformat", pass_context=True)
     @checks.is_owner()
@@ -163,13 +164,12 @@ class Blizzard:
 
         accept = ['paged', 'full', 'embed']
         if form in accept:
-            self.settings['notes_format'] = form
-            dataIO.save_json(self.settings_path, self.settings)
-            await self.bot.say("Patch notes format set to `{}`.".format(form))
+            await self.settings.set('notes_format', form)
+            await ctx.send("Patch notes format set to `{}`.".format(form))
         else:
-            await self.bot.say("`{}` is not a valid format. Please choose "
-                               "`{}`, `{}`, or `{}`.".format(form, accept[0],
-                                                             accept[1], accept[2]))
+            await ctx.send("`{}` is not a valid format. Please choose "
+                           "`{}`, `{}`, or `{}`.".format(form, accept[0],
+                                                         accept[1], accept[2]))
 
     @blizzard.command(name="notetimeout", pass_context=True)
     @checks.is_owner()
@@ -179,20 +179,18 @@ class Blizzard:
 
         min_max = (5, 3600)
         if min_max[0] <= timeout <= min_max[1]:
-            self.settings['notes_timeout'] = timeout
-            dataIO.save_json(self.settings_path, self.settings)
-            # Need str() casting?
-            await self.bot.say("Timeout period set to `{} sec`.".format(timeout))
+            await self.settings.set('notes_timeout', timeout)
+            await ctx.send("Timeout period set to `{} sec`.".format(timeout))
         else:
-            await self.bot.say("Please choose a duration between "
-                               "{} and {} seconds.".format(min_max[0], min_max[1]))
+            await ctx.send("Please choose a duration between "
+                           "{} and {} seconds.".format(min_max[0], min_max[1]))
 
     @commands.group(name="battletag", pass_context=True)
     async def battletag(self, ctx):
         """Change your battletag settings."""
 
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+        #if ctx.invoked_subcommand is None:
+        #    await send_cmd_help(ctx)
 
     @battletag.command(name="set", pass_context=True)
     async def _set_battletag(self, ctx, tag: str):
@@ -200,30 +198,34 @@ class Blizzard:
 
         pattern = re.compile(r'.#\d{4,5}\Z')
         if pattern.search(tag) is None:
-            await self.bot.say("That doesn't look like a valid battletag.")
+            await ctx.send("That doesn't look like a valid battletag.")
             return
-        uid = ctx.message.author.id
-        self.settings['battletags'][uid] = tag
-        dataIO.save_json(self.settings_path, self.settings)
-        await self.bot.say("Your battletag has been set.")
+        user_id = str(ctx.message.author.id)
+        # Need to check if this results in data loss with simultaneous use
+        tags = self.settings.get('battletags', {})
+        tags[user_id] = tag
+        await self.settings.set('battletags', tags)
+        await ctx.send("Your battletag has been set.")
 
     @battletag.command(name="clear", pass_context=True)
     async def _clear_battletag(self, ctx):
         """Remove your battletag"""
 
-        uid = ctx.message.author.id
-        if self.settings['battletags'].pop(uid, None) is not None:
-            await self.bot.say("Your battletag has been removed.")
+        user_id = str(ctx.message.author.id)
+        # Need to check for data loss here as well
+        tags = self.settings.get('battletags', {})
+        if tags.pop(user_id, None) is not None:
+            await self.settings.set('battletags', tags)
+            await ctx.send("Your battletag has been removed.")
         else:
-            await self.bot.say("I had no battletag stored for you.")
-        dataIO.save_json(self.settings_path, self.settings)
+            await ctx.send("I had no battletag stored for you.")
 
     @commands.group(name="hearthstone", pass_context=True)
     async def hearthstone(self, ctx):
         """Hearthstone utilities"""
 
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+        #if ctx.invoked_subcommand is None:
+        #    await send_cmd_help(ctx)
 
     @hearthstone.command(name="notes", pass_context=True)
     async def _notes_hearthstone(self, ctx):
@@ -234,8 +236,8 @@ class Blizzard:
     async def overwatch(self, ctx):
         """Overwatch utilities"""
 
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+        #if ctx.invoked_subcommand is None:
+        #    await send_cmd_help(ctx)
 
     @overwatch.command(name="stats", pass_context=True)
     async def _stats_overwatch(self, ctx, tag: str=None, region: str=None):
@@ -246,32 +248,31 @@ class Blizzard:
         Example: [p]overwatch stats CoolDude#1234 kr
         """
 
-        uid = ctx.message.author.id
+        user_id = str(ctx.message.author.id)
         # Little hack to detect if region was entered, but not battletag
         if (tag in ['kr', 'eu', 'us']) and (region is None):
             region = tag
             tag = None
 
         if tag is None:
-            tag = self.settings['battletags'].get(uid)
+            tag = self.settings.get('battletags', {}).get(user_id)
             if tag is None:
-                await self.bot.say('You did not provide a battletag '
-                                   'and I do not have one stored for you.')
+                await ctx.send('You did not provide a battletag '
+                               'and I do not have one stored for you.')
                 return
 
         tag = tag.replace("#", "-")
         url = 'https://owapi.net/api/v3/u/' + tag + '/stats'
-        async with aiohttp.ClientSession(headers=self.header) as session:
-            async with session.get(url) as resp:
-                stats = await resp.json()
+        async with aiohttp.request("GET", url, headers=self.header) as response:
+            stats = await response.json()
 
         if 'error' in stats:
-            await self.bot.say('Could not fetch your statistics. '
-                               'Battletags are case sensitive '
-                               'and require a 4 or 5-digit identifier '
-                               '(e.g. CoolDude#1234)'
-                               'Or, you may have an invalid tag '
-                               'on file.')
+            await ctx.send('Could not fetch your statistics. '
+                           'Battletags are case sensitive '
+                           'and require a 4 or 5-digit identifier '
+                           '(e.g. CoolDude#1234)'
+                           'Or, you may have an invalid tag '
+                           'on file.')
             return
 
         if region is None:
@@ -285,15 +286,15 @@ class Blizzard:
                 region = 'us'
                 region_full = 'US'
             else:
-                await self.bot.say('That battletag has no stats in any region.')
+                await ctx.send('That battletag has no stats in any region.')
                 return
 
         if stats[region] is None:
-            await self.bot.say('That battletag exists, but I could not '
-                               'find stats for the region specified. '
-                               'Try a different region '
-                               '<us/eu/kr> or leave that field blank '
-                               'so I can autodetect the region.')
+            await ctx.send('That battletag exists, but I could not '
+                           'find stats for the region specified. '
+                           'Try a different region '
+                           '<us/eu/kr> or leave that field blank '
+                           'so I can autodetect the region.')
             return
 
         url = 'https://playoverwatch.com/en-us/career/pc/' + region + '/' + tag
@@ -305,11 +306,11 @@ class Blizzard:
             thumb_url = self.thumbs['overwatch']
         else:
             thumb_url = qplay['overall_stats']['avatar']
-            qplay_stats = ''.join(['**Wins:** ', str(int(round(qplay['game_stats']['games_won']))),
-                                   '\n**Avg Elim:** ', str(int(round(qplay['average_stats']['eliminations_avg']))),
-                                   '\n**Avg Death:** ', str(int(round(qplay['average_stats']['deaths_avg']))),
-                                   '\n**Avg Dmg:** ', str(int(round(qplay['average_stats']['damage_done_avg']))),
-                                   '\n**Avg Heal:** ', str(int(round(qplay['average_stats']['healing_done_avg'])))])
+            qplay_stats = ''.join(['**Wins:** ', self.dictgrab(qplay, 'game_stats', 'games_won'),
+                                   '\n**Avg Elim:** ', self.dictgrab(qplay, 'average_stats', 'eliminations_avg'),
+                                   '\n**Avg Death:** ', self.dictgrab(qplay, 'average_stats', 'deaths_avg'),
+                                   '\n**Avg Dmg:** ', self.dictgrab(qplay, 'average_stats', 'damage_done_avg'),
+                                   '\n**Avg Heal:** ', self.dictgrab(qplay, 'average_stats', 'healing_done_avg')])
 
         comp = stats[region]['stats']['competitive']
         footer = None
@@ -322,11 +323,11 @@ class Blizzard:
         else:
             tier = comp['overall_stats']['tier']
             footer = 'SR: ' + str(comp['overall_stats']['comprank'])
-            comp_stats = ''.join(['**Wins:** ', str(int(round(comp['game_stats']['games_won']))),
-                                  '\n**Avg Elim:** ', str(int(round(comp['average_stats']['eliminations_avg']))),
-                                  '\n**Avg Death:** ', str(int(round(comp['average_stats']['deaths_avg']))),
-                                  '\n**Avg Dmg:** ', str(int(round(comp['average_stats']['damage_done_avg']))),
-                                  '\n**Avg Heal:** ', str(int(round(comp['average_stats']['healing_done_avg'])))])
+            comp_stats = ''.join(['**Wins:** ', self.dictgrab(comp, 'game_stats', 'games_won'),
+                                  '\n**Avg Elim:** ', self.dictgrab(comp, 'average_stats', 'eliminations_avg'),
+                                  '\n**Avg Death:** ', self.dictgrab(comp, 'average_stats', 'deaths_avg'),
+                                  '\n**Avg Dmg:** ', self.dictgrab(comp, 'average_stats', 'damage_done_avg'),
+                                  '\n**Avg Heal:** ', self.dictgrab(comp, 'average_stats', 'healing_done_avg')])
 
         icon_url = self.ow_tier_icon(tier)
 
@@ -337,7 +338,7 @@ class Blizzard:
         embed.add_field(name='__Quick Play__', value=qplay_stats, inline=True)
         if footer is not None:
             embed.set_footer(text=footer)
-        await self.bot.say(embed=embed)
+        await ctx.send(embed=embed)
 
     def ow_tier_icon(self, tier: str):
         return {
@@ -358,8 +359,8 @@ class Blizzard:
     async def starcraft2(self, ctx):
         """Starcraft2 utilities"""
 
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+        #if ctx.invoked_subcommand is None:
+        #    await send_cmd_help(ctx)
 
     @starcraft2.command(name="notes", pass_context=True)
     async def _notes_starcraft2(self, ctx):
@@ -370,8 +371,8 @@ class Blizzard:
     async def warcraft(self, ctx):
         """World of Warcraft utilities"""
 
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+        #if ctx.invoked_subcommand is None:
+        #    await send_cmd_help(ctx)
 
     @warcraft.command(name="notes", pass_context=True)
     async def _notes_warcraft(self, ctx):
@@ -385,17 +386,17 @@ class Blizzard:
         url = self.wowtoken_url
 
         if realm.lower() not in ['na', 'eu', 'cn', 'tw', 'kr']:
-            await self.bot.say("'" + realm + "' is not a valid realm.")
+            await ctx.send("'" + realm + "' is not a valid realm.")
             return
 
-        await self.print_token(url, realm)
+        await self.print_token(ctx, url, realm)
 
     @commands.group(name="diablo3", pass_context=True)
     async def diablo3(self, ctx):
         """Diablo3 utilities"""
 
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+        #if ctx.invoked_subcommand is None:
+        #    await send_cmd_help(ctx)
 
     @diablo3.command(name="notes", pass_context=True)
     async def _notes_diablo3(self, ctx):
@@ -410,7 +411,7 @@ class Blizzard:
         Example: [p]diablo3 stats CoolDude#1234
         """
 
-        uid = ctx.message.author.id
+        user_id = str(ctx.message.author.id)
 
         # Little hack to detect if region was entered, but not battletag
         if tag is not None and tag.lower() in ['kr', 'eu', 'us', 'tw']\
@@ -419,17 +420,16 @@ class Blizzard:
             tag = None
 
         if tag is None:
-            if uid in self.settings['battletags']:
-                tag = self.settings['battletags'][uid]
-            else:
-                await self.bot.say('You did not provide a battletag '
-                                   'and I do not have one stored for you.')
+            tag = self.settings.get('battletags', {}).get(user_id)
+            if tag is None:
+                await ctx.send('You did not provide a battletag '
+                               'and I do not have one stored for you.')
                 return
-
-        if 'apikey' not in self.settings:
-            await self.bot.say('The bot owner has not provided a '
-                               'battle.net API key, which is '
-                               'required for Diablo 3 stats.')
+        key = self.settings.get('apikey')
+        if key is None:
+            await ctx.send('The bot owner has not provided a '
+                           'battle.net API key, which is '
+                           'required for Diablo 3 stats.')
             return
 
         if region is not None:
@@ -446,17 +446,15 @@ class Blizzard:
             locale = 'en_US'
             region = 'us'
 
-        key = self.settings['apikey']
         tag = tag.replace("#", "-")
         url = 'https://' + region + '.api.battle.net/d3/profile/'\
               + tag + '/?locale=' + locale + '&apikey=' + key
 
-        async with aiohttp.ClientSession(headers=self.header) as session:
-            async with session.get(url) as resp:
-                stats = await resp.json()
+        async with aiohttp.request("GET", url, headers=self.header) as response:
+            stats = await response.json()
 
         if 'code' in stats:
-            await self.bot.say("I coulnd't find Diablo 3 stats for that battletag.")
+            await ctx.send("I coulnd't find Diablo 3 stats for that battletag.")
             return
 
         tag = tag.replace("-", "#") + ' (' + region.upper() + ')'
@@ -475,7 +473,7 @@ class Blizzard:
                                  ' (RIP)\n' if hero['dead'] else '\n'])
 
         if not hero_txt:
-            await self.bot.say("You don't have any Diablo 3 heroes.")
+            await ctx.send("You don't have any Diablo 3 heroes.")
             return
 
         kills = "Lifetime monster kills: " + str(stats['kills']['monsters'])
@@ -486,14 +484,14 @@ class Blizzard:
         embed.add_field(name='__Paragon__', value=paragon, inline=False)
         embed.add_field(name='__Heroes__', value=hero_txt, inline=False)
         embed.set_footer(text=kills)
-        await self.bot.say(embed=embed)
+        await ctx.send(embed=embed)
 
     @commands.group(name="hots", pass_context=True)
     async def hots(self, ctx):
         """Heroes of the Storm utilities"""
 
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+        #if ctx.invoked_subcommand is None:
+        #    await send_cmd_help(ctx)
 
     @hots.command(name="notes", pass_context=True)
     async def _notes_hots(self, ctx):
@@ -507,7 +505,7 @@ class Blizzard:
                        self.abbr[game]])
         tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'div']
         attr = {'div': 'class'}
-        async with aiohttp.get(url, headers=self.patch_header) as response:
+        async with aiohttp.request("GET", url, headers=self.patch_header) as response:
             dirty = await response.text()
         clean = bleach.clean(dirty, tags=tags, attributes=attr, strip=True)
         soup = BeautifulSoup(clean, "html.parser")
@@ -561,15 +559,15 @@ class Blizzard:
                     pass
             note_list.append(pager.pages)
 
-        if self.settings.setdefault('notes_format', 'paged') == 'paged':
+        if self.settings.get('notes_format', 'paged') == 'paged':
             result = await self._info_menu(ctx, note_list[0],
-                timeout=self.settings.setdefault('notes_timeout', 60))
+                timeout=self.settings.get('notes_timeout', 60))
             if result[0] == "no":
-                await self.bot.delete_message(result[1])
+                await result[1].delete()
             else:
-                await self.bot.edit_message(result[1], embed=self.expired_embed)
-        elif self.settings['notes_format'] == 'full':
-            await self.say_full_notes(note_list[0])
+                await result[1].edit(embed=self.expired_embed)
+        elif self.settings.get('notes_format', 'paged') == 'full':
+            await self.say_full_notes(ctx, note_list[0])
         else:
             # Extract title and body, remove markdown formatting line between
             split = note_list[0][0].split('\n', 3)
@@ -579,7 +577,7 @@ class Blizzard:
             embed = discord.Embed(title=title, url=self.patch_urls[game], color=0x00B4FF)
             embed.set_thumbnail(url=self.thumbs[game])
             embed.add_field(name='Summary', value=body, inline=False)
-            await self.bot.say(embed=embed)
+            await ctx.send(embed=embed)
 
     def walk_list(self, child, pager, count):
         try:
@@ -589,17 +587,17 @@ class Blizzard:
             if child.string.strip():
                 pager.add_line('  '*count + '*' + ' ' + child.string.strip())
 
-    async def say_full_notes(self, pages):
+    async def say_full_notes(self, ctx, pages):
         for page in pages:
-            await self.bot.say(page)
+            await ctx.send(page)
             await asyncio.sleep(1)
 
-    async def print_token(self, url, realm):
+    async def print_token(self, ctx, url, realm):
 
         thumb_url = 'http://wowtokenprices.com/assets/wowtokeninterlaced.png'
 
         try:
-            async with aiohttp.get(url, headers=self.header) as response:
+            async with aiohttp.request("GET", url, headers=self.header) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
             desc = soup.find('div', {"class": "mui-panel realm-panel", "id": realm.lower() + "-panel"}).h2.string
@@ -614,34 +612,7 @@ class Blizzard:
             embed.add_field(name='24-Hour Range', value=day_lo + ' - ' + day_hi, inline=False)
             embed.set_footer(text='Updated: ' + updated)
 
-            await self.bot.say(embed=embed)
+            await ctx.send(embed=embed)
 
         except:
-            await self.bot.say("Error finding WoW token prices.")
-
-
-def check_folders():
-    folder = "data/blizzard"
-    if not os.path.exists(folder):
-        print("Creating {} folder...".format(folder))
-        os.makedirs(folder)
-
-
-def check_files():
-    default = {'battletags': {}}
-    if not dataIO.is_valid_json("data/blizzard/settings.json"):
-        print("Creating default blizzard settings.json...")
-        dataIO.save_json("data/blizzard/settings.json", default)
-
-
-def setup(bot):
-    if soup_available and bleach_available:
-        check_folders()
-        check_files()
-        n = Blizzard(bot)
-        bot.add_cog(n)
-    else:
-        error_text = ("Make sure beautifulsoup4 and bleach are installed."
-                      "\n`pip install beautifulsoup4`"
-                      "\n`pip install bleach`")
-        raise RuntimeError(error_text)
+            await ctx.send("Error finding WoW token prices.")
