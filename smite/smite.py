@@ -1,13 +1,17 @@
+import hashlib
 import os
-import discord
-from discord.ext import commands
-from cogs.utils import checks
-from .utils.dataIO import dataIO
-from __main__ import send_cmd_help
+#import pprint
 from datetime import datetime
 from json import JSONDecodeError
-import hashlib
+
 import aiohttp
+import discord
+from discord.ext import commands
+
+#from __main__ import send_cmd_help
+from core import checks
+from core.utils import helpers
+
 
 # Special thanks to Kunkulada for suggesting this cog and
 # contributing to the design of the embeds.
@@ -19,8 +23,7 @@ class Smite:
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings_path = "data/smite/settings.json"
-        self.settings = dataIO.load_json(self.settings_path)
+        self.settings = helpers.JsonDB("data/settings.json")
         self.url_pc = 'http://api.smitegame.com/smiteapi.svc'
         self.header = {"User-Agent": "flapjackcogs/1.0"}
 
@@ -28,8 +31,8 @@ class Smite:
     async def smite(self, ctx):
         """Smite cog commands."""
 
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+        #if ctx.invoked_subcommand is None:
+        #    await send_cmd_help(ctx)
 
     @smite.command(name="auth", pass_context=True)
     @checks.is_owner()
@@ -38,37 +41,40 @@ class Smite:
         (get them at https://fs12.formsite.com/HiRez/form48/secure_index.html)
         Use a direct message to keep the credentials secret."""
 
-        self.settings['devid'] = devid
-        self.settings['authkey'] = key
-        dataIO.save_json(self.settings_path, self.settings)
-        await self.bot.say('API access credentials set.')
+        await self.settings.set('devid', devid)
+        await self.settings.set('authkey', key)
+        await ctx.send('API access credentials set.')
 
     @smite.command(name="ping", pass_context=True)
     @checks.is_owner()
     async def _ping_smite(self, ctx):
         """Ping the Smite API"""
 
-        await self.ping()
+        await self.ping(ctx)
 
     @smite.command(name="nameset", pass_context=True)
     async def _nameset_smite(self, ctx, name: str):
         """Set your Smite name"""
 
-        uid = ctx.message.author.id
-        self.settings['smitenames'][uid] = name
-        dataIO.save_json(self.settings_path, self.settings)
-        await self.bot.say("Your Smite name has been set.")
+        user_id = str(ctx.message.author.id)
+        # Need to check if this results in data loss with simultaneous use
+        names = self.settings.get('smitenames', {})
+        names[user_id] = name
+        await self.settings.set('smitenames', names)
+        await ctx.send("Your Smite name has been set.")
 
     @smite.command(name="nameclear", pass_context=True)
     async def _nameclear_smite(self, ctx):
         """Remove your Smite name"""
 
-        uid = ctx.message.author.id
-        if self.settings['smitenames'].pop(uid, None) is not None:
-            await self.bot.say("Your Smite name has been removed.")
+        user_id = str(ctx.message.author.id)
+        # Need to check for data loss here as well
+        names = self.settings.get('smitenames', {})
+        if names.pop(user_id, None) is not None:
+            await self.settings.set('smitenames', names)
+            await ctx.send("Your Smite name has been removed.")
         else:
-            await self.bot.say("I had no Smite name stored for you.")
-        dataIO.save_json(self.settings_path, self.settings)
+            await ctx.send("I had no Smite name stored for you.")
 
     @smite.command(name="stats", pass_context=True)
     async def _stats_smite(self, ctx, name: str=None):
@@ -78,25 +84,28 @@ class Smite:
         Example: [p]smite stats Kunkulada
         """
 
+        dev_id = self.settings.get('devid')
+        key = self.settings.get('authkey')
+        if dev_id is None or key is None:
+            await ctx.send("I am missing Smite API credentials.")
+            return
+
+        user_id = str(ctx.message.author.id)
+        if name is None:
+            name = self.settings.get('smitenames', {}).get(user_id)
+            if name is None:
+                await ctx.send('You did not provide a name '
+                               'and I do not have one stored for you.')
+                return
+
         if not await self.test_session():
             if not await self.create_session():
-                await self.bot.say("I could not establish a connection "
-                                   "to the Smite API. Has my owner input "
-                                   "valid credentials?")
+                await ctx.send("I could not establish a connection "
+                               "to the Smite API. Has my owner input "
+                               "valid credentials?")
                 return
 
-        uid = ctx.message.author.id
-        if name is None:
-            if uid in self.settings['smitenames']:
-                name = self.settings['smitenames'][uid]
-            else:
-                await self.bot.say('You did not provide a name '
-                                   'and I do not have one stored for you.')
-                return
-
-        dev_id = self.settings['devid']
-        key = self.settings['authkey']
-        session = self.settings['session_id']
+        session = self.settings.get('session_id')
         time = datetime.utcnow().strftime('%Y%m%d%H%M%S')
 
         m = hashlib.md5()
@@ -108,12 +117,11 @@ class Smite:
 
         url = '/'.join([self.url_pc, 'getplayerJson', dev_id, str_hash, session, time, name])
 
-        async with aiohttp.ClientSession(headers=self.header) as session:
-            async with session.get(url) as resp:
-                re = await resp.json()
+        async with aiohttp.request("GET", url, headers=self.header) as response:
+            re = await response.json()
 
         if not re:
-            await self.bot.say("That profile is hidden or was not found.")
+            await ctx.send("That profile is hidden or was not found.")
             return
 
         # Smite - Icon by J1mB091 on DeviantArt (http://j1mb091.deviantart.com/art/Smite-Icon-314198305)
@@ -138,7 +146,110 @@ class Smite:
         embed.add_field(name='Ranked Joust', value=self.league_tier(re[0]['RankedJoust']['Tier']), inline=True)
         embed.add_field(name='Mastery', value=str(re[0]['MasteryLevel']), inline=True)
         embed.add_field(name='Ranked Duel', value=self.league_tier(re[0]['RankedDuel']['Tier']), inline=True)
-        await self.bot.say(embed=embed)
+        await ctx.send(embed=embed)
+
+    @smite.command(name="status", pass_context=True)
+    async def _status_smite(self, ctx, name: str=None):
+        """Smite player status.
+        If name is ommitted, bot will use your name if stored.
+
+        Example: [p]smite status Kunkulada
+        """
+
+        dev_id = self.settings.get('devid')
+        key = self.settings.get('authkey')
+        if dev_id is None or key is None:
+            await ctx.send("I am missing Smite API credentials.")
+            return
+
+        user_id = str(ctx.message.author.id)
+        if name is None:
+            name = self.settings.get('smitenames', {}).get(user_id)
+            if name is None:
+                await ctx.send('You did not provide a name '
+                               'and I do not have one stored for you.')
+                return
+
+        if not await self.test_session():
+            if not await self.create_session():
+                await ctx.send("I could not establish a connection "
+                               "to the Smite API. Has my owner input "
+                               "valid credentials?")
+                return
+
+        session = self.settings.get('session_id')
+        time = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+
+        m = hashlib.md5()
+        m.update(dev_id.encode('utf-8'))
+        m.update('getplayerstatus'.encode('utf-8'))
+        m.update(key.encode('utf-8'))
+        m.update(time.encode('utf-8'))
+        str_hash = m.hexdigest()
+
+        url = '/'.join([self.url_pc, 'getplayerstatusJson', dev_id, str_hash, session, time, name])
+
+        async with aiohttp.request("GET", url, headers=self.header) as response:
+            re = await response.json()
+
+        # Smite - Icon by J1mB091 on DeviantArt (http://j1mb091.deviantart.com/art/Smite-Icon-314198305)
+        icon_url = 'http://orig09.deviantart.net/6fc3/f/2013/095/9/a/smite___icon_by_j1mb091-d572cyp.png'
+
+        if re[0]['status'] == 0:
+            name = 'Offline'
+        elif re[0]['status'] == 1:
+            name = 'In Lobby'
+        elif re[0]['status'] == 2:
+            name = 'God Selection'
+        elif re[0]['status'] == 3:
+            name = 'In Game'
+        elif re[0]['status'] == 4:
+            name = 'Online - No Data'
+        else:
+            await ctx.send("I could not find information on this player.")
+            return
+
+        embed = discord.Embed(color=0x4E66A3)
+        embed.set_author(name=name, icon_url=icon_url)
+        if re[0]['status'] != 3:
+            await ctx.send(embed=embed)
+            return
+
+        # If we reach here, player is in a game, and we can show live data
+        mid = str(re[0]['Match'])
+        session = self.settings.get('session_id')
+        time = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+
+        m = hashlib.md5()
+        m.update(dev_id.encode('utf-8'))
+        m.update('getmatchplayerdetails'.encode('utf-8'))
+        m.update(key.encode('utf-8'))
+        m.update(time.encode('utf-8'))
+        str_hash = m.hexdigest()
+
+        url = '/'.join([self.url_pc, 'getmatchplayerdetailsJson', dev_id, str_hash, session, time, mid])
+
+        async with aiohttp.request("GET", url, headers=self.header) as response:
+            re = await response.json()
+
+        # Print data to console for troubleshooting
+        #pp = pprint.PrettyPrinter()
+        #pp.pprint(re)
+
+        teams = ['', '']
+
+        for player in re:
+            team = player['taskForce']-1
+            teams[team] += '\n'.join(['**' + player['playerName'] + '**',
+                                      'God: ' + player['GodName'],
+                                      'Tier: ' + self.league_tier(player['Tier']),
+                                      '\n'])
+
+        name += ' - ' + self.queue_type(re[0]['Queue'])
+        embed.set_author(name=name, icon_url=icon_url)
+        embed.add_field(name='__Team 1__', value=teams[0], inline=True)
+        embed.add_field(name='__Team 2__', value=teams[1], inline=True)
+        await ctx.send(embed=embed)
 
     def league_tier(self, tier: int):
         return {
@@ -170,19 +281,42 @@ class Smite:
             26: 'Masters I'
         }.get(tier, 'None')
 
-    async def ping(self):
+    def queue_type(self, queue: str):
+        return {
+            '423': 'Conquest 5v5',
+            '424': 'Novice Queue',
+            '426': 'Conquest',
+            '427': 'Practice',
+            '429': 'Conquest Challenge',
+            '430': 'Conquest Ranked',
+            '433': 'Domination',
+            '434': 'MOTD',
+            '435': 'Arena',
+            '438': 'Arena Challenge',
+            '439': 'Domination Challenge',
+            '440': 'Joust League',
+            '441': 'Joust Challenge',
+            '445': 'Assault',
+            '446': 'Assault Challenge',
+            '448': 'Joust 3v3',
+            '451': 'Conquest League',
+            '452': 'Arena League',
+            '465': 'MOTD'
+        }.get(queue, 'Unknown')
+
+    async def ping(self, ctx):
 
         url = self.url_pc + '/pingjson'
-        async with aiohttp.ClientSession(headers=self.header) as session:
-            async with session.get(url) as resp:
-                await self.bot.say(await resp.text())
-
+        async with aiohttp.request("GET", url, headers=self.header) as response:
+            await ctx.send(await response.text())
         return
 
     async def create_session(self):
 
-        dev_id = self.settings['devid']
-        key = self.settings['authkey']
+        dev_id = self.settings.get('devid')
+        key = self.settings.get('authkey')
+        if dev_id is None or key is None:
+            return False
         time = datetime.utcnow().strftime('%Y%m%d%H%M%S')
 
         m = hashlib.md5()
@@ -194,26 +328,26 @@ class Smite:
 
         url = '/'.join([self.url_pc, 'createsessionJson', dev_id, str_hash, time])
 
-        async with aiohttp.ClientSession(headers=self.header) as session:
-            async with session.get(url) as resp:
-                try:
-                    re = await resp.json()
-                except JSONDecodeError:
-                    # Response was not JSON. Could be bad/missing credentials.
-                    return False
+        async with aiohttp.request("GET", url, headers=self.header) as response:
+            try:
+                re = await response.json()
+            except JSONDecodeError:
+                # Response was not JSON. Could be bad/missing credentials.
+                return False
 
         if re['ret_msg'] == "Approved":
-            self.settings['session_id'] = re['session_id']
-            dataIO.save_json(self.settings_path, self.settings)
+            await self.settings.set('session_id', re['session_id'])
             return True
         # Response received, but request rejected. Could be bad credentials.
         return False
 
     async def test_session(self):
 
-        dev_id = self.settings['devid']
-        key = self.settings['authkey']
-        session = self.settings['session_id']
+        dev_id = self.settings.get('devid')
+        key = self.settings.get('authkey')
+        session = self.settings.get('session_id')
+        if dev_id is None or key is None or session is None:
+            return False
         time = datetime.utcnow().strftime('%Y%m%d%H%M%S')
 
         m = hashlib.md5()
@@ -224,9 +358,8 @@ class Smite:
         str_hash = m.hexdigest()
 
         url = '/'.join([self.url_pc, 'testsessionJson', dev_id, str_hash, session, time])
-        async with aiohttp.ClientSession(headers=self.header) as session:
-            async with session.get(url) as resp:
-                text = await resp.text()
+        async with aiohttp.request("GET", url, headers=self.header) as response:
+            text = await response.text()
 
         if text.startswith('"Invalid'):
             return False
@@ -237,22 +370,5 @@ class Smite:
         return False
 
 
-def check_folders():
-    folder = "data/smite"
-    if not os.path.exists(folder):
-        print("Creating {} folder...".format(folder))
-        os.makedirs(folder)
-
-
-def check_files():
-    default = {'smitenames': {}, 'devid': '', 'authkey': '', 'session_id': ''}
-    if not dataIO.is_valid_json("data/smite/settings.json"):
-        print("Creating default Smite settings.json...")
-        dataIO.save_json("data/smite/settings.json", default)
-
-
 def setup(bot):
-    check_folders()
-    check_files()
-    n = Smite(bot)
-    bot.add_cog(n)
+    bot.add_cog(Smite(bot))
