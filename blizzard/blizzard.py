@@ -68,7 +68,8 @@ class Blizzard:
 
     async def show_menu(self, ctx, message, messages, page):
         if message:
-            return await message.edit(messages[page])
+            await message.edit(content=messages[page])
+            return message
         else:
             return await ctx.send(messages[page])
 
@@ -84,20 +85,21 @@ class Blizzard:
         message = await self.show_menu(ctx, message, messages, page)
 
         if reactions_needed:
-            await ctx.message.add_reaction(str(emoji['back']))
-            await ctx.message.add_reaction(str(emoji['no']))
-            await ctx.message.add_reaction(str(emoji['next']))
+            await message.add_reaction(str(emoji['back']))
+            await message.add_reaction(str(emoji['no']))
+            await message.add_reaction(str(emoji['next']))
 
-        # Needs update
-        r = await self.bot.wait_for_reaction(
-            message=message,
-            user=ctx.message.author,
-            timeout=timeout)
-        if r is None:
+        # See if there's a way to check reaction add and remove at same time.
+        def check(r, u):
+            return r.message.id == message.id and u == ctx.message.author
+
+        try:
+            (r, u) = await self.bot.wait_for('reaction_add', check=check, timeout=timeout)
+        except asyncio.TimeoutError:
             return [None, message]
 
         reacts = {v: k for k, v in emoji.items()}
-        react = reacts[r.reaction.emoji]
+        react = reacts[r.emoji]
 
         if react == "next":
             page += 1
@@ -113,7 +115,7 @@ class Blizzard:
             page = 0
 
         try:
-            await message.remove_reaction(emoji[react], r.user)
+            await message.remove_reaction(emoji[react], u)
         except discord.errors.Forbidden:
             await ctx.send('I require the "manage messages" permission '
                            'to make these menus work.')
@@ -331,6 +333,7 @@ class Blizzard:
 
         icon_url = self.ow_tier_icon(tier)
 
+        # Images not working in embed?
         embed = discord.Embed(title='Overwatch Stats (PC-' + region_full + ')', color=0xFAA02E)
         embed.set_author(name=tag, url=url, icon_url=icon_url)
         embed.set_thumbnail(url=thumb_url)
