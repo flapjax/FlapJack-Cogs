@@ -18,10 +18,10 @@ class Spoiler:
 
     def __init__(self, bot):
         self.bot = bot
-        self.temp_filepath = "data/spoiler/"
+        self.temp_filepath = "cogs/spoiler/data/"
         self.line_length = 60
         self.margin = (5, 5)
-        self.font = "data/spoiler/UbuntuMono-Regular.ttf"
+        self.font = "cogs/spoiler/data/UbuntuMono-Regular.ttf"
         self.font_size = 14
         self.font_color = 150
         self.bg_color = 20
@@ -34,18 +34,18 @@ class Spoiler:
         author = message.author.display_name
 
         try:
-            await self.bot.delete_message(message)
+            await message.delete()
         except discord.errors.Forbidden:
-            await self.bot.say("I require the 'manage messages' permission "
-                               "to hide spoilers!")
+            await ctx.send("I require the 'manage messages' permission "
+                           "to hide spoilers!")
 
         try:
             fnt = ImageFont.truetype(self.font, self.font_size)
         except OSError:
-            await self.bot.say("I couldn't load the font file. Try "
-                               "reinstalling via the downloader cog, or "
-                               "manually place `UbuntuMono-Regular.ttf` "
-                               "in `/data/spoiler/`")
+            await ctx.send("I couldn't load the font file. Try "
+                           "reinstalling via the downloader cog, or "
+                           "manually place `UbuntuMono-Regular.ttf` "
+                           "in `/data/spoiler/`")
             return
 
         spoil_lines = []
@@ -82,24 +82,8 @@ class Spoiler:
                           append_images=[spoil_img[1]],
                           duration=[0, 0xFFFF], loop=0)
         content = "**" + author + "** posted this spoiler:"
-        await self.bot.send_file(ctx.message.channel, path,
-                                 content=content)
+        await message.channel.send(content=content, file=discord.File(path))
         os.remove(path)
 
     def new_image(self, width, height):
         return Image.new("L", (width, height), self.bg_color)
-
-
-def check_folders():
-    folder = "data/spoiler"
-    if not os.path.exists(folder):
-        print("Creating {} folder...".format(folder))
-        os.makedirs(folder)
-
-
-def setup(bot):
-    check_folders()
-    if pillowAvailable:
-        bot.add_cog(Spoiler(bot))
-    else:
-        raise RuntimeError("You need to run `pip3 install pillow`")
