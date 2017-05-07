@@ -437,8 +437,7 @@ class Sfx:
                 " (excluding extensions) unique.".format(len(f))))
             return
 
-        # might not work in rewrite
-        # await self.bot.upload(f[0])
+        await ctx.send(file=discord.File(f[0]))
 
     async def _queue_manager(self):
         await self.bot.wait_until_ready()
