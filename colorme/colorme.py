@@ -4,11 +4,11 @@ import os
 import re
 
 import discord
-#from __main__ import send_cmd_help
-from core import checks
-from core.utils import helpers
 from discord.ext import commands
 from discord.ext.commands import converter
+
+from core import checks
+from core.utils import helpers
 
 
 class ColorMe:
@@ -52,8 +52,8 @@ class ColorMe:
     async def colorme(self, ctx):
         """Change the color of your name via custom roles."""
 
-        #if ctx.invoked_subcommand is None:
-        #    await send_cmd_help(ctx)
+        if ctx.invoked_subcommand is None:
+            await self.bot.send_cmd_help(ctx)
 
     @colorme.command(name="change", pass_context=True, no_pm=True)
     @commands.cooldown(2, 60, commands.BucketType.user)
@@ -71,7 +71,9 @@ class ColorMe:
         protected_roles = self.settings.get(guild, "Roles", {}).get("Protected", [])
 
         try:
-            newcolor = converter.ColourConverter(ctx, newcolor).convert()
+            verter = converter.ColourConverter()
+            verter.prepare(ctx, newcolor)
+            newcolor = verter.convert()
         except commands.BadArgument:
             await ctx.send("Color must be a valid hexidecimal value.")
             return
