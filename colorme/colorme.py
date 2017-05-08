@@ -4,13 +4,11 @@ import os
 import re
 
 import discord
+#from __main__ import send_cmd_help
+from core import checks
+from core.utils import helpers
 from discord.ext import commands
 from discord.ext.commands import converter
-
-from __main__ import send_cmd_help
-
-from .utils import checks
-from .utils.dataIO import dataIO
 
 
 class ColorMe:
@@ -19,18 +17,17 @@ class ColorMe:
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.settings_path = "data/colorme/settings.json"
-        self.settings = dataIO.load_json(self.settings_path)
+        self.settings = helpers.JsonGuildDB("data/settings.json")
         self.suffix = ":color"
 
     def _is_sharing_role(self, ctx: commands.Context, role):
-        server = ctx.message.server
-        for member in server.members:
-            if (role in member.roles) and (member != ctx.message.author):
+        guild = ctx.message.guild
+        for member in guild.members:
+            if (role in member.roles) and (member.id != ctx.message.author.id):
                 return True
         return False
 
-    def _could_be_colorme(self, ctx: commands.Context, role):
+    def _could_be_colorme(self, role):
         pattern = re.compile(r'#\d{4}\Z')
         if pattern.search(role.name) is not None:
             # Possible role created by old version
@@ -39,27 +36,24 @@ class ColorMe:
             return True
         return False
 
-    def _elim_valid_roles(self, ctx: commands.Context, roles):
-        # HOW is role.members NOT a thing?
-        server = ctx.message.server
+    def _elim_valid_roles(self, roles):
+        # Do we still need deepcopy?
         role_copy = copy.deepcopy(roles)
         for role in role_copy:
-            for member in server.members:
-                if role in member.roles:
-                    roles.remove(role)
-                    break
+            if len(role.members) > 0:
+                roles.remove(role)
         return roles
 
     def _already_has_colorme(self, ctx, rolename):
-        server = ctx.message.server
-        return discord.utils.get(server.roles, name=rolename)
+        guild = ctx.message.guild
+        return discord.utils.get(guild.roles, name=rolename)
 
     @commands.group(name="colorme", pass_context=True)
     async def colorme(self, ctx):
         """Change the color of your name via custom roles."""
 
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+        #if ctx.invoked_subcommand is None:
+        #    await send_cmd_help(ctx)
 
     @colorme.command(name="change", pass_context=True, no_pm=True)
     @commands.cooldown(2, 60, commands.BucketType.user)
@@ -68,87 +62,91 @@ class ColorMe:
 
         New color must be a valid hexidecimal color value.
         """
-        server = ctx.message.server
+        guild = ctx.message.guild
         member = ctx.message.author
         name = member.name
         disc = member.discriminator
         top_role = member.top_role
-
-        self.load_settings(server.id)
-        protected_roles = self.settings[server.id]["Roles"]["Protected"]
+        # lolol v2 json compatibility
+        protected_roles = self.settings.get(guild, "Roles", {}).get("Protected", [])
 
         try:
             newcolor = converter.ColourConverter(ctx, newcolor).convert()
         except commands.BadArgument:
-            await self.bot.reply("Color must be a valid hexidecimal value.")
+            await ctx.send("Color must be a valid hexidecimal value.")
             return
 
         role_to_change = None
         for role in member.roles:
-            if role.id in protected_roles:
-                await self.bot.reply("You have a role that is protected from "
-                                     "color changes.")
+            # Need to compare strings
+            if str(role.id) in protected_roles:
+                await ctx.send("You have a role that is protected from "
+                               "color changes.")
                 return
-            if self._could_be_colorme(ctx, role):
+            if self._could_be_colorme(role):
                 if role_to_change is not None:
-                    await self.bot.reply("It looks like you have more than "
-                                         "one role that can be used for "
-                                         "ColorMe, so I'm not sure which one "
-                                         "to edit. Talk to your server admin "
-                                         "about fixing this!")
+                    await ctx.send("It looks like you have more than "
+                                   "one role that can be used for "
+                                   "ColorMe, so I'm not sure which one "
+                                   "to edit. Talk to your server admin "
+                                   "about fixing this!")
                     return
                 role_to_change = role
 
         if role_to_change is None:
             rolename = "{}#{}{}".format(name, disc, self.suffix)
             if self._already_has_colorme(ctx, rolename):
-                await self.bot.say("It looks like the server already has "
-                                   "a ColorMe role for you, but it's not "
-                                   "applied to you. To be safe, I'm not "
-                                   "going to make a new one. Please talk "
-                                   "to your server admin about fixing this!")
+                await ctx.send("It looks like the server already has "
+                               "a ColorMe role for you, but it's not "
+                               "applied to you. To be safe, I'm not "
+                               "going to make a new one. Please talk "
+                               "to your server admin about fixing this!")
                 return
             # Make a new cosmetic role for this person
             try:
-                new_role = await self.bot.create_role(server, name=rolename,
-                                                      colour=newcolor,
-                                                      hoist=False,
-                                                      permissions=discord.Permissions.none())
+                new_role = await guild.create_role(reason='Custom ColorMe Role',
+                                                   name=rolename,
+                                                   colour=newcolor,
+                                                   hoist=False,
+                                                   permissions=discord.Permissions.none())
             except discord.Forbidden:
-                await self.bot.say("Failed to create new role. (permissions)")
+                await ctx.send("Failed to create new role. (permissions)")
                 return
             except discord.HTTPException:
-                await self.bot.say("Failed to create new role. (request failed)")
+                await ctx.send("Failed to create new role. (request failed)")
                 return
 
             try:
-                await self.bot.add_roles(member, new_role)
+                await member.add_roles(new_role, reason='Custom ColorMe Role')
             except discord.Forbidden:
-                await self.bot.say("Failed to apply new role. (permissions)")
+                await ctx.send("Failed to apply new role. (permissions)")
                 return
             except discord.HTTPException:
-                await self.bot.say("Failed to apply new role. (request failed)")
+                await ctx.send("Failed to apply new role. (request failed)")
                 return
-
-            await self.bot.reply("Your new color is set.")
+            # Change to reply?
+            await ctx.send("Your new color is set.")
         else:
             # Member appears to have an existing ColorMe role
             # Need to make sure they are not sharing with someone else
             if not self._is_sharing_role(ctx, role_to_change):
                 try:
-                    await self.bot.edit_role(server, role_to_change, colour=newcolor)
+                    await role_to_change.edit(colour=newcolor,
+                                              reason='ColorMe Change')
                 except discord.Forbidden:
-                    await self.bot.say("Failed to edit role. (permissions)")
+                    await ctx.send("Failed to edit role. (permissions)")
                     return
                 except discord.HTTPException:
-                    await self.bot.say("Failed to edit role. (request failed)")
+                    await ctx.send("Failed to edit role. (request failed)")
                     return
-                await self.bot.reply("Your new color is set.")
+                # Change to reply?
+                await ctx.send("Your new color is set.")
             else:
-                await self.bot.reply("This is odd. It looks like you have a "
-                                     "valid ColorMe role, but you're sharing "
-                                     "it with one or more members. To be "
-                                     "safe, I'm not going to edit it.")
+                # Change to reply?
+                await ctx.send("This is odd. It looks like you have a "
+                               "valid ColorMe role, but you're sharing "
+                               "it with one or more members. To be "
+                               "safe, I'm not going to edit it.")
                 return
 
     @colorme.command(name="clean", pass_context=True, no_pm=True)
@@ -156,17 +154,16 @@ class ColorMe:
     async def _clean_colorme(self, ctx: commands.Context):
         """Clean colorme roles by removing all permissions."""
         user = ctx.message.author
-        server = ctx.message.server
-        channel = ctx.message.channel
+        guild = ctx.message.guild
         dirty_roles = []
         emoji = ('\N{WHITE HEAVY CHECK MARK}', '\N{CROSS MARK}')
-        for role in server.role_hierarchy:
-            if self._could_be_colorme(ctx, role):
+        for role in guild.role_hierarchy:
+            if self._could_be_colorme(role):
                 if role.permissions != discord.Permissions.none():
                     dirty_roles.append(role)
         if not dirty_roles:
-            await self.bot.say("I couldn't find any ColorMe roles "
-                               "that need to be cleaned.")
+            await ctx.send("I couldn't find any ColorMe roles "
+                           "that need to be cleaned.")
             return
         msg_txt = ("I have scanned the list of roles on this server. "
                    "I have detected the following roles which were "
@@ -179,33 +176,40 @@ class ColorMe:
                    "{} **to confirm**\n"
                    "{} **to cancel**\n```".format(emoji[0], emoji[1]))
         msg_txt += '\n'.join([role.name for role in dirty_roles]) + '```'
-        msg = await self.bot.send_message(channel, msg_txt)
-        await self.bot.add_reaction(msg, emoji[0])
+        msg = await ctx.send(msg_txt)
+        await msg.add_reaction(emoji[0])
         await asyncio.sleep(0.5)
-        await self.bot.add_reaction(msg, emoji[1])
-        response = await self.bot.wait_for_reaction(emoji, user=user,
-                                              timeout=600, message=msg)
+        await msg.add_reaction(emoji[1])
 
-        if response is None or response.reaction.emoji == emoji[1]:
-            await self.bot.clear_reactions(msg)
+        def check(r, u):
+            return r.message.id == msg.id and u == user
+
+        try:
+            (r, u) = await self.bot.wait_for('reaction_add',
+                                             check=check, timeout=600)
+        except asyncio.TimeoutError:
+            r = None
+
+        if r is None or r.emoji == emoji[1]:
+            await msg.clear_reactions()
             return
 
-        if response.reaction.emoji == emoji[0]:
-            await self.bot.clear_reactions(msg)
-            await self.bot.say("Cleaning roles...")
+        if r.emoji == emoji[0]:
+            await msg.clear_reactions()
+            await ctx.send("Cleaning roles...")
             for role in dirty_roles:
                 await asyncio.sleep(1)
                 try:
-                    await self.bot.edit_role(server, role,
-                                        permissions=discord.Permissions.none())
+                    await role.edit(permissions=discord.Permissions.none(),
+                                    reason='ColorMe permission wipe')
                 except discord.Forbidden:
-                    await self.bot.say("Failed to edit role: "
-                                       "{} (permissions)".format(role.name))
+                    await ctx.send("Failed to edit role: "
+                                   "{} (permissions)".format(role.name))
                 except discord.HTTPException:
-                    await self.bot.say("Failed to edit role: "
-                                       "{} (request failed)".format(role.name))
+                    await ctx.send("Failed to edit role: "
+                                   "{} (request failed)".format(role.name))
 
-            await self.bot.say("Finished cleaning roles!")
+            await ctx.send("Finished cleaning roles!")
 
     @colorme.command(name="purge", pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_server=True)
@@ -213,17 +217,16 @@ class ColorMe:
         """Purge the server of roles that may have been created
         by ColorMe, but are no longer in use."""
         user = ctx.message.author
-        server = ctx.message.server
-        channel = ctx.message.channel
+        guild = ctx.message.guild
         dead_roles = []
         emoji = ('\N{WHITE HEAVY CHECK MARK}', '\N{CROSS MARK}')
 
         for role in server.role_hierarchy:
-            if self._could_be_colorme(ctx, role):
+            if self._could_be_colorme(role):
                 dead_roles.append(role)
-        dead_roles = self._elim_valid_roles(ctx, dead_roles)
+        dead_roles = self._elim_valid_roles(dead_roles)
         if not dead_roles:
-            await self.bot.say("I couldn't find any roles to purge.")
+            await ctx.send("I couldn't find any roles to purge.")
             return
         msg_txt = ("I have scanned the list of roles on this server. "
                    "I have detected the following roles which were "
@@ -236,32 +239,39 @@ class ColorMe:
                    "{} **to confirm**\n"
                    "{} **to cancel**\n```".format(emoji[0], emoji[1]))
         msg_txt += '\n'.join([role.name for role in dead_roles]) + '```'
-        msg = await self.bot.send_message(channel, msg_txt)
-        await self.bot.add_reaction(msg, emoji[0])
+        msg = await ctx.send(msg_txt)
+        await msg.add_reaction(emoji[0])
         await asyncio.sleep(0.5)
-        await self.bot.add_reaction(msg, emoji[1])
-        response = await self.bot.wait_for_reaction(emoji, user=user,
-                                              timeout=600, message=msg)
+        await msg.add_reaction(emoji[1])
 
-        if response is None or response.reaction.emoji == emoji[1]:
-            await self.bot.clear_reactions(msg)
+        def check(r, u):
+            return r.message.id == msg.id and u == user
+
+        try:
+            (r, u) = await self.bot.wait_for('reaction_add',
+                                             check=check, timeout=600)
+        except asyncio.TimeoutError:
+            r = None
+
+        if r is None or r.emoji == emoji[1]:
+            await msg.clear_reactions()
             return
 
-        if response.reaction.emoji == emoji[0]:
-            await self.bot.clear_reactions(msg)
-            await self.bot.say("Deleting roles...")
+        if r.emoji == emoji[0]:
+            await msg.clear_reactions()
+            await ctx.send("Deleting roles...")
             for role in dead_roles:
                 await asyncio.sleep(1)
                 try:
-                    await self.bot.delete_role(server, role)
+                    await role.delete(reason='ColorMe role purge')
                 except discord.Forbidden:
-                    await self.bot.say("Failed to delete role: "
-                                       "{} (permissions)".format(role.name))
+                    await ctx.send("Failed to delete role: "
+                                   "{} (permissions)".format(role.name))
                 except discord.HTTPException:
-                    await self.bot.say("Failed to delete role: "
-                                       "{} (request failed)".format(role.name))
+                    await ctx.send("Failed to delete role: "
+                                   "{} (request failed)".format(role.name))
 
-            await self.bot.say("Finished deleting roles!")
+            await ctx.send("Finished deleting roles!")
 
     @colorme.command(name="protect", pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_server=True)
@@ -271,19 +281,21 @@ class ColorMe:
         Members with this role as top role will not be allowed to change color.
         Example: [p]colorme protect admin
         """
-        server = ctx.message.server
-        protect_role = discord.utils.get(server.roles, name=role)
+        guild = ctx.message.guild
+        protect_role = discord.utils.get(guild.roles, name=role)
         if protect_role is None:
-            await self.bot.say("No roles match that name.")
+            await ctx.send("No roles match that name.")
             return
-        self.load_settings(server.id)
-        if protect_role.id in self.settings[server.id]["Roles"]["Protected"]:
-            await self.bot.say("That role is already protected.")
+        guild_roles = self.settings.get(guild, "Roles", {})
+        protected_roles = guild_roles.get("Protected", [])
+        if str(protect_role.id) in protected_roles:
+            await ctx.send("That role is already protected.")
         else:
-            self.settings[server.id]["Roles"]["Protected"].append(protect_role.id)
-            dataIO.save_json(self.settings_path, self.settings)
-            await self.bot.say("Users with top role '{}' are protected from "
-                               "color changes.".format(role))
+            protected_roles.append(str(protect_role.id))
+            guild_roles["Protected"] = protected_roles
+            await self.settings.set(guild, "Roles", guild_roles)
+            await ctx.send("Users with top role '{}' are protected from "
+                           "color changes.".format(role))
 
     @colorme.command(name="unprotect", pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_server=True)
@@ -292,57 +304,34 @@ class ColorMe:
 
         Example: [p]colorme unprotect admin
         """
-        server = ctx.message.server
-        protect_role = discord.utils.get(server.roles, name=role)
+        guild= ctx.message.guild
+        protect_role = discord.utils.get(guild.roles, name=role)
         if protect_role is None:
-            await self.bot.say("No roles match that name.")
+            await ctx.send("No roles match that name.")
             return
-        self.load_settings(server.id)
-        if protect_role.id not in self.settings[server.id]["Roles"]["Protected"]:
-            await self.bot.say("That role is not currently protected.")
+        guild_roles = self.settings.get(guild, "Roles", {})
+        protected_roles = guild_roles.get("Protected", [])
+        if str(protect_role.id) not in protected_roles:
+            await ctx.send("That role is not currently protected.")
         else:
-            self.settings[server.id]["Roles"]["Protected"].remove(protect_role.id)
-            dataIO.save_json(self.settings_path, self.settings)
-            await self.bot.say("Users with top role '{}' are no longer protected "
-                               "from color changes.".format(role))
+            protected_roles.remove(str(protect_role.id))
+            guild_roles["Protected"] = protected_roles
+            await self.settings.set(guild, "Roles", guild_roles)
+            await ctx.send("Users with top role '{}' are no longer protected "
+                           "from color changes.".format(role))
 
     @colorme.command(name="listprotect", pass_context=True, no_pm=True)
     async def _listprotect_colorme(self, ctx):
         """Lists roles that are protected from color changes."""
-        server = ctx.message.server
-        self.load_settings(server.id)
+        guild = ctx.message.guild
+        protected_roles = self.settings.get(guild, "Roles", {}).get("Protected", [])
         msg_text = "Protected role(s):"
-        for role in self.settings[server.id]["Roles"]["Protected"]:
-            role_name = discord.utils.get(server.roles, id=role).name
+        for role in protected_roles:
+            role_name = discord.utils.get(guild.roles, id=int(role)).name
             msg_text += " '" + role_name + "',"
         msg_text = msg_text[:-1] + "."
-        await self.bot.say(msg_text)
-
-    def load_settings(self, server_id):
-        self.settings = dataIO.load_json(self.settings_path)
-        if server_id not in self.settings.keys():
-            self.add_default_settings(server_id)
-
-    def add_default_settings(self, server_id):
-        self.settings[server_id] = {"Roles": {"Protected": []}}
-        dataIO.save_json(self.settings_path, self.settings)
-
-
-def check_folders():
-    folder = "data/colorme"
-    if not os.path.exists(folder):
-        print("Creating {} folder...".format(folder))
-        os.makedirs(folder)
-
-
-def check_files():
-    default = {}
-    if not dataIO.is_valid_json("data/colorme/settings.json"):
-        print("Creating default colorme settings.json...")
-        dataIO.save_json("data/colorme/settings.json", default)
+        await ctx.send(msg_text)
 
 
 def setup(bot):
-    check_folders()
-    check_files()
     bot.add_cog(ColorMe(bot))
