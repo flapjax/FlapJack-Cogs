@@ -8,7 +8,6 @@ import aiohttp
 import discord
 from discord.ext import commands
 
-#from __main__ import send_cmd_help
 from core import checks
 from core.utils import helpers
 
@@ -31,8 +30,8 @@ class Smite:
     async def smite(self, ctx):
         """Smite cog commands."""
 
-        #if ctx.invoked_subcommand is None:
-        #    await send_cmd_help(ctx)
+        if ctx.invoked_subcommand is None:
+            await self.bot.send_cmd_help(ctx)
 
     @smite.command(name="auth", pass_context=True)
     @checks.is_owner()

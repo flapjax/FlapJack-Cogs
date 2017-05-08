@@ -3,7 +3,6 @@ import re
 
 from discord.ext import commands
 
-#from __main__ import send_cmd_help
 from core import checks
 from core.utils import helpers
 
@@ -21,8 +20,8 @@ class Wat:
     async def watignore(self, ctx):
         """Change Wat cog ignore settings."""
 
-        #if ctx.invoked_subcommand is None:
-        #    await send_cmd_help(ctx)
+        if ctx.invoked_subcommand is None:
+            await self.bot.send_cmd_help(ctx)
 
     @watignore.command(name="server", pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_server=True)

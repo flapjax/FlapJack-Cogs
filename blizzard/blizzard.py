@@ -11,7 +11,6 @@ from discord.ext.commands import formatter
 
 import bleach
 from bs4 import BeautifulSoup
-#from __main__ import send_cmd_help
 from core import checks
 from core.utils import helpers
 
@@ -143,8 +142,8 @@ class Blizzard:
     async def blizzard(self, ctx):
         """Change blizzard cog settings."""
 
-        #if ctx.invoked_subcommand is None:
-        #    await send_cmd_help(ctx)
+        if ctx.invoked_subcommand is None:
+            await self.bot.send_cmd_help(ctx)
 
     @blizzard.command(name="apikey", pass_context=True)
     @checks.is_owner()
@@ -191,8 +190,8 @@ class Blizzard:
     async def battletag(self, ctx):
         """Change your battletag settings."""
 
-        #if ctx.invoked_subcommand is None:
-        #    await send_cmd_help(ctx)
+        if ctx.invoked_subcommand is None:
+            await self.bot.send_cmd_help(ctx)
 
     @battletag.command(name="set", pass_context=True)
     async def _set_battletag(self, ctx, tag: str):
@@ -226,8 +225,8 @@ class Blizzard:
     async def hearthstone(self, ctx):
         """Hearthstone utilities"""
 
-        #if ctx.invoked_subcommand is None:
-        #    await send_cmd_help(ctx)
+        if ctx.invoked_subcommand is None:
+            await self.bot.send_cmd_help(ctx)
 
     @hearthstone.command(name="notes", pass_context=True)
     async def _notes_hearthstone(self, ctx):
@@ -238,8 +237,8 @@ class Blizzard:
     async def overwatch(self, ctx):
         """Overwatch utilities"""
 
-        #if ctx.invoked_subcommand is None:
-        #    await send_cmd_help(ctx)
+        if ctx.invoked_subcommand is None:
+            await self.bot.send_cmd_help(ctx)
 
     @overwatch.command(name="stats", pass_context=True)
     async def _stats_overwatch(self, ctx, tag: str=None, region: str=None):
@@ -356,14 +355,15 @@ class Blizzard:
 
     @overwatch.command(name="notes", pass_context=True)
     async def _notes_overwatch(self, ctx):
+        """Latest Overwatch patch notes"""
         await self.format_patch_notes(ctx, 'overwatch')
 
     @commands.group(name="starcraft2", pass_context=True)
     async def starcraft2(self, ctx):
         """Starcraft2 utilities"""
 
-        #if ctx.invoked_subcommand is None:
-        #    await send_cmd_help(ctx)
+        if ctx.invoked_subcommand is None:
+            await self.bot.send_cmd_help(ctx)
 
     @starcraft2.command(name="notes", pass_context=True)
     async def _notes_starcraft2(self, ctx):
@@ -374,8 +374,8 @@ class Blizzard:
     async def warcraft(self, ctx):
         """World of Warcraft utilities"""
 
-        #if ctx.invoked_subcommand is None:
-        #    await send_cmd_help(ctx)
+        if ctx.invoked_subcommand is None:
+            await self.bot.send_cmd_help(ctx)
 
     @warcraft.command(name="notes", pass_context=True)
     async def _notes_warcraft(self, ctx):
@@ -398,8 +398,8 @@ class Blizzard:
     async def diablo3(self, ctx):
         """Diablo3 utilities"""
 
-        #if ctx.invoked_subcommand is None:
-        #    await send_cmd_help(ctx)
+        if ctx.invoked_subcommand is None:
+            await self.bot.send_cmd_help(ctx)
 
     @diablo3.command(name="notes", pass_context=True)
     async def _notes_diablo3(self, ctx):
@@ -493,8 +493,8 @@ class Blizzard:
     async def hots(self, ctx):
         """Heroes of the Storm utilities"""
 
-        #if ctx.invoked_subcommand is None:
-        #    await send_cmd_help(ctx)
+        if ctx.invoked_subcommand is None:
+            await self.bot.send_cmd_help(ctx)
 
     @hots.command(name="notes", pass_context=True)
     async def _notes_hots(self, ctx):
