@@ -279,16 +279,15 @@ class Blizzard:
         if region is None:
             if stats['kr']:
                 region = 'kr'
-                region_full = 'Asia'
             elif stats['eu']:
                 region = 'eu'
-                region_full = 'Europe'
             elif stats['us']:
                 region = 'us'
-                region_full = 'US'
             else:
                 await ctx.send('That battletag has no stats in any region.')
                 return
+
+        region_full = self.ow_full_region(region)
 
         if stats[region] is None:
             await ctx.send('That battletag exists, but I could not '
@@ -352,6 +351,13 @@ class Blizzard:
             'master': 'https://i.imgur.com/wjf0lEc.png',
             'grandmaster': 'https://i.imgur.com/5ApGiZs.png',
         }.get(tier, self.thumbs['overwatch'])
+
+    def ow_full_region(self, region: str):
+        return {
+            'kr': 'Asia',
+            'eu': 'Europe',
+            'us': 'US',
+        }.get(region, ' ')
 
     @overwatch.command(name="notes", pass_context=True)
     async def _notes_overwatch(self, ctx):
