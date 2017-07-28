@@ -41,7 +41,7 @@ class Blizzard:
         self.settings = dataIO.load_json(self.settings_path)
         self.base_url = 'https://us.battle.net/connect/en/app/'
         self.product_url = '/patch-notes?productType='
-        self.wowtoken_url = 'https://wowtoken.info/'
+        self.wowtoken_url = 'http://wowtokenprices.com'
         self.patch_urls = {
             'hearthstone': 'https://us.battle.net/hearthstone/en/blog/',
             'overwatch': 'https://playoverwatch.com/en-us/game/patch-notes/pc/',
@@ -620,16 +620,13 @@ class Blizzard:
             async with aiohttp.get(url, headers=self.header) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            desc = soup.find('div', {"class": "mui-panel realm-panel", "id": realm.lower() + "-panel"}).h2.string
-            buy_price = soup.find('td', {"class": "buy-price", "id": realm.upper() + "-buy"}).string
-            day_lo = soup.find('span', {"id": realm.upper() + "-24min"}).string
-            day_hi = soup.find('span', {"id": realm.upper() + "-24max"}).string
-            updated = soup.find('td', {"id": realm.upper() + "-updatedhtml"}).string
+            desc = soup.find('div', {'class': 'col-sm-6 col-md-4 col-12 region-div us-region-div'}).h3.string
+            buy_price = soup.find('p', {'class' : 'money-text'}).text
+            updated = soup.find('p', {'class' : "region-date" , 'id' : 'us-datetime'}).text
 
             embed = discord.Embed(title='WoW Token Info', description=desc, colour=0xFFD966)
             embed.set_thumbnail(url=thumb_url)
             embed.add_field(name='Buy Price', value=buy_price, inline=False)
-            embed.add_field(name='24-Hour Range', value=day_lo + ' - ' + day_hi, inline=False)
             embed.set_footer(text='Updated: ' + updated)
 
             await self.bot.say(embed=embed)
