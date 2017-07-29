@@ -289,7 +289,7 @@ class Blizzard:
 
         region_full = self.ow_full_region(region)
 
-        if stats[region] is None:
+        if region not in stats.keys() or stats[region] is None:
             await ctx.send('That battletag exists, but I could not '
                            'find stats for the region specified. '
                            'Try a different region '
@@ -309,7 +309,6 @@ class Blizzard:
             qplay_stats = ''.join(['**Wins:** ', self.dictgrab(qplay, 'game_stats', 'games_won'),
                                    '\n**Avg Elim:** ', self.dictgrab(qplay, 'average_stats', 'eliminations_avg'),
                                    '\n**Avg Death:** ', self.dictgrab(qplay, 'average_stats', 'deaths_avg'),
-                                   '\n**Avg Dmg:** ', self.dictgrab(qplay, 'average_stats', 'damage_done_avg'),
                                    '\n**Avg Heal:** ', self.dictgrab(qplay, 'average_stats', 'healing_done_avg')])
 
         comp = stats[region]['stats']['competitive']
@@ -326,7 +325,6 @@ class Blizzard:
             comp_stats = ''.join(['**Wins:** ', self.dictgrab(comp, 'game_stats', 'games_won'),
                                   '\n**Avg Elim:** ', self.dictgrab(comp, 'average_stats', 'eliminations_avg'),
                                   '\n**Avg Death:** ', self.dictgrab(comp, 'average_stats', 'deaths_avg'),
-                                  '\n**Avg Dmg:** ', self.dictgrab(comp, 'average_stats', 'damage_done_avg'),
                                   '\n**Avg Heal:** ', self.dictgrab(comp, 'average_stats', 'healing_done_avg')])
 
         icon_url = self.ow_tier_icon(tier)
