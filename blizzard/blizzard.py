@@ -41,7 +41,7 @@ class Blizzard:
         self.settings = dataIO.load_json(self.settings_path)
         self.base_url = 'https://us.battle.net/connect/en/app/'
         self.product_url = '/patch-notes?productType='
-        self.wowtoken_url = 'https://wowtoken.info/'
+        self.wowtoken_url = 'http://wowtokenprices.com'
         self.patch_urls = {
             'hearthstone': 'https://us.battle.net/hearthstone/en/blog/',
             'overwatch': 'https://playoverwatch.com/en-us/game/patch-notes/pc/',
@@ -400,11 +400,21 @@ class Blizzard:
 
         url = self.wowtoken_url
 
-        if realm.lower() not in ['na', 'eu', 'cn', 'tw', 'kr']:
+        if realm.lower() not in ['us', 'eu', 'cn', 'tw', 'kr']:
             await self.bot.say("'" + realm + "' is not a valid realm.")
             return
 
-        await self.print_token(url, realm)
+        await self.print_token(url, self.wow_full_region(realm))
+
+    def wow_full_region(self, region: str):
+        # Works only with wowtokenprices.com
+        return {
+            'kr': 'korea',
+            'eu': 'eu',
+            'us': 'us',
+            'cn': 'china',
+            'tw': 'taiwan'
+        }.get(region, ' ')
 
     @commands.group(name="diablo3", pass_context=True)
     async def diablo3(self, ctx):
@@ -618,17 +628,18 @@ class Blizzard:
             async with aiohttp.get(url, headers=self.header) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            desc = soup.find('div', {"class": "mui-panel realm-panel", "id": realm.lower() + "-panel"}).h2.string
-            buy_price = soup.find('td', {"class": "buy-price", "id": realm.upper() + "-buy"}).string
-            day_lo = soup.find('span', {"id": realm.upper() + "-24min"}).string
-            day_hi = soup.find('span', {"id": realm.upper() + "-24max"}).string
-            updated = soup.find('td', {"id": realm.upper() + "-updatedhtml"}).string
+            data = soup.find('div', class_=realm + '-region-div')
+            desc = data.div.a.h3.text
+            buy_price = data.div.find('p', class_='money-text').text
+            trend = data.div.find('span', class_='money-text-small').text
+            # Update time broken, returns --:-- -- when requested by bot
+            #updated = data.div.find('p', id=realm + '-datetime').text
 
             embed = discord.Embed(title='WoW Token Info', description=desc, colour=0xFFD966)
             embed.set_thumbnail(url=thumb_url)
             embed.add_field(name='Buy Price', value=buy_price, inline=False)
-            embed.add_field(name='24-Hour Range', value=day_lo + ' - ' + day_hi, inline=False)
-            embed.set_footer(text='Updated: ' + updated)
+            embed.add_field(name='Change', value=trend, inline=False)
+            #embed.set_footer(text='Updated: ' + updated)
 
             await self.bot.say(embed=embed)
 
