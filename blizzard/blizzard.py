@@ -402,11 +402,21 @@ class Blizzard:
 
         url = self.wowtoken_url
 
-        if realm.lower() not in ['na', 'eu', 'cn', 'tw', 'kr']:
+        if realm.lower() not in ['us', 'eu', 'cn', 'tw', 'kr']:
             await self.bot.say("'" + realm + "' is not a valid realm.")
             return
 
-        await self.print_token(url, realm)
+        await self.print_token(url, self.wow_full_region(realm))
+
+    def wow_full_region(self, region: str):
+        # Works only with wowtokenprices.com
+        return {
+            'kr': 'korea',
+            'eu': 'eu',
+            'us': 'us',
+            'cn': 'china',
+            'tw': 'taiwan'
+        }.get(region, ' ')
 
     @commands.group(name="diablo3", pass_context=True)
     async def diablo3(self, ctx):
@@ -620,14 +630,18 @@ class Blizzard:
             async with aiohttp.get(url, headers=self.header) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            desc = soup.find('div', {'class': 'col-sm-6 col-md-4 col-12 region-div us-region-div'}).h3.string
-            buy_price = soup.find('p', {'class' : 'money-text'}).text
-            updated = soup.find('p', {'class' : "region-date" , 'id' : 'us-datetime'}).text
+            data = soup.find('div', class_=realm + '-region-div')
+            desc = data.div.a.h3.text
+            buy_price = data.div.find('p', class_='money-text').text
+            trend = data.div.find('span', class_='money-text-small').text
+            # Update time broken, returns --:-- -- when requested by bot
+            #updated = data.div.find('p', id=realm + '-datetime').text
 
             embed = discord.Embed(title='WoW Token Info', description=desc, colour=0xFFD966)
             embed.set_thumbnail(url=thumb_url)
             embed.add_field(name='Buy Price', value=buy_price, inline=False)
-            embed.set_footer(text='Updated: ' + updated)
+            embed.add_field(name='Change', value=trend, inline=False)
+            #embed.set_footer(text='Updated: ' + updated)
 
             await self.bot.say(embed=embed)
 
