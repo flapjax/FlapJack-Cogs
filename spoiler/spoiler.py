@@ -32,6 +32,10 @@ class Spoiler:
 
         message = ctx.message
         author = message.author.display_name
+        title = "Mouseover to reveal spoiler"
+        if title == ''.join(text):
+            await ctx.send("Nice try :|")
+            return
 
         try:
             await message.delete()
@@ -53,7 +57,6 @@ class Spoiler:
             spoil_lines.extend(textwrap.wrap(line, self.line_length,
                                              replace_whitespace=False))
 
-        title = "Mouseover to reveal spoiler"
         width = fnt.getsize(title)[0] + 50
         height = 0
 
@@ -72,8 +75,11 @@ class Spoiler:
 
         for img, txt in zip(spoil_img, spoil_text):
             canvas = ImageDraw.Draw(img)
-            canvas.text(self.margin, txt, font=fnt, fill=self.font_color, 
-                        spacing=4)
+            try:
+                canvas.text(self.margin, txt, font=fnt, fill=self.font_color,
+                            spacing=4)
+            except TypeError:
+                canvas.text(self.margin, txt, font=fnt, fill=self.font_color)
 
         path = self.temp_filepath + ''.join(random.choice(
                    '0123456789ABCDEF') for i in range(12)) + ".gif"
