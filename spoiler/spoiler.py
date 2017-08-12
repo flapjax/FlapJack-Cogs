@@ -32,6 +32,10 @@ class Spoiler:
 
         message = ctx.message
         author = message.author.display_name
+        title = "Mouseover to reveal spoiler"
+        if title == ''.join(text):
+            await self.bot.say("Nice try :|")
+            return
 
         try:
             await self.bot.delete_message(message)
@@ -53,7 +57,6 @@ class Spoiler:
             spoil_lines.extend(textwrap.wrap(line, self.line_length,
                                              replace_whitespace=False))
 
-        title = "Mouseover to reveal spoiler"
         width = fnt.getsize(title)[0] + 50
         height = 0
 
