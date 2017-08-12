@@ -72,8 +72,11 @@ class Spoiler:
 
         for img, txt in zip(spoil_img, spoil_text):
             canvas = ImageDraw.Draw(img)
-            canvas.text(self.margin, txt, font=fnt, fill=self.font_color, 
-                        spacing=4)
+            try:
+                canvas.text(self.margin, txt, font=fnt, fill=self.font_color,
+                            spacing=4)
+            except TypeError:
+                canvas.text(self.margin, txt, font=fnt, fill=self.font_color)
 
         path = self.temp_filepath + ''.join(random.choice(
                    '0123456789ABCDEF') for i in range(12)) + ".gif"
