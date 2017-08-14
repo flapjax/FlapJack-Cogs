@@ -311,10 +311,11 @@ class ColorMe:
         """Lists roles that are protected from color changes."""
         server = ctx.message.server
         self.load_settings(server.id)
-        msg_text = "Protected role(s):"
+        msg_text = "Protected role(s): "
         for role in self.settings[server.id]["Roles"]["Protected"]:
-            role_name = discord.utils.get(server.roles, id=role).name
-            msg_text += " '" + role_name + "',"
+            protected_role = discord.utils.get(server.roles, id=role)
+            if protected_role is not None:
+                msg_text += " '" + protected_role.name + "',"
         msg_text = msg_text[:-1] + "."
         await self.bot.say(msg_text)
 
