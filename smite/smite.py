@@ -1,16 +1,12 @@
 import hashlib
 import os
-#import pprint
 from datetime import datetime
 from json import JSONDecodeError
 
 import aiohttp
 import discord
+from core import checks, Config
 from discord.ext import commands
-
-from core import checks
-from core.utils import helpers
-
 
 # Special thanks to Kunkulada for suggesting this cog and
 # contributing to the design of the embeds.
@@ -22,7 +18,7 @@ class Smite:
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings = helpers.JsonDB("data/settings.json")
+        self.conf = Config.get_conf(self, identifier=254906529)
         self.url_pc = 'http://api.smitegame.com/smiteapi.svc'
         self.header = {"User-Agent": "flapjackcogs/1.0"}
 
@@ -40,8 +36,8 @@ class Smite:
         (get them at https://fs12.formsite.com/HiRez/form48/secure_index.html)
         Use a direct message to keep the credentials secret."""
 
-        await self.settings.set('devid', devid)
-        await self.settings.set('authkey', key)
+        await self.conf.devid.set(devid)
+        await self.conf.authkey.set(key)
         await ctx.send('API access credentials set.')
 
     @smite.command(name="ping", pass_context=True)
@@ -55,22 +51,18 @@ class Smite:
     async def _nameset_smite(self, ctx, name: str):
         """Set your Smite name"""
 
-        user_id = str(ctx.message.author.id)
-        # Need to check if this results in data loss with simultaneous use
-        names = self.settings.get('smitenames', {})
-        names[user_id] = name
-        await self.settings.set('smitenames', names)
+        user = ctx.author
+        await self.conf.user(user).smitename.set(name)
         await ctx.send("Your Smite name has been set.")
 
     @smite.command(name="nameclear", pass_context=True)
     async def _nameclear_smite(self, ctx):
         """Remove your Smite name"""
 
-        user_id = str(ctx.message.author.id)
-        # Need to check for data loss here as well
-        names = self.settings.get('smitenames', {})
-        if names.pop(user_id, None) is not None:
-            await self.settings.set('smitenames', names)
+        user = ctx.author
+        name = await self.conf.user(user).smitename()
+        if name is not None:
+            await self.conf.user(user).smitename.set(None)
             await ctx.send("Your Smite name has been removed.")
         else:
             await ctx.send("I had no Smite name stored for you.")
@@ -83,15 +75,15 @@ class Smite:
         Example: [p]smite stats Kunkulada
         """
 
-        dev_id = self.settings.get('devid')
-        key = self.settings.get('authkey')
+        dev_id = await self.conf.devid()
+        key = await self.conf.authkey()
         if dev_id is None or key is None:
             await ctx.send("I am missing Smite API credentials.")
             return
 
-        user_id = str(ctx.message.author.id)
+        user = ctx.message.author
         if name is None:
-            name = self.settings.get('smitenames', {}).get(user_id)
+            name = await self.conf.user(user).smitename()
             if name is None:
                 await ctx.send('You did not provide a name '
                                'and I do not have one stored for you.')
@@ -104,7 +96,7 @@ class Smite:
                                "valid credentials?")
                 return
 
-        session = self.settings.get('session_id')
+        session = await self.conf.session_id()
         time = datetime.utcnow().strftime('%Y%m%d%H%M%S')
 
         m = hashlib.md5()
@@ -155,15 +147,15 @@ class Smite:
         Example: [p]smite status Kunkulada
         """
 
-        dev_id = self.settings.get('devid')
-        key = self.settings.get('authkey')
+        dev_id = await self.conf.devid()
+        key = await self.conf.authkey()
         if dev_id is None or key is None:
             await ctx.send("I am missing Smite API credentials.")
             return
 
-        user_id = str(ctx.message.author.id)
+        user = ctx.message.author
         if name is None:
-            name = self.settings.get('smitenames', {}).get(user_id)
+            name = await self.conf.user(user).smitename()
             if name is None:
                 await ctx.send('You did not provide a name '
                                'and I do not have one stored for you.')
@@ -176,7 +168,7 @@ class Smite:
                                "valid credentials?")
                 return
 
-        session = self.settings.get('session_id')
+        session = await self.conf.session_id()
         time = datetime.utcnow().strftime('%Y%m%d%H%M%S')
 
         m = hashlib.md5()
@@ -216,7 +208,7 @@ class Smite:
 
         # If we reach here, player is in a game, and we can show live data
         mid = str(re[0]['Match'])
-        session = self.settings.get('session_id')
+        session = await self.conf.session_id()
         time = datetime.utcnow().strftime('%Y%m%d%H%M%S')
 
         m = hashlib.md5()
@@ -230,10 +222,6 @@ class Smite:
 
         async with aiohttp.request("GET", url, headers=self.header) as response:
             re = await response.json()
-
-        # Print data to console for troubleshooting
-        #pp = pprint.PrettyPrinter()
-        #pp.pprint(re)
 
         teams = ['', '']
 
@@ -312,8 +300,8 @@ class Smite:
 
     async def create_session(self):
 
-        dev_id = self.settings.get('devid')
-        key = self.settings.get('authkey')
+        dev_id = await self.conf.devid()
+        key = await self.conf.authkey()
         if dev_id is None or key is None:
             return False
         time = datetime.utcnow().strftime('%Y%m%d%H%M%S')
@@ -335,16 +323,16 @@ class Smite:
                 return False
 
         if re['ret_msg'] == "Approved":
-            await self.settings.set('session_id', re['session_id'])
+            await self.conf.session_id.set(re['session_id'])
             return True
         # Response received, but request rejected. Could be bad credentials.
         return False
 
     async def test_session(self):
 
-        dev_id = self.settings.get('devid')
-        key = self.settings.get('authkey')
-        session = self.settings.get('session_id')
+        dev_id = await self.conf.devid()
+        key = await self.conf.authkey()
+        session = await self.conf.session_id()
         if dev_id is None or key is None or session is None:
             return False
         time = datetime.utcnow().strftime('%Y%m%d%H%M%S')

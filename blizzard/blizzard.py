@@ -5,15 +5,12 @@ from copy import copy
 from numbers import Number
 
 import aiohttp
+import bleach
 import discord
+from bs4 import BeautifulSoup
+from core import Config, checks
 from discord.ext import commands
 from discord.ext.commands import formatter
-
-import bleach
-from bs4 import BeautifulSoup
-from core import checks
-from core.utils import helpers
-
 
 # Special thanks to judge2020 for telling me about this method for getting
 # patch notes. https://github.com/judge2020/BattleNetUpdateChecker
@@ -25,9 +22,17 @@ class Blizzard:
 
     """Blizzard Game Utilities"""
 
+    default_global_settings = {
+        "notes_format": "paged",
+        "notes_timeout": 60
+    }
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.settings = helpers.JsonDB("data/settings.json")
+        self.conf = Config.get_conf(self, identifier=62869734)
+        self.conf.register_global(
+            **self.default_global_settings
+        )
         self.base_url = 'https://us.battle.net/connect/en/app/'
         self.product_url = '/patch-notes?productType='
         self.wowtoken_url = 'http://wowtokenprices.com'
@@ -152,7 +157,7 @@ class Blizzard:
         (get one at https://dev.battle.net/)
         Use a direct message to keep the key secret."""
 
-        await self.settings.set('apikey', key)
+        await self.conf.apikey.set(key)
         await ctx.send('API key set.')
 
     @blizzard.command(name="noteformat", pass_context=True)
@@ -165,7 +170,7 @@ class Blizzard:
 
         accept = ['paged', 'full', 'embed']
         if form in accept:
-            await self.settings.set('notes_format', form)
+            await self.conf.notes_format.set(form)
             await ctx.send("Patch notes format set to `{}`.".format(form))
         else:
             await ctx.send("`{}` is not a valid format. Please choose "
@@ -180,7 +185,7 @@ class Blizzard:
 
         min_max = (5, 3600)
         if min_max[0] <= timeout <= min_max[1]:
-            await self.settings.set('notes_timeout', timeout)
+            await self.conf.notes_timeout.set(timeout)
             await ctx.send("Timeout period set to `{} sec`.".format(timeout))
         else:
             await ctx.send("Please choose a duration between "
@@ -201,22 +206,18 @@ class Blizzard:
         if pattern.search(tag) is None:
             await ctx.send("That doesn't look like a valid battletag.")
             return
-        user_id = str(ctx.message.author.id)
-        # Need to check if this results in data loss with simultaneous use
-        tags = self.settings.get('battletags', {})
-        tags[user_id] = tag
-        await self.settings.set('battletags', tags)
+        user = ctx.author
+        await self.conf.user(user).battletag.set(tag)
         await ctx.send("Your battletag has been set.")
 
     @battletag.command(name="clear", pass_context=True)
     async def _clear_battletag(self, ctx):
         """Remove your battletag"""
 
-        user_id = str(ctx.message.author.id)
-        # Need to check for data loss here as well
-        tags = self.settings.get('battletags', {})
-        if tags.pop(user_id, None) is not None:
-            await self.settings.set('battletags', tags)
+        user = ctx.author
+        tag = await self.conf.user(user).battletag()
+        if tag is not None:
+            await self.conf.user(user).battletag.set(None)
             await ctx.send("Your battletag has been removed.")
         else:
             await ctx.send("I had no battletag stored for you.")
@@ -249,14 +250,14 @@ class Blizzard:
         Example: [p]overwatch stats CoolDude#1234 kr
         """
 
-        user_id = str(ctx.message.author.id)
+        user = ctx.author
         # Little hack to detect if region was entered, but not battletag
         if (tag in ['kr', 'eu', 'us']) and (region is None):
             region = tag
             tag = None
 
         if tag is None:
-            tag = self.settings.get('battletags', {}).get(user_id)
+            tag = await self.conf.user(user).battletag()
             if tag is None:
                 await ctx.send('You did not provide a battletag '
                                'and I do not have one stored for you.')
@@ -428,7 +429,7 @@ class Blizzard:
         Example: [p]diablo3 stats CoolDude#1234
         """
 
-        user_id = str(ctx.message.author.id)
+        user = ctx.author
 
         # Little hack to detect if region was entered, but not battletag
         if tag is not None and tag.lower() in ['kr', 'eu', 'us', 'tw']\
@@ -437,12 +438,12 @@ class Blizzard:
             tag = None
 
         if tag is None:
-            tag = self.settings.get('battletags', {}).get(user_id)
+            tag = await self.conf.user(user).battletag()
             if tag is None:
                 await ctx.send('You did not provide a battletag '
                                'and I do not have one stored for you.')
                 return
-        key = self.settings.get('apikey')
+        key = await self.conf.apikey()
         if key is None:
             await ctx.send('The bot owner has not provided a '
                            'battle.net API key, which is '
@@ -576,14 +577,15 @@ class Blizzard:
                     pass
             note_list.append(pager.pages)
 
-        if self.settings.get('notes_format', 'paged') == 'paged':
-            result = await self._info_menu(ctx, note_list[0],
-                timeout=self.settings.get('notes_timeout', 60))
+        notes_format = await self.conf.notes_format()
+        timeout = await self.conf.notes_timeout()
+        if notes_format == 'paged':
+            result = await self._info_menu(ctx, note_list[0], timeout=timeout)
             if result[0] == "no":
                 await result[1].delete()
             else:
                 await result[1].edit(embed=self.expired_embed)
-        elif self.settings.get('notes_format', 'paged') == 'full':
+        elif notes_format == 'full':
             await self.say_full_notes(ctx, note_list[0])
         else:
             # Extract title and body, remove markdown formatting line between

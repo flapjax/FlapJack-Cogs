@@ -4,20 +4,25 @@ import os
 import re
 
 import discord
+from core import Config, checks
 from discord.ext import commands
 from discord.ext.commands import converter
-
-from core import checks
-from core.utils import helpers
 
 
 class ColorMe:
 
     """Manage the color of your own name."""
 
+    default_guild_settings = {
+        "protected_roles": []
+    }
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.settings = helpers.JsonGuildDB("data/settings.json")
+        self.conf = Config.get_conf(self, identifier=879271957)
+        self.conf.register_guild(
+            **self.default_guild_settings
+        )
         self.suffix = ":color"
 
     def _is_sharing_role(self, ctx: commands.Context, role):
@@ -37,9 +42,7 @@ class ColorMe:
         return False
 
     def _elim_valid_roles(self, roles):
-        # Do we still need deepcopy?
-        role_copy = copy.deepcopy(roles)
-        for role in role_copy:
+        for role in roles:
             if len(role.members) > 0:
                 roles.remove(role)
         return roles
@@ -56,8 +59,9 @@ class ColorMe:
             await self.bot.send_cmd_help(ctx)
 
     @colorme.command(name="change", pass_context=True, no_pm=True)
-    @commands.cooldown(2, 60, commands.BucketType.user)
-    async def _change_colorme(self, ctx: commands.Context, newcolor: str):
+    @commands.cooldown(10, 60, commands.BucketType.user)
+    async def _change_colorme(self, ctx: commands.Context,
+                              newcolor: discord.Colour):
         """Change the color of your name.
 
         New color must be a valid hexidecimal color value.
@@ -67,21 +71,11 @@ class ColorMe:
         name = member.name
         disc = member.discriminator
         top_role = member.top_role
-        # lolol v2 json compatibility
-        protected_roles = self.settings.get(guild, "Roles", {}).get("Protected", [])
-
-        try:
-            verter = converter.ColourConverter()
-            verter.prepare(ctx, newcolor)
-            newcolor = verter.convert()
-        except commands.BadArgument:
-            await ctx.send("Color must be a valid hexidecimal value.")
-            return
+        protected_roles = await self.conf.guild(guild).protected_roles()
 
         role_to_change = None
         for role in member.roles:
-            # Need to compare strings
-            if str(role.id) in protected_roles:
+            if role.id in protected_roles:
                 await ctx.send("You have a role that is protected from "
                                "color changes.")
                 return
@@ -223,7 +217,7 @@ class ColorMe:
         dead_roles = []
         emoji = ('\N{WHITE HEAVY CHECK MARK}', '\N{CROSS MARK}')
 
-        for role in server.role_hierarchy:
+        for role in guild.role_hierarchy:
             if self._could_be_colorme(role):
                 dead_roles.append(role)
         dead_roles = self._elim_valid_roles(dead_roles)
@@ -288,14 +282,12 @@ class ColorMe:
         if protect_role is None:
             await ctx.send("No roles match that name.")
             return
-        guild_roles = self.settings.get(guild, "Roles", {})
-        protected_roles = guild_roles.get("Protected", [])
-        if str(protect_role.id) in protected_roles:
+        protected_roles = await self.conf.guild(guild).protected_roles()
+        if protect_role.id in protected_roles:
             await ctx.send("That role is already protected.")
         else:
-            protected_roles.append(str(protect_role.id))
-            guild_roles["Protected"] = protected_roles
-            await self.settings.set(guild, "Roles", guild_roles)
+            protected_roles.append(protect_role.id)
+            await self.conf.guild(guild).protected_roles.set(protected_roles)
             await ctx.send("Users with top role '{}' are protected from "
                            "color changes.".format(role))
 
@@ -306,19 +298,17 @@ class ColorMe:
 
         Example: [p]colorme unprotect admin
         """
-        guild= ctx.message.guild
+        guild = ctx.message.guild
         protect_role = discord.utils.get(guild.roles, name=role)
         if protect_role is None:
             await ctx.send("No roles match that name.")
             return
-        guild_roles = self.settings.get(guild, "Roles", {})
-        protected_roles = guild_roles.get("Protected", [])
-        if str(protect_role.id) not in protected_roles:
+        protected_roles = await self.conf.guild(guild).protected_roles()
+        if protect_role.id not in protected_roles:
             await ctx.send("That role is not currently protected.")
         else:
-            protected_roles.remove(str(protect_role.id))
-            guild_roles["Protected"] = protected_roles
-            await self.settings.set(guild, "Roles", guild_roles)
+            protected_roles.remove(protect_role.id)
+            await self.conf.guild(guild).protected_roles.set(protected_roles)
             await ctx.send("Users with top role '{}' are no longer protected "
                            "from color changes.".format(role))
 
@@ -326,11 +316,12 @@ class ColorMe:
     async def _listprotect_colorme(self, ctx):
         """Lists roles that are protected from color changes."""
         guild = ctx.message.guild
-        protected_roles = self.settings.get(guild, "Roles", {}).get("Protected", [])
-        msg_text = "Protected role(s):"
+        protected_roles = await self.conf.guild(guild).protected_roles()
+        msg_text = "Protected role(s): "
         for role in protected_roles:
-            role_name = discord.utils.get(guild.roles, id=int(role)).name
-            msg_text += " '" + role_name + "',"
+            protected_role = discord.utils.get(guild.roles, id=role)
+            if protected_role is not None:
+                msg_text += " '" + protected_role.name + "',"
         msg_text = msg_text[:-1] + "."
         await ctx.send(msg_text)
 

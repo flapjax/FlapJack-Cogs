@@ -3,17 +3,24 @@ import re
 
 from discord.ext import commands
 
-from core import checks
-from core.utils import helpers
+from core import checks, Config
 
 
 class Wat:
 
     """Repeat messages when other users are having trouble hearing"""
 
+    default_global_settings = {
+        "channels_ignored": [],
+        "guilds_ignored": []
+    }
+
     def __init__(self, bot):
         self.bot = bot
-        self.settings = helpers.JsonDB("data/settings.json")
+        self.conf = Config.get_conf(self, identifier=527690525)
+        self.conf.register_global(
+            **self.default_global_settings
+        )
 
     @commands.group(name="watignore", pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_server=True)
@@ -28,36 +35,34 @@ class Wat:
     async def _watignore_server(self, ctx):
         """Ignore/Unignore the current server"""
 
-        guild_id = str(ctx.message.guild.id)
-        guilds = self.settings.get('ignore_servers', [])
-        if guild_id in guilds:
-            guilds.remove(guild_id)
-            await self.settings.set('ignore_servers', guilds)
+        guild = ctx.message.guild
+        guilds = await self.conf.guilds_ignored()
+        if guild.id in guilds:
+            guilds.remove(guild.id)
             await ctx.send("wot? Ok boss, I will no longer "
                            "ignore this server.")
         else:
-            guilds.append(guild_id)
-            await self.settings.set('ignore_servers', guilds)
+            guilds.append(guild.id)
             await ctx.send("what? Fine, I will ignore "
                            "this server.")
+        await self.conf.guilds_ignored.set(guilds)
 
     @watignore.command(name="channel", pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_server=True)
     async def _watignore_channel(self, ctx):
         """Ignore/Unignore the current channel"""
 
-        chan_id = str(ctx.message.channel.id)
-        chans = self.settings.get('ignore_channels', [])
-        if chan_id in chans:
-            chans.remove(chan_id)
-            await self.settings.set('ignore_channels', chans)
+        chan = ctx.message.channel
+        chans = await self.conf.channels_ignored()
+        if chan.id in chans:
+            chans.remove(chan.id)
             await ctx.send("wut? Ok, I will no longer "
                            "ignore this channel.")
         else:
-            chans.append(chan_id)
-            await self.settings.set('ignore_channels', chans)
+            chans.append(chan.id)
             await ctx.send("wat? Alright, I will ignore "
                            "this channel.")
+        await self.conf.channels_ignored.set(chans)
 
     # Come up with a new method to ignore bot commands
     async def on_message(self, message):
@@ -70,9 +75,9 @@ class Wat:
         content = message.content.lower().split()
         if len(content) != 1:
             return
-        if str(message.guild.id) in self.settings.get('ignore_servers', []):
+        if message.guild.id in await self.conf.guilds_ignored():
             return
-        if str(message.channel.id) in self.settings.get('ignore_channels', []):
+        if message.channel.id in await self.conf.channels_ignored():
             return
 
         pattern = re.compile(r'w+h*[aou]+t+[?!]*', re.IGNORECASE)
