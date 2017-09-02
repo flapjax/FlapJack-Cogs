@@ -1,8 +1,10 @@
 import asyncio
+import functools
 import os
 
 import numpy as np
 from __main__ import send_cmd_help
+from cogs.utils import checks
 from discord.ext import commands
 from discord.ext.commands import formatter
 from PIL import Image
@@ -55,7 +57,7 @@ class WordCloud:
 
         text = ''
         async for message in self.bot.logs_from(channel, limit=limit):
-            if not mssage.author.bot:
+            if not message.author.bot:
                 text += message.clean_content + ' '
 
         # Default settings
@@ -79,15 +81,28 @@ class WordCloud:
         if self.settings.get('colormask', False):
             coloring = ImageColorGenerator(mask)
 
-        wc = WCloud(mask=mask, color_func=coloring, mode=mode,
-                    background_color=bg_color, max_words=max_words,
-                    stopwords=excluded)
-        wc.generate(text)
+        kwargs = {'mask': mask, 'color_func': coloring, 'mode': mode,
+                  'background_color': bg_color, 'max_words': max_words,
+                  'stopwords': excluded}
         cloudfile = 'data/wordcloud/clouds/' + channel.id + '.png'
-        wc.to_file(cloudfile)
+
+        task = functools.partial(self.generate_wordcloud, cloudfile, text,
+                                 **kwargs)
+        task = self.bot.loop.run_in_executor(None, task)
+        try:
+            await asyncio.wait_for(task, timeout=15)
+        except asyncio.TimeoutError:
+            await self.bot.say('Wordcloud creation timed out.')
+            return
 
         msg = "Word Cloud for **" + server.name + '/' + channel.name + "**:"
         await self.bot.send_file(ctx.message.channel, cloudfile, content=msg)
+
+    def generate_wordcloud(self, cloudfile, text, **kwargs):
+        # Designed to be run in executor to avoid blocking
+        wc = WCloud(**kwargs)
+        wc.generate(text)
+        wc.to_file(cloudfile)
 
     @commands.group(name='wordset', pass_context=True, no_pm=True)
     @checks.mod_or_permissions(administrator=True)
