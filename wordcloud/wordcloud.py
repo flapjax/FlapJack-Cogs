@@ -86,7 +86,6 @@ class WordCloud:
                 if user is None or user == message.author:
                     text += message.clean_content + ' '
 
-        print(text)
         if not text or text.isspace():
             await self.bot.say("Wordlcoud creation failed. Couldn't find any words!")
             return
