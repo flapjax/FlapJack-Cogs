@@ -2,11 +2,12 @@ import asyncio
 import functools
 import os
 
+import discord
 import numpy as np
 from __main__ import send_cmd_help
 from cogs.utils import checks
 from discord.ext import commands
-from discord.ext.commands import formatter
+from discord.ext.commands import formatter, converter, errors
 from PIL import Image
 from wordcloud import WordCloud as WCloud
 from wordcloud import ImageColorGenerator
@@ -42,23 +43,39 @@ class WordCloud:
             asyncio.sleep(1)
 
     @commands.command(name='wordcloud', pass_context=True, no_pm=True)
-    async def wordcloud(self, ctx, channel=None, limit: int=1000):
-        """Generate a wordcloud"""
+    async def wordcloud(self, ctx, *argv):
+        """Generate a wordcloud. Optional arguments are channel, user, and
+        message limit."""
 
-        if channel is None:
-            channel = ctx.message.channel
-            server = ctx.message.server
-        else:
-            channel = self.bot.get_channel(channel)
-            if channel is None:
-                await self.bot.say("That's not a valid channel.")
-                return
-            server = channel.server
+        channel = ctx.message.channel
+        user = None
+        limit = 1000
+
+        for arg in argv:
+            try:
+                channel = converter.ChannelConverter(ctx, arg).convert()
+                if channel.type != discord.ChannelType.text:
+                    channel = ctx.message.channel
+                continue
+            except errors.BadArgument:
+                pass
+
+            try:
+                user = converter.UserConverter(ctx, arg).convert()
+                continue
+            except errors.BadArgument:
+                pass
+
+            if isinstance(arg, int):
+                limit = arg
+
+        server = channel.server
 
         text = ''
         async for message in self.bot.logs_from(channel, limit=limit):
             if not message.author.bot:
-                text += message.clean_content + ' '
+                if user is None or user == message.author:
+                    text += message.clean_content + ' '
 
         # Default settings
         mask = None
