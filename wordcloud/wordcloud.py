@@ -25,15 +25,15 @@ class WordCloud:
         self.mask_folder = "data/wordcloud/masks/"
         self.settings = dataIO.load_json(self.settings_path)
 
-    async def _list_masks(self, channel):
+    async def _list_masks(self, ctx):
 
+        channel = ctx.message.channel
+        prefix = ctx.prefix
         masks = sorted(os.listdir(self.mask_folder))
 
         if len(masks) == 0:
             await self.bot.send_message(channel, "No masks found. Use "
-                                        "`{}wordmask add`to add one."
-                                        .format(ctx.prefix))
-
+                                        "`{}wordmask add` to add one.".format(prefix))
         pager = formatter.Paginator(prefix='```', suffix='```', max_size=2000)
         pager.add_line('Here are the image masks you have installed:')
         for mask in masks:
@@ -50,7 +50,7 @@ class WordCloud:
 
         channel = ctx.message.channel
         user = None
-        limit = 1000
+        limit = 4000
 
         for arg in argv:
             try:
@@ -73,10 +73,10 @@ class WordCloud:
 
         server = channel.server
 
-        msg = "Generating Word Cloud for **" + server.name + '/' + channel.name
+        msg = "Generating wordcloud for **" + server.name + '/' + channel.name
         if user is not None:
             msg += "/" + user.display_name
-        msg += "** using last {} messages. (this might take a while)".format(limit)
+        msg += "** using the last {} messages. (this might take a while)".format(limit)
 
         await self.bot.say(msg)
 
@@ -86,9 +86,16 @@ class WordCloud:
                 if user is None or user == message.author:
                     text += message.clean_content + ' '
 
+        print(text)
+        if not text or text.isspace():
+            await self.bot.say("Wordlcoud creation failed. Couldn't find any words!")
+            return
+
         # Default settings
         mask = None
         coloring = None
+        width = 800
+        height = 600
         mode = 'RGB'
         bg_color = self.settings.get('bgcolor', 'black')
         if bg_color == 'clear':
@@ -104,19 +111,19 @@ class WordCloud:
         mask_file = self.settings.get('mask', None)
         if mask_file is not None:
             mask = np.array(Image.open(mask_file))
-        if self.settings.get('colormask', False):
-            coloring = ImageColorGenerator(mask)
+            if self.settings.get('colormask', False):
+                coloring = ImageColorGenerator(mask)
 
         kwargs = {'mask': mask, 'color_func': coloring, 'mode': mode,
                   'background_color': bg_color, 'max_words': max_words,
-                  'stopwords': excluded}
+                  'stopwords': excluded, 'width': width, 'height': height}
         filepath = 'data/wordcloud/clouds/' + channel.id + '.png'
 
         task = functools.partial(self.generate_wordcloud, filepath, text,
                                  **kwargs)
         task = self.bot.loop.run_in_executor(None, task)
         try:
-            await asyncio.wait_for(task, timeout=15)
+            await asyncio.wait_for(task, timeout=45)
         except asyncio.TimeoutError:
             await self.bot.say('Wordcloud creation timed out.')
             return
@@ -141,15 +148,15 @@ class WordCloud:
     async def _wordset_listmask(self, ctx):
         """List image files available for masking"""
 
-        await self._list_masks(ctx.message.channel)
+        await self._list_masks(ctx)
 
-    @wordset.command(name='setmask', pass_context=True, no_pm=True)
-    async def _wordset_setmask(self, ctx, filename: str):
-        """Set image file for masking"""
-
+    @wordset.command(name='maskfile', pass_context=True, no_pm=True)
+    async def _wordset_maskfile(self, ctx, filename: str):
+        """Set image file for masking
+        - place masks in /data/wordcloud/masks/"""
         if not os.path.isfile(self.mask_folder + filename):
             await self.bot.say("That's not a valid filename.")
-            await self._list_masks(ctx.message.channel)
+            await self._list_masks(ctx)
             return
         self.settings['mask'] = self.mask_folder + filename
         dataIO.save_json(self.settings_path, self.settings)
@@ -190,8 +197,8 @@ class WordCloud:
 
     @wordset.command(name='maxwords', pass_context=True, no_pm=True)
     async def _wordset_maxwords(self, ctx, count: int):
-        """Set maximum number of words to appear in the word cloud (
-        Set to 0 for default)."""
+        """Set maximum number of words to appear in the word cloud
+        Set to 0 for default (4000)."""
         # No checks for bad values yet
         self.settings['maxwords'] = count
         dataIO.save_json(self.settings_path, self.settings)
@@ -207,8 +214,8 @@ class WordCloud:
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say("'{}' added to excluded words.".format(word))
 
-    @wordset.command(name='clear', pass_context=True, no_pm=True)
-    async def _wordset_clear(self, ctx):
+    @wordset.command(name='clearwords', pass_context=True, no_pm=True)
+    async def _wordset_clearwords(self, ctx):
         """Clear the excluded word list.
         Default excluded list will be used."""
 
