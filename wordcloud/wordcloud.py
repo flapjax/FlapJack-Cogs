@@ -43,6 +43,7 @@ class WordCloud:
             asyncio.sleep(1)
 
     @commands.command(name='wordcloud', pass_context=True, no_pm=True, aliases=['wc'])
+    @commands.cooldown(1, 10, commands.BucketType.server)
     async def wordcloud(self, ctx, *argv):
         """Generate a wordcloud. Optional arguments are channel, user, and
         message limit."""
