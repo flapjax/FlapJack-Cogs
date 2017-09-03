@@ -42,7 +42,7 @@ class WordCloud:
             await self.bot.send_message(channel, page)
             asyncio.sleep(1)
 
-    @commands.command(name='wordcloud', pass_context=True, no_pm=True)
+    @commands.command(name='wordcloud', pass_context=True, no_pm=True, aliases=['wc'])
     async def wordcloud(self, ctx, *argv):
         """Generate a wordcloud. Optional arguments are channel, user, and
         message limit."""
@@ -57,19 +57,27 @@ class WordCloud:
                 if channel.type != discord.ChannelType.text:
                     channel = ctx.message.channel
                 continue
+
             except errors.BadArgument:
                 pass
 
             try:
-                user = converter.UserConverter(ctx, arg).convert()
+                user = converter.MemberConverter(ctx, arg).convert()
                 continue
             except errors.BadArgument:
                 pass
 
-            if isinstance(arg, int):
-                limit = arg
+            if arg.isdigit():
+                limit = int(arg)
 
         server = channel.server
+
+        msg = "Generating Word Cloud for **" + server.name + '/' + channel.name
+        if user is not None:
+            msg += "/" + user.display_name
+        msg += "** using last {} messages. (this might take a while)".format(limit)
+
+        await self.bot.say(msg)
 
         text = ''
         async for message in self.bot.logs_from(channel, limit=limit):
@@ -101,9 +109,9 @@ class WordCloud:
         kwargs = {'mask': mask, 'color_func': coloring, 'mode': mode,
                   'background_color': bg_color, 'max_words': max_words,
                   'stopwords': excluded}
-        cloudfile = 'data/wordcloud/clouds/' + channel.id + '.png'
+        filepath = 'data/wordcloud/clouds/' + channel.id + '.png'
 
-        task = functools.partial(self.generate_wordcloud, cloudfile, text,
+        task = functools.partial(self.generate_wordcloud, filepath, text,
                                  **kwargs)
         task = self.bot.loop.run_in_executor(None, task)
         try:
@@ -112,14 +120,13 @@ class WordCloud:
             await self.bot.say('Wordcloud creation timed out.')
             return
 
-        msg = "Word Cloud for **" + server.name + '/' + channel.name + "**:"
-        await self.bot.send_file(ctx.message.channel, cloudfile, content=msg)
+        await self.bot.send_file(ctx.message.channel, filepath)
 
-    def generate_wordcloud(self, cloudfile, text, **kwargs):
+    def generate_wordcloud(self, filepath, text, **kwargs):
         # Designed to be run in executor to avoid blocking
         wc = WCloud(**kwargs)
         wc.generate(text)
-        wc.to_file(cloudfile)
+        wc.to_file(filepath)
 
     @commands.group(name='wordset', pass_context=True, no_pm=True)
     @checks.mod_or_permissions(administrator=True)
