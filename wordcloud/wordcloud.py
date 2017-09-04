@@ -28,12 +28,13 @@ class WordCloud:
     async def _list_masks(self, ctx):
 
         channel = ctx.message.channel
-        prefix = ctx.prefix
         masks = sorted(os.listdir(self.mask_folder))
 
         if len(masks) == 0:
-            await self.bot.send_message(channel, "No masks found. Use "
-                                        "`{}wordmask add` to add one.".format(prefix))
+            await self.bot.send_message(channel, "No masks found. (place "
+                                        "masks in /data/wordcloud/masks/)")
+            return
+
         pager = formatter.Paginator(prefix='```', suffix='```', max_size=2000)
         pager.add_line('Here are the image masks you have installed:')
         for mask in masks:
@@ -48,6 +49,7 @@ class WordCloud:
         """Generate a wordcloud. Optional arguments are channel, user, and
         message limit."""
 
+        author = ctx.message.author
         channel = ctx.message.channel
         user = None
         limit = 4000
@@ -73,21 +75,9 @@ class WordCloud:
 
         server = channel.server
 
-        msg = "Generating wordcloud for **" + server.name + '/' + channel.name
-        if user is not None:
-            msg += "/" + user.display_name
-        msg += "** using the last {} messages. (this might take a while)".format(limit)
-
-        await self.bot.say(msg)
-
-        text = ''
-        async for message in self.bot.logs_from(channel, limit=limit):
-            if not message.author.bot:
-                if user is None or user == message.author:
-                    text += message.clean_content + ' '
-
-        if not text or text.isspace():
-            await self.bot.say("Wordlcoud creation failed. Couldn't find any words!")
+        # Verify that wordcloud requester is not being a sneaky snek
+        if not channel.permissions_for(author).read_messages:
+            await self.bot.say('😏 Nice try.')
             return
 
         # Default settings
@@ -109,7 +99,13 @@ class WordCloud:
 
         mask_file = self.settings.get('mask', None)
         if mask_file is not None:
-            mask = np.array(Image.open(mask_file))
+            try:
+                mask = np.array(Image.open(mask_file))
+            except FileNotFoundError:
+                await self.bot.say('I could not load your mask file. It may '
+                                   'have been deleted. `{}wordset clearmask` '
+                                   'may resolve this.'.format(ctx.prefix))
+                return
             if self.settings.get('colormask', False):
                 coloring = ImageColorGenerator(mask)
 
@@ -117,6 +113,23 @@ class WordCloud:
                   'background_color': bg_color, 'max_words': max_words,
                   'stopwords': excluded, 'width': width, 'height': height}
         filepath = 'data/wordcloud/clouds/' + channel.id + '.png'
+
+        msg = "Generating wordcloud for **" + server.name + '/' + channel.name
+        if user is not None:
+            msg += "/" + user.display_name
+        msg += "** using the last {} messages. (this might take a while)".format(limit)
+
+        await self.bot.say(msg)
+
+        text = ''
+        async for message in self.bot.logs_from(channel, limit=limit):
+            if not message.author.bot:
+                if user is None or user == message.author:
+                    text += message.clean_content + ' '
+
+        if not text or text.isspace():
+            await self.bot.say("Wordlcoud creation failed. Couldn't find any words!")
+            return
 
         task = functools.partial(self.generate_wordcloud, filepath, text,
                                  **kwargs)
