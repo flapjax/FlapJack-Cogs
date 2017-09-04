@@ -122,13 +122,20 @@ class WordCloud:
         await self.bot.say(msg)
 
         text = ''
-        async for message in self.bot.logs_from(channel, limit=limit):
-            if not message.author.bot:
-                if user is None or user == message.author:
-                    text += message.clean_content + ' '
+        try:
+            async for message in self.bot.logs_from(channel, limit=limit):
+                if not message.author.bot:
+                    if user is None or user == message.author:
+                        text += message.clean_content + ' '
+        except discord.errors.Forbidden:
+            await self.bot.say("Wordcloud creation failed. I can't see that channel!")
+            return
 
         if not text or text.isspace():
-            await self.bot.say("Wordlcoud creation failed. Couldn't find any words!")
+            await self.bot.say("Wordcloud creation failed. I couldn't find "
+                               "any words. You may have entered a very small "
+                               "message limit, or I may not have permission "
+                               "to view message history in that channel.")
             return
 
         task = functools.partial(self.generate_wordcloud, filepath, text,
