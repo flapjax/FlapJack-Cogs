@@ -20,8 +20,8 @@ class CryptoPrice:
         self.url = "https://coinmarketcap.com/"
 
     @commands.command()
-    async def price(self, *, currency: str=None):
-        """Fetch price data for a cryptocurrency.
+    async def cprice(self, *, currency: str=None):
+        """Fetch price data for cryptocurrencies matching your query.
         If currency is omitted, will display top 5 by market cap."""
 
         if currency is None:

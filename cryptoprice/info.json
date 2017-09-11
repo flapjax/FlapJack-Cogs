@@ -5,6 +5,6 @@
     "DESCRIPTION" : "Fetches cryptocurrency price data.\n\nDependencies:\nBeautifulSoup4 :: https://www.crummy.com/software/BeautifulSoup/bs4/doc/\nTabulate :: https://github.com/gregbanks/python-tabulate",
     "INSTALL_MSG" : "Thanks for installing CryptoPrice.",
     "REQUIREMENTS" : ["beautifulsoup4", "tabulate"],
-    "TAGS" : ["crypto", "currency", "price"],
+    "TAGS" : ["crypto", "currency", "price", "bitcoin"],
     "DISABLED" : false
 }
