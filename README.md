@@ -9,9 +9,9 @@ View them on the [Red Cogs Portal](https://cogs.red/cogs/flapjax/FlapJack-Cogs/)
 
 - **Blizzard** - Fetches and prints latest patch notes and some (limited) user data from current Blizzard games.
 - **ColorMe** - Allows users to manage the color of their own name through custom roles with default permissions.
+- **CryptoPrice** - Search https://coinmarketcap.com/ for cryptocurrency price information.
 - **Defcon** - A nod to the 1983 film War Games. Maintain a DEFCON system on your server, displayed through creative use of embeds.
 - **Dongers** - Fetches and prints a random Donger from www.dongerlist.com.
-- **gtts** - Experimental cog using the Google TTS service and tmerc's playsound code to play TTS in a voice channel.
 - **Msgvote** - Turn a Discord channel into a Reddit thread... if that's something you're into...
 - **ReactPoll** - Functions exactly like Red's built-in polls, but uses numeric reactions instead of typed responses.
 - **SFX** - Inject sound effects into voice channels. Compatible with other audio, and backwards compatible with tmerc's playsound!
