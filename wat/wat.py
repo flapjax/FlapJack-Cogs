@@ -3,7 +3,7 @@ import re
 
 from discord.ext import commands
 
-from core import checks, Config
+from redbot.core import checks, Config
 
 
 class Wat:

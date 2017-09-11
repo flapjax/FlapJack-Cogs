@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime
 
 import discord
-from core import Config, checks
+from redbot.core import Config, checks
 from discord.ext import commands
 
 # Credit to JennJenn#6857 for thinking up this cog.

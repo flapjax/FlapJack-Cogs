@@ -1,7 +1,7 @@
 import copy
 
 import discord
-from core import Config
+from redbot.core import Config
 from discord.ext import commands
 
 

@@ -4,7 +4,7 @@ import os
 import re
 
 import discord
-from core import Config, checks
+from redbot.core import Config, checks
 from discord.ext import commands
 from discord.ext.commands import converter
 
