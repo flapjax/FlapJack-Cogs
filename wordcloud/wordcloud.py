@@ -2,17 +2,21 @@ import asyncio
 import functools
 import os
 
+import aiohttp
 import discord
 import numpy as np
 from __main__ import send_cmd_help
 from cogs.utils import checks
 from discord.ext import commands
-from discord.ext.commands import formatter, converter, errors
+from discord.ext.commands import converter, errors, formatter
 from PIL import Image
 from wordcloud import WordCloud as WCloud
 from wordcloud import ImageColorGenerator
 
 from .utils.dataIO import dataIO
+
+# Special thanks to co-author aikaterna for pressing onward
+# with this cog when I had lost motivation!
 
 
 class WordCloud:
@@ -32,7 +36,8 @@ class WordCloud:
 
         if len(masks) == 0:
             await self.bot.send_message(channel, "No masks found. (place "
-                                        "masks in /data/wordcloud/masks/)")
+                                        "masks in /data/wordcloud/masks/) "
+                                        "or add one with `{}wcset maskfile`.".format(ctx.prefix))
             return
 
         pager = formatter.Paginator(prefix='```', suffix='```', max_size=2000)
@@ -77,7 +82,7 @@ class WordCloud:
 
         # Verify that wordcloud requester is not being a sneaky snek
         if not channel.permissions_for(author).read_messages:
-            await self.bot.say('😏 Nice try.')
+            await self.bot.say('Nice try.')
             return
 
         # Default settings
@@ -103,7 +108,7 @@ class WordCloud:
                 mask = np.array(Image.open(mask_file))
             except FileNotFoundError:
                 await self.bot.say('I could not load your mask file. It may '
-                                   'have been deleted. `{}wordset clearmask` '
+                                   'have been deleted. `{}wcset clearmask` '
                                    'may resolve this.'.format(ctx.prefix))
                 return
             if self.settings.get('colormask', False):
@@ -138,7 +143,7 @@ class WordCloud:
                                "to view message history in that channel.")
             return
 
-        task = functools.partial(self.generate_wordcloud, filepath, text,
+        task = functools.partial(WordCloud.generate, filepath, text,
                                  **kwargs)
         task = self.bot.loop.run_in_executor(None, task)
         try:
@@ -149,29 +154,29 @@ class WordCloud:
 
         await self.bot.send_file(ctx.message.channel, filepath)
 
-    def generate_wordcloud(self, filepath, text, **kwargs):
+    @staticmethod
+    def generate(filepath, text, **kwargs):
         # Designed to be run in executor to avoid blocking
         wc = WCloud(**kwargs)
         wc.generate(text)
         wc.to_file(filepath)
 
-    @commands.group(name='wordset', pass_context=True, no_pm=True)
+    @commands.group(name='wcset', pass_context=True, no_pm=True)
     @checks.mod_or_permissions(administrator=True)
-    async def wordset(self, ctx):
+    async def wcset(self, ctx):
         """WordCloud image settings"""
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
             return
 
-    @wordset.command(name='listmask', pass_context=True, no_pm=True)
-    async def _wordset_listmask(self, ctx):
+    @wcset.command(name='listmask', pass_context=True, no_pm=True)
+    async def _wcset_listmask(self, ctx):
         """List image files available for masking"""
-
         await self._list_masks(ctx)
 
-    @wordset.command(name='maskfile', pass_context=True, no_pm=True)
-    async def _wordset_maskfile(self, ctx, filename: str):
-        """Set image file for masking
+    @wcset.command(name='maskfile', pass_context=True, no_pm=True)
+    async def _wcset_maskfile(self, ctx, filename: str):
+        """Set local image file for masking
         - place masks in /data/wordcloud/masks/"""
         if not os.path.isfile(self.mask_folder + filename):
             await self.bot.say("That's not a valid filename.")
@@ -181,15 +186,63 @@ class WordCloud:
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say('Mask set to {}.'.format(filename))
 
-    @wordset.command(name='clearmask', pass_context=True, no_pm=True)
-    async def _wordset_clearmask(self, ctx):
+    @wcset.command(name='upload', pass_context = True, no_pm=True)
+    async def _wcset_upload(self, ctx, link: str=None):
+        """Upload an image mask through Discord"""
+        user = ctx.message.author
+        attach = ctx.message.attachments
+        emoji = ('\N{WHITE HEAVY CHECK MARK}', '\N{CROSS MARK}')
+        if len(attach) > 1 or (attach and link):
+            await self.bot.say("Please add one image at a time.")
+            return
+
+        url = ""
+        filename = ""
+        if attach:
+            a = attach[0]
+            url = a["url"]
+            filename = a["filename"]
+        elif link:
+            url = "".join(link)
+            filename = os.path.basename(
+                "_".join(url.split()).replace("%20", "_"))
+        else:
+            await self.bot.say("You must provide either a Discord attachment "
+                               "or a direct link to an image")
+            return
+
+        filepath = os.path.join(self.mask_folder, filename)
+
+        async with aiohttp.get(url) as new_image:
+            # Overwrite file if it exists
+            f = open(filepath, "wb")
+            f.write(await new_image.read())
+            f.close()
+
+        msg = await self.bot.say("Mask {} added. Set as current mask?".format(os.path.splitext(filename)[0]))
+        await self.bot.add_reaction(msg, emoji[0])
+        await asyncio.sleep(0.5)
+        await self.bot.add_reaction(msg, emoji[1])
+        response = await self.bot.wait_for_reaction(emoji, user=user,
+                                                    timeout=600, message=msg)
+
+        if response is None or response.reaction.emoji == emoji[1]:
+            await self.bot.clear_reactions(msg)
+        elif response.reaction.emoji == emoji[0]:
+            await self.bot.clear_reactions(msg)
+            self.settings['mask'] = filepath
+            dataIO.save_json(self.settings_path, self.settings)
+            await self.bot.say('Mask set to uploaded file.')
+
+    @wcset.command(name='clearmask', pass_context=True, no_pm=True)
+    async def _wcset_clearmask(self, ctx):
         """Clear image file for masking"""
         self.settings['mask'] = None
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say('Mask set to None.')
 
-    @wordset.command(name='colormask', pass_context=True, no_pm=True)
-    async def _wordset_colormask(self, ctx, on_off: bool=None):
+    @wcset.command(name='colormask', pass_context=True, no_pm=True)
+    async def _wcset_colormask(self, ctx, on_off: bool=None):
         """Turn color masking on/off"""
 
         if self.settings.setdefault('colormask', False):
@@ -206,16 +259,16 @@ class WordCloud:
                 await self.bot.say('Color masking is already off.')
         dataIO.save_json(self.settings_path, self.settings)
 
-    @wordset.command(name='bgcolor', pass_context=True, no_pm=True)
-    async def _wordset_bgcolor(self, ctx, color: str):
+    @wcset.command(name='bgcolor', pass_context=True, no_pm=True)
+    async def _wcset_bgcolor(self, ctx, color: str):
         """Set background color. Use 'clear' for transparent."""
         # No checks for bad colors yet
         self.settings['bgcolor'] = color
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say('Background color set to {}.'.format(color))
 
-    @wordset.command(name='maxwords', pass_context=True, no_pm=True)
-    async def _wordset_maxwords(self, ctx, count: int):
+    @wcset.command(name='maxwords', pass_context=True, no_pm=True)
+    async def _wcset_maxwords(self, ctx, count: int):
         """Set maximum number of words to appear in the word cloud
         Set to 0 for default (4000)."""
         # No checks for bad values yet
@@ -223,8 +276,8 @@ class WordCloud:
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say('Max words set to {}.'.format(str(count)))
 
-    @wordset.command(name='exclude', pass_context=True, no_pm=True)
-    async def _wordset_exclude(self, ctx, word: str):
+    @wcset.command(name='exclude', pass_context=True, no_pm=True)
+    async def _wcset_exclude(self, ctx, word: str):
         """Add a word to the excluded list.
         This overrides the default excluded list!"""
 
@@ -233,8 +286,8 @@ class WordCloud:
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say("'{}' added to excluded words.".format(word))
 
-    @wordset.command(name='clearwords', pass_context=True, no_pm=True)
-    async def _wordset_clearwords(self, ctx):
+    @wcset.command(name='clearwords', pass_context=True, no_pm=True)
+    async def _wcset_clearwords(self, ctx):
         """Clear the excluded word list.
         Default excluded list will be used."""
 
