@@ -90,7 +90,7 @@ class Defcon:
 
         if level == 5:
             color = 0x0080ff
-            thumbnail_url = 'https://i.imgur.com/uTPeW7N.gif'
+            thumbnail_url = 'https://i.imgur.com/ynitQlf.gif'
             author = "This server is at DEFCON LEVEL {}.".format(level)
             subtitle = ("No known threats to your self esteem "
                         "exist at this time.")
@@ -99,7 +99,7 @@ class Defcon:
                             "- Report all suspicious activity")
         elif level == 4:
             color = 0x00ff00
-            thumbnail_url = 'https://i.imgur.com/siIWL5V.gif'
+            thumbnail_url = 'https://i.imgur.com/sRhQekI.gif'
             author = "This server is at DEFCON LEVEL {}.".format(level)
             subtitle = 'Trace amounts of sodium have been detected.'
             instructions = ("- Inhale deeply through your nose and "
@@ -108,7 +108,7 @@ class Defcon:
                             "- Do not encourage trolls")
         elif level == 3:
             color = 0xffff00
-            thumbnail_url = 'https://i.imgur.com/E71VSBE.gif'
+            thumbnail_url = 'https://i.imgur.com/xY9SkkA.gif'
             author = "This server is at DEFCON LEVEL {}.".format(level)
             subtitle = 'Sodium levels may exceed OSHA exposure limits.'
             instructions = ("- Use extreme caution when playing ranked games\n"
@@ -116,7 +116,7 @@ class Defcon:
                             "- Put on your big boy pants")
         elif level == 2:
             color = 0xff0000
-            thumbnail_url = 'https://i.imgur.com/PxKhT7h.gif'
+            thumbnail_url = 'https://i.imgur.com/cSzezRE.gif'
             author = "This server is at DEFCON LEVEL {}.".format(level)
             subtitle = 'Sodium levels are approaching critical mass'
             instructions = ("- Avoid ranked game modes at all costs\n"
@@ -124,7 +124,7 @@ class Defcon:
                             "- Queue up some relaxing jazz music")
         elif level == 1:
             color = 0xffffff
-            thumbnail_url = 'https://i.imgur.com/wzXSNWi.gif'
+            thumbnail_url = 'https://i.imgur.com/NVB1AFA.gif'
             author = "This server is at DEFCON LEVEL {}.".format(level)
             subtitle = 'Total destruction is IMMINENT.'
             instructions = ("- Do not participate in any online games\n"
