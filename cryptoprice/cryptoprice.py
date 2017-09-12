@@ -38,7 +38,7 @@ class CryptoPrice:
         size = len(results)
 
         if size == 0:
-            await self.bot.say("Could't find a currency matching your query.")
+            await self.bot.say("Couldn't find a currency matching your query.")
 
         elif size <= 5:
             text = self.make_table(results)
