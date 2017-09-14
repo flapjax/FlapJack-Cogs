@@ -7,6 +7,7 @@
 A collection of cogs I have developed for Red Bot.  
 View them on the [Red Cogs Portal](https://cogs.red/cogs/flapjax/FlapJack-Cogs/), where you will also find installation instructions.
 
+- **Bigmoji** - Uploads a large version of an emoji
 - **Blizzard** - Fetches and prints latest patch notes and some (limited) user data from current Blizzard games.
 - **ColorMe** - Allows users to manage the color of their own name through custom roles with default permissions.
 - **CryptoPrice** - Search https://coinmarketcap.com/ for cryptocurrency price information.
@@ -22,7 +23,8 @@ View them on the [Red Cogs Portal](https://cogs.red/cogs/flapjax/FlapJack-Cogs/)
 
 ## Contact Me
 
-For technical support, visit #support_flapjack-cogs in the [3rd Party Cog Support Server](https://discord.gg/GET4DVk). You may also contact me on discord [**FlapJack#5505**] with any suggestions or collaboration opportunities. Don't hesitate to suggest new features, or code them yourself!
+For technical support, visit #support_flapjack-cogs in the [3rd Party Cog Support Server](https://discord.gg/GET4DVk).
+Please join this server and request help in my support channel before DMing me.
 
 ## Credits
 
