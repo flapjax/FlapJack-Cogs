@@ -37,7 +37,12 @@ class Bigmoji:
             name = []
             for char in emoji:
                 chars.append(str(hex(ord(char)))[2:])
-                name.append(unicodedata.name(char))
+                try:
+                    name.append(unicodedata.name(char))
+                except ValueError:
+                    # Sometimes occurs when the unicodedata library cannot
+                    # resolve the name, however the image still exists
+                    name.append("none")
             name = '_'.join(name)
             if cairo:
                 convert = True
