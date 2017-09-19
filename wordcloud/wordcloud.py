@@ -82,7 +82,7 @@ class WordCloud:
 
         # Verify that wordcloud requester is not being a sneaky snek
         if not channel.permissions_for(author).read_messages:
-            await self.bot.say('Nice try.')
+            await self.bot.say('\N{SMIRKING FACE} Nice try.')
             return
 
         # Default settings
