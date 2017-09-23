@@ -1,6 +1,9 @@
 import os
+
 import discord
 from discord.ext import commands
+
+from .utils import checks
 from .utils.dataIO import dataIO
 
 
@@ -18,60 +21,82 @@ class Defcon:
     async def defcon(self, ctx):
         """Reports the server DEFCON level."""
         server = ctx.message.server
-        self.load_settings(server)
-        nick = self.settings[server.id]["authority"]
-        await self.post_defcon(str(self.settings[server.id]["defcon"]), nick)
+        nick = self.settings.get(server.id, {}).get("authority", "none")
+        level = self.settings.get(server.id, {}).get("defcon", 5)
+        await self.post_defcon(ctx, str(level), nick)
 
     @commands.command(name="defcon+", no_pm=True, pass_context=True)
     async def defconplus(self, ctx):
         """Elevates the server DEFCON level."""
         server = ctx.message.server
-        member = ctx.message.author
-        self.load_settings(server)
-        if self.settings[server.id]["defcon"] == 1:
+        nick = ctx.message.author.display_name
+        level = self.settings.get(server.id, {}).get("defcon", 5)
+        if level == 1:
             await self.bot.say("We are already at DEFCON 1! Oh no!")
         else:
-            self.settings[server.id]["defcon"] -= 1
+            level -= 1
 
-        self.settings[server.id]["authority"] = member.display_name
-        self.save_settings(server)
-        await self.post_defcon(str(self.settings[server.id]["defcon"]),
-                               member.display_name)
+        self.settings.setdefault(server.id, {}).update(defcon=level, authority=nick)
+        dataIO.save_json(self.settings_path, self.settings)
+        await self.post_defcon(ctx, str(level), nick)
 
     @commands.command(name="defcon-", no_pm=True, pass_context=True)
     async def defconminus(self, ctx):
         """Lowers the server DEFCON level."""
         server = ctx.message.server
-        member = ctx.message.author
-        self.load_settings(server)
-        if self.settings[server.id]["defcon"] == 5:
+        nick = ctx.message.author.display_name
+        level = self.settings.get(server.id, {}).get("defcon", 5)
+        if level == 5:
             await self.bot.say("We are already at DEFCON 5! Relax!")
         else:
-            self.settings[server.id]["defcon"] += 1
+            level += 1
 
-        self.settings[server.id]["authority"] = member.display_name
-        self.save_settings(server)
-        await self.post_defcon(str(self.settings[server.id]["defcon"]),
-                               member.display_name)
+        self.settings.setdefault(server.id, {}).update(defcon=level, authority=nick)
+        dataIO.save_json(self.settings_path, self.settings)
+        await self.post_defcon(ctx, str(level), nick)
 
     @commands.command(name="setdefcon", no_pm=True, pass_context=True)
-    async def setdefcon(self, ctx, level):
+    async def setdefcon(self, ctx, level: int):
         """Manually set the server DEFCON level in case of emergency."""
         server = ctx.message.server
-        member = ctx.message.author
-        self.load_settings(server)
-
-        if level in self.valid_defcons:
-            self.settings[server.id]["defcon"] = int(level)
-            self.settings[server.id]["authority"] = member.display_name
-            self.save_settings(server)
-            await self.post_defcon(str(self.settings[server.id]["defcon"]),
-                                   member.display_name)
+        nick = ctx.message.author.display_name
+        if str(level) in self.valid_defcons:
+            self.settings.setdefault(server.id, {}).update(defcon=level, authority=nick)
+            dataIO.save_json(self.settings_path, self.settings)
+            await self.post_defcon(ctx, str(level), nick)
         else:
             await self.bot.say("Not a valid DEFCON level. Haven't "
                                "you seen War Games?")
 
-    async def post_defcon(self, level, nick):
+    @commands.command(name="defconchan", no_pm=True, pass_context=True)
+    @checks.mod()
+    async def defconchan(self, ctx, channel: discord.Channel=None):
+        """Constrain defcon alerts to a specific channel.
+        Omit the channel argument to clear the setting."""
+        me = ctx.message.server.me
+        author = ctx.message.author
+        server = ctx.message.server
+        if channel is None:
+            self.settings.setdefault(server.id, {}).update(channel=None)
+            dataIO.save_json(self.settings_path, self.settings)
+            await self.bot.say("DEFCON channel setting cleared.")
+            return
+
+        if channel.type != discord.ChannelType.text:
+            await self.bot.say("Channel must be a text channel")
+            return
+        elif not channel.permissions_for(author).send_messages:
+            await self.bot.say("You're not allowed to send messages in that channel.")
+            return
+        elif not channel.permissions_for(me).send_messages:
+            await self.bot.say("I'm not allowed to send messaages in that channel.")
+            return
+
+        self.settings.setdefault(server.id, {}).update(channel=channel.id)
+        dataIO.save_json(self.settings_path, self.settings)
+        await self.bot.say("Defcon channel set to **{}**.".format(channel.name))
+
+    async def post_defcon(self, ctx, level, nick):
 
         icon_url = 'http://i.imgur.com/MfDcOEU.gif'
 
@@ -119,29 +144,20 @@ class Defcon:
                             "- Take shelter outdoors until the "
                             "all-clear is given")
 
-        if level in self.valid_defcons:
-            embed = discord.Embed(title="\u2063", color=color)
-            embed.set_author(name=author, icon_url=icon_url)
-            embed.set_thumbnail(url=thumbnail_url)
-            embed.add_field(name=subtitle, value=instructions, inline=False)
-            embed.set_footer(text="Authority: {}".format(nick))
+        embed = discord.Embed(title="\u2063", color=color)
+        embed.set_author(name=author, icon_url=icon_url)
+        embed.set_thumbnail(url=thumbnail_url)
+        embed.add_field(name=subtitle, value=instructions, inline=False)
+        embed.set_footer(text="Authority: {}".format(nick))
+
+        server = ctx.message.server
+        channel = self.bot.get_channel(self.settings.get(server.id, {}).get("channel", None))
+        if channel is None:
             await self.bot.say(embed=embed)
         else:
-            await self.bot.say("Something wrent wrong.")
-
-    def load_settings(self, server):
-        self.settings = dataIO.load_json(self.settings_path)
-        if server.id not in self.settings.keys():
-            self.add_default_settings(server)
-
-    def save_settings(self, server):
-        if server.id not in self.settings.keys():
-            self.add_default_settings(server)
-        dataIO.save_json(self.settings_path, self.settings)
-
-    def add_default_settings(self, server):
-        self.settings[server.id] = {"defcon": 5, "authority": "none"}
-        dataIO.save_json(self.settings_path, self.settings)
+            if channel != ctx.message.channel:
+                await self.bot.say("Done.")
+            await self.bot.send_message(channel, embed=embed)
 
 
 def check_folders():
