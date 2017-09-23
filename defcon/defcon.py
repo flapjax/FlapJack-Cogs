@@ -1,7 +1,7 @@
 import os
 
 import discord
-from redbot.core import Config
+from redbot.core import Config, checks
 from discord.ext import commands
 
 
@@ -17,7 +17,8 @@ class Defcon:
 
     default_guild_settings = {
         "defcon": 5,
-        "authority": "none"
+        "authority": "none",
+        "channel": None
     }
 
     def __init__(self, bot):
@@ -81,6 +82,29 @@ class Defcon:
             await ctx.send("Not a valid DEFCON level. Haven't "
                            "you seen War Games?")
 
+    @commands.command(name="defconchan", no_pm=True, pass_context=True)
+    @checks.mod()
+    async def defconchan(self, ctx, channel: discord.TextChannel=None):
+        """Constrain defcon alerts to a specific channel.
+        Omit the channel argument to clear the setting."""
+        me = ctx.me
+        author = ctx.author
+        server = ctx.guild
+        if channel is None:
+            await self.conf.guild(guild).channel.set(None)
+            await ctx.send("DEFCON channel setting cleared.")
+            return
+
+        if not channel.permissions_for(author).send_messages:
+            await self.bot.say("You're not allowed to send messages in that channel.")
+            return
+        elif not channel.permissions_for(me).send_messages:
+            await self.bot.say("I'm not allowed to send messaages in that channel.")
+            return
+
+        await self.conf.guild(guild).channel.set(channel.id)
+        await ctx.send("Defcon channel set to **{}**.".format(channel.name))
+
     async def _post_defcon(self, guild, channel):
 
         level = await self.conf.guild(guild).defcon()
@@ -140,4 +164,11 @@ class Defcon:
         embed.set_thumbnail(url=thumbnail_url)
         embed.add_field(name=subtitle, value=instructions, inline=False)
         embed.set_footer(text="Authority: {}".format(nick))
-        await channel.send(embed=embed)
+
+        set_channel = self.bot.get_channel(await self.conf.guild(guild).channel())
+        if set_channel is None:
+            await channel.send(embed=embed)
+        else:
+            if channel != set_channel:
+                await self.bot.say("Done.")
+            await set_channel.send(channel, embed=embed)
