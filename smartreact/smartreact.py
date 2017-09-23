@@ -42,9 +42,12 @@ class SmartReact:
         dataIO.save_json(self.settings_path, self.settings)
 
     def fix_custom_emoji(self, emoji):
-        if emoji[:2] != "<:":
-            return emoji
-        return [r for server in self.bot.servers for r in server.emojis if r.id == emoji.split(':')[2][:-1]][0]
+        try:
+            if emoji[:2] != "<:":
+                return emoji
+            return [r for server in self.bot.servers for r in server.emojis if r.id == emoji.split(':')[2][:-1]][0]
+        except IndexError:
+            return None
 
     # From Twentysix26's trigger.py cog
     def is_command(self, msg):
@@ -72,9 +75,8 @@ class SmartReact:
             await self.bot.say("Successfully added this reaction.")
             dataIO.save_json(self.settings_path, self.settings)
 
-        except discord.errors.HTTPException:
-            await self.bot.say("That's not an emoji I recognize. "
-                               "(might be custom!)")
+        except (discord.errors.HTTPException, discord.errors.InvalidArgument):
+            await self.bot.say("That's not an emoji I recognize.")
 
     async def remove_smart_reaction(self, server, word, emoji, message):
         try:
@@ -93,9 +95,8 @@ class SmartReact:
 
             dataIO.save_json(self.settings_path, self.settings)
 
-        except discord.errors.HTTPException:
-            await self.bot.say("That's not an emoji I recognize. "
-                               "(might be custom!)")
+        except (discord.errors.HTTPException, discord.errors.InvalidArgument):
+            await self.bot.say("That's not an emoji I recognize.")
 
     # Special thanks to irdumb#1229 on discord for helping me make this method
     # "more Pythonic"
@@ -105,13 +106,17 @@ class SmartReact:
         if self.is_command(message):
             return
         server = message.server
-        if server.id not in self.settings.keys():
+        if server is None:
+            return
+        if server.id not in self.settings:
             return
         react_dict = copy.deepcopy(self.settings[server.id])
         words = message.content.lower().split()
         for emoji in react_dict:
             if set(w.lower() for w in react_dict[emoji]).intersection(words):
-                await self.bot.add_reaction(message, self.fix_custom_emoji(emoji))
+                fixed_emoji = self.fix_custom_emoji(emoji)
+                if fixed_emoji is not None:
+                    await self.bot.add_reaction(message, fixed_emoji)
 
 
 def check_folders():
