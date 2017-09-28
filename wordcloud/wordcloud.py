@@ -162,7 +162,7 @@ class WordCloud:
         wc.to_file(filepath)
 
     @commands.group(name='wcset', pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(administrator=True)
+    @checks.is_owner()
     async def wcset(self, ctx):
         """WordCloud image settings"""
         if ctx.invoked_subcommand is None:
