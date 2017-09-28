@@ -52,7 +52,7 @@ class WordCloud:
     @commands.cooldown(1, 10, commands.BucketType.server)
     async def wordcloud(self, ctx, *argv):
         """Generate a wordcloud. Optional arguments are channel, user, and
-        message limit."""
+        message limit (capped at 10,000)."""
 
         author = ctx.message.author
         channel = ctx.message.channel
@@ -75,7 +75,7 @@ class WordCloud:
             except errors.BadArgument:
                 pass
 
-            if arg.isdigit():
+            if arg.isdigit() and int(arg) <= 10000:
                 limit = int(arg)
 
         server = channel.server
