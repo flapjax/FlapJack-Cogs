@@ -81,7 +81,8 @@ class WordCloud:
         server = channel.server
 
         # Verify that wordcloud requester is not being a sneaky snek
-        if not channel.permissions_for(author).read_messages:
+        if not channel.permissions_for(author).read_messages or \
+                server != ctx.message.server:
             await self.bot.say('\N{SMIRKING FACE} Nice try.')
             return
 
@@ -91,18 +92,18 @@ class WordCloud:
         width = 800
         height = 600
         mode = 'RGB'
-        bg_color = self.settings.get('bgcolor', 'black')
+        bg_color = self.settings.get(server.id, {}).get('bgcolor', 'black')
         if bg_color == 'clear':
             mode += 'A'
             bg_color = None
-        max_words = self.settings.get('maxwords', 200)
+        max_words = self.settings.get(server.id, {}).get('maxwords', 200)
         if max_words == 0:
             max_words = 200
-        excluded = self.settings.get('excluded', [])
+        excluded = self.settings.get(server.id, {}).get('excluded', [])
         if not excluded:
             excluded = None
 
-        mask_file = self.settings.get('mask', None)
+        mask_file = self.settings.get(server.id, {}).get('mask', None)
         if mask_file is not None:
             try:
                 mask = np.array(Image.open(mask_file))
@@ -111,7 +112,7 @@ class WordCloud:
                                    'have been deleted. `{}wcset clearmask` '
                                    'may resolve this.'.format(ctx.prefix))
                 return
-            if self.settings.get('colormask', False):
+            if self.settings.get(server.id, {}).get('colormask', False):
                 coloring = ImageColorGenerator(mask)
 
         kwargs = {'mask': mask, 'color_func': coloring, 'mode': mode,
@@ -162,7 +163,7 @@ class WordCloud:
         wc.to_file(filepath)
 
     @commands.group(name='wcset', pass_context=True, no_pm=True)
-    @checks.is_owner()
+    @checks.mod_or_permissions(administrator=True)
     async def wcset(self, ctx):
         """WordCloud image settings"""
         if ctx.invoked_subcommand is None:
@@ -178,18 +179,21 @@ class WordCloud:
     async def _wcset_maskfile(self, ctx, filename: str):
         """Set local image file for masking
         - place masks in /data/wordcloud/masks/"""
+        server = ctx.message.server
         if not os.path.isfile(self.mask_folder + filename):
             await self.bot.say("That's not a valid filename.")
             await self._list_masks(ctx)
             return
-        self.settings['mask'] = self.mask_folder + filename
+        self.settings.setdefault(server.id, {})['mask'] = self.mask_folder + filename
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say('Mask set to {}.'.format(filename))
 
     @wcset.command(name='upload', pass_context = True, no_pm=True)
+    @checks.is_owner()
     async def _wcset_upload(self, ctx, link: str=None):
         """Upload an image mask through Discord"""
         user = ctx.message.author
+        server = ctx.message.server
         attach = ctx.message.attachments
         emoji = ('\N{WHITE HEAVY CHECK MARK}', '\N{CROSS MARK}')
         if len(attach) > 1 or (attach and link):
@@ -219,7 +223,7 @@ class WordCloud:
             f.write(await new_image.read())
             f.close()
 
-        msg = await self.bot.say("Mask {} added. Set as current mask?".format(os.path.splitext(filename)[0]))
+        msg = await self.bot.say("Mask {} added. Set as current mask for this server?".format(os.path.splitext(filename)[0]))
         await self.bot.add_reaction(msg, emoji[0])
         await asyncio.sleep(0.5)
         await self.bot.add_reaction(msg, emoji[1])
@@ -230,30 +234,31 @@ class WordCloud:
             await self.bot.clear_reactions(msg)
         elif response.reaction.emoji == emoji[0]:
             await self.bot.clear_reactions(msg)
-            self.settings['mask'] = filepath
+            self.settings.setdefault(server.id, {})['mask'] = filepath
             dataIO.save_json(self.settings_path, self.settings)
-            await self.bot.say('Mask set to uploaded file.')
+            await self.bot.say('Mask for this server set to uploaded file.')
 
     @wcset.command(name='clearmask', pass_context=True, no_pm=True)
     async def _wcset_clearmask(self, ctx):
         """Clear image file for masking"""
-        self.settings['mask'] = None
+        server = ctx.message.server
+        self.settings.setdefault(server.id, {})['mask'] = None
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say('Mask set to None.')
 
     @wcset.command(name='colormask', pass_context=True, no_pm=True)
     async def _wcset_colormask(self, ctx, on_off: bool=None):
         """Turn color masking on/off"""
-
-        if self.settings.setdefault('colormask', False):
+        server = ctx.message.server
+        if self.settings.setdefault(server.id, {}).setdefault('colormask', False):
             if not on_off:  # This also catches None case
-                self.settings['colormask'] = False
+                self.settings[server.id]['colormask'] = False
                 await self.bot.say('Color masking turned off.')
             else:
                 await self.bot.say('Color masking is already on.')
         else:
             if on_off or on_off is None:
-                self.settings['colormask'] = True
+                self.settings[server.id]['colormask'] = True
                 await self.bot.say('Color masking turned on.')
             else:
                 await self.bot.say('Color masking is already off.')
@@ -263,7 +268,8 @@ class WordCloud:
     async def _wcset_bgcolor(self, ctx, color: str):
         """Set background color. Use 'clear' for transparent."""
         # No checks for bad colors yet
-        self.settings['bgcolor'] = color
+        server = ctx.message.server
+        self.settings.setdefault(server.id, {})['bgcolor'] = color
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say('Background color set to {}.'.format(color))
 
@@ -272,7 +278,8 @@ class WordCloud:
         """Set maximum number of words to appear in the word cloud
         Set to 0 for default (4000)."""
         # No checks for bad values yet
-        self.settings['maxwords'] = count
+        server = ctx.message.server
+        self.settings.setdefault(server.id, {})['maxwords'] = count
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say('Max words set to {}.'.format(str(count)))
 
@@ -280,9 +287,8 @@ class WordCloud:
     async def _wcset_exclude(self, ctx, word: str):
         """Add a word to the excluded list.
         This overrides the default excluded list!"""
-
-        self.settings.setdefault('excluded', [])
-        self.settings['excluded'].append(word)
+        server = ctx.message.server
+        self.settings.setdefault(server.id, {}).setdefault('excluded', []).append(word)
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say("'{}' added to excluded words.".format(word))
 
@@ -290,8 +296,8 @@ class WordCloud:
     async def _wcset_clearwords(self, ctx):
         """Clear the excluded word list.
         Default excluded list will be used."""
-
-        self.settings['excluded'] = []
+        server = ctx.message.server
+        self.settings.setdefault(server.id, {})['excluded'] = []
         dataIO.save_json(self.settings_path, self.settings)
         await self.bot.say("Cleared the excluded word list.")
 
