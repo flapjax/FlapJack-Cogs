@@ -20,6 +20,7 @@ View them on the [Red Cogs Portal](https://cogs.red/cogs/flapjax/FlapJack-Cogs/)
 - **Smite** - Smite statistics using the official Smite API.
 - **Spoiler** - Hide spoilers in chat using animated GIFs that require a mouseover.
 - **Wat** - Assist users who have trouble 'hearing' what people type! :)
+- **WordCloud** - Generate customized word clouds for text channels.
 
 ## Contact Me
 
