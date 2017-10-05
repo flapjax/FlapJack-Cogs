@@ -1,0 +1,10 @@
+{
+    "NAME" : "Comics",
+    "AUTHOR" : "FlapJack",
+    "SHORT" : "Print random comics from popular sources",
+    "DESCRIPTION" : "Fetches a random comic from a number of popular online comic sources, including:\n\nWebcomic Name (ohno)\nSaturday Morning Breakfast Cereal\nThe Perry Bible Fellowship\nCyanide and Happiness\nxkcd\nMr. Lovenstein\nChainsawsuit\nSarah's Scribbles\n\n\nDependencies:\nBeautifulSoup4 :: https://www.crummy.com/software/BeautifulSoup/bs4/doc/",
+    "INSTALL_MSG" : "Thanks for installing Comics.",
+    "REQUIREMENTS" : ["beautifulsoup4"],
+    "TAGS" : ["comics", "ohno", "cah", "pbf", "smbc", "xkcd"],
+    "DISABLED" : false
+}

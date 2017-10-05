@@ -9,7 +9,8 @@ View them on the [Red Cogs Portal](https://cogs.red/cogs/flapjax/FlapJack-Cogs/)
 
 - **Bigmoji** - Uploads a large version of an emoji
 - **Blizzard** - Fetches and prints latest patch notes and some (limited) user data from current Blizzard games.
-- **ColorMe** - Allows users to manage the color of their own name through custom roles with default permissions.
+- **ColorMe** - Allows users to manage the color of their own name through custom roles.
+- **Comics** - Brighten up your day with a random comic from popular sources like C&H, SMBC, xkcd, and many more.
 - **CryptoPrice** - Search https://coinmarketcap.com/ for cryptocurrency price information.
 - **Defcon** - A nod to the 1983 film War Games. Maintain a DEFCON system on your server, displayed through creative use of embeds.
 - **Dongers** - Fetches and prints a random Donger from www.dongerlist.com.
