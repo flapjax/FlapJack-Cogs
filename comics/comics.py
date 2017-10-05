@@ -101,6 +101,40 @@ class Comics:
 
         await self.bot.send_file(ctx.message.channel, img, filename='xkcd.png')
 
+    @commands.command(pass_context=True)
+    async def mrls(self, ctx):
+        """Mr. Lovenstein"""
+
+        url = "http://www.mrlovenstein.com/shuffle"
+
+        async with self.session.get(url) as response:
+            soup = BeautifulSoup(await response.text(), "html.parser")
+
+        img_url = 'http://www.mrlovenstein.com' \
+            + soup.find(id='comic_main_image')['src']
+
+        async with self.session.get(img_url) as response:
+            img = io.BytesIO(await response.read())
+
+        await self.bot.send_file(ctx.message.channel, img, filename='mrls.gif')
+
+    @commands.command(pass_context=True)
+    async def chainsaw(self, ctx):
+        """Chainsawsuit"""
+
+        url = "http://chainsawsuit.com/comic/random/?random&nocache=1"
+
+        async with self.session.get(url) as response:
+            soup = BeautifulSoup(await response.text(), "html.parser")
+
+        img_url = soup.find(property='og:image')['content']
+
+        async with self.session.get(img_url) as response:
+            img = io.BytesIO(await response.read())
+
+        await self.bot.send_file(ctx.message.channel, img,
+                                 filename='chainsawsuit.png')
+
     def __unload(self):
         self.session.close()
 
