@@ -135,6 +135,23 @@ class Comics:
         await self.bot.send_file(ctx.message.channel, img,
                                  filename='chainsawsuit.png')
 
+    @commands.command(pass_context=True)
+    async def sarah(self, ctx):
+        """Sarah's Scribbles"""
+
+        url = "http://www.gocomics.com/random/sarahs-scribbles"
+
+        async with self.session.get(url) as response:
+            soup = BeautifulSoup(await response.text(), "html.parser")
+
+        img_url = soup.find(property='og:image')['content']
+
+        async with self.session.get(img_url) as response:
+            img = io.BytesIO(await response.read())
+
+        await self.bot.send_file(ctx.message.channel, img,
+                                 filename='sarahsscribbles.gif')                    
+
     def __unload(self):
         self.session.close()
 
