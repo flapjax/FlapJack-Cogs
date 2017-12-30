@@ -13,6 +13,7 @@ class Dongers:
     def __init__(self, bot):
         self.bot = bot
         self.donger_pages = 40
+        self.session = aiohttp.ClientSession()
 
     @commands.command()
     async def donger(self, ctx):
@@ -21,7 +22,7 @@ class Dongers:
         # Access random donger page
         url = "http://dongerlist.com/page/" + str(random.randint(1, self.donger_pages))
 
-        async with aiohttp.request("GET", url) as response:
+        async with self.session.get(url) as response:
             soup = BeautifulSoup(await response.text(), "html.parser")
         try:
             donger_list = soup.find_all("textarea", "donger")
@@ -29,3 +30,6 @@ class Dongers:
 
         except:
             await ctx.send("I couldn't find any dongers. ¯\_(ツ)_/¯")
+
+    def __unload(self):
+        self.session.close()
