@@ -36,7 +36,7 @@ class Defcon:
         """Reports the server DEFCON level."""
         guild = ctx.message.guild
         channel = ctx.message.channel
-        await self._post_defcon(guild, channel)
+        await self._post_defcon(ctx, guild, channel)
 
     @commands.command(name="defcon+", no_pm=True, pass_context=True)
     async def defconplus(self, ctx):
@@ -51,7 +51,7 @@ class Defcon:
         else:
             await self.conf.guild(guild).defcon.set(level - 1)
         await self.conf.guild(guild).authority.set(member.display_name)
-        await self._post_defcon(guild, channel)
+        await self._post_defcon(ctx, guild, channel)
 
     @commands.command(name="defcon-", no_pm=True, pass_context=True)
     async def defconminus(self, ctx):
@@ -66,7 +66,7 @@ class Defcon:
         else:
             await self.conf.guild(guild).defcon.set(level + 1)
         await self.conf.guild(guild).authority.set(member.display_name)
-        await self._post_defcon(guild, channel)
+        await self._post_defcon(ctx, guild, channel)
 
     @commands.command(name="setdefcon", no_pm=True, pass_context=True)
     async def setdefcon(self, ctx, level: int):
@@ -77,7 +77,7 @@ class Defcon:
         if await self.conf.max_defcon() <= level <= await self.conf.min_defcon():
             await self.conf.guild(guild).defcon.set(level)
             await self.conf.guild(guild).authority.set(member.display_name)
-            await self._post_defcon(guild, channel)
+            await self._post_defcon(ctx, guild, channel)
         else:
             await ctx.send("Not a valid DEFCON level. Haven't "
                            "you seen War Games?")
@@ -89,23 +89,23 @@ class Defcon:
         Omit the channel argument to clear the setting."""
         me = ctx.me
         author = ctx.author
-        server = ctx.guild
+        guild = ctx.guild
         if channel is None:
             await self.conf.guild(guild).channel.set(None)
             await ctx.send("DEFCON channel setting cleared.")
             return
 
         if not channel.permissions_for(author).send_messages:
-            await self.bot.say("You're not allowed to send messages in that channel.")
+            await ctx.send("You're not allowed to send messages in that channel.")
             return
         elif not channel.permissions_for(me).send_messages:
-            await self.bot.say("I'm not allowed to send messaages in that channel.")
+            await ctx.send("I'm not allowed to send messaages in that channel.")
             return
 
         await self.conf.guild(guild).channel.set(channel.id)
         await ctx.send("Defcon channel set to **{}**.".format(channel.name))
 
-    async def _post_defcon(self, guild, channel):
+    async def _post_defcon(self, ctx, guild, channel):
 
         level = await self.conf.guild(guild).defcon()
         nick = await self.conf.guild(guild).authority()
@@ -170,5 +170,5 @@ class Defcon:
             await channel.send(embed=embed)
         else:
             if channel != set_channel:
-                await self.bot.say("Done.")
-            await set_channel.send(channel, embed=embed)
+                await ctx.send("Done.")
+            await set_channel.send(embed=embed)
