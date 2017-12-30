@@ -324,7 +324,3 @@ class ColorMe:
                 msg_text += " '" + protected_role.name + "',"
         msg_text = msg_text[:-1] + "."
         await ctx.send(msg_text)
-
-
-def setup(bot):
-    bot.add_cog(ColorMe(bot))
