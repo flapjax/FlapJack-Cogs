@@ -29,13 +29,15 @@ class MsgVote:
             **self.default_global_settings
         )
         # Odd bug, default emojis don't work if not set in this way
+        # Has something to do with the way the emoji characters are grabbed
+        # from the default dict
         bot.loop.create_task(self._fix_defaults())
 
     async def _fix_defaults(self):
         if await self.conf.up_emoji() is None:
-            await self.conf.up_emoji.set("\ud83d\udc4d")
+            await self.conf.up_emoji.set("👍")
         if await self.conf.dn_emoji() is None:
-            await self.conf.dn_emoji.set("\ud83d\udc4e")
+            await self.conf.dn_emoji.set("👎")
 
     @commands.group(name="msgvote", pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_server=True)
@@ -43,7 +45,7 @@ class MsgVote:
         """Msgvote cog settings"""
 
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            await ctx.send_help()
 
     @msgvote.command(name="on", pass_context=True, no_pm=True)
     async def _msgvote_on(self, ctx):
