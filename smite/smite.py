@@ -19,6 +19,7 @@ class Smite:
     def __init__(self, bot):
         self.bot = bot
         self.conf = Config.get_conf(self, identifier=254906529)
+        self.session = aiohttp.ClientSession()
         self.url_pc = 'http://api.smitegame.com/smiteapi.svc'
         self.header = {"User-Agent": "flapjackcogs/1.0"}
 
@@ -27,7 +28,7 @@ class Smite:
         """Smite cog commands."""
 
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            await ctx.send_help()
 
     @smite.command(name="auth", pass_context=True)
     @checks.is_owner()
@@ -108,7 +109,7 @@ class Smite:
 
         url = '/'.join([self.url_pc, 'getplayerJson', dev_id, str_hash, session, time, name])
 
-        async with aiohttp.request("GET", url, headers=self.header) as response:
+        async with self.session.get(url, headers=self.header) as response:
             re = await response.json()
 
         if not re:
@@ -180,7 +181,7 @@ class Smite:
 
         url = '/'.join([self.url_pc, 'getplayerstatusJson', dev_id, str_hash, session, time, name])
 
-        async with aiohttp.request("GET", url, headers=self.header) as response:
+        async with self.session.get(url, headers=self.header) as response:
             re = await response.json()
 
         # Smite - Icon by J1mB091 on DeviantArt (http://j1mb091.deviantart.com/art/Smite-Icon-314198305)
@@ -220,7 +221,7 @@ class Smite:
 
         url = '/'.join([self.url_pc, 'getmatchplayerdetailsJson', dev_id, str_hash, session, time, mid])
 
-        async with aiohttp.request("GET", url, headers=self.header) as response:
+        async with self.session.get(url, headers=self.header) as response:
             re = await response.json()
 
         teams = ['', '']
@@ -294,7 +295,7 @@ class Smite:
     async def ping(self, ctx):
 
         url = self.url_pc + '/pingjson'
-        async with aiohttp.request("GET", url, headers=self.header) as response:
+        async with self.session.get(url, headers=self.header) as response:
             await ctx.send(await response.text())
         return
 
@@ -315,7 +316,7 @@ class Smite:
 
         url = '/'.join([self.url_pc, 'createsessionJson', dev_id, str_hash, time])
 
-        async with aiohttp.request("GET", url, headers=self.header) as response:
+        async with self.session.get(url, headers=self.header) as response:
             try:
                 re = await response.json()
             except JSONDecodeError:
@@ -345,7 +346,7 @@ class Smite:
         str_hash = m.hexdigest()
 
         url = '/'.join([self.url_pc, 'testsessionJson', dev_id, str_hash, session, time])
-        async with aiohttp.request("GET", url, headers=self.header) as response:
+        async with self.session.get(url, headers=self.header) as response:
             text = await response.text()
 
         if text.startswith('"Invalid'):
@@ -356,6 +357,5 @@ class Smite:
         # or the Smite API has changed.
         return False
 
-
-def setup(bot):
-    bot.add_cog(Smite(bot))
+    def __unload(self):
+        self.session.close()
