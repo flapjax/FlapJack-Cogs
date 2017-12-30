@@ -33,6 +33,7 @@ class Blizzard:
         self.conf.register_global(
             **self.default_global_settings
         )
+        self.session = aiohttp.ClientSession()
         self.base_url = 'https://us.battle.net/connect/en/app/'
         self.product_url = '/patch-notes?productType='
         self.wowtoken_url = 'http://wowtokenprices.com'
@@ -148,7 +149,7 @@ class Blizzard:
         """Change blizzard cog settings."""
 
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            await ctx.send_help()
 
     @blizzard.command(name="apikey", pass_context=True)
     @checks.is_owner()
@@ -196,7 +197,7 @@ class Blizzard:
         """Change your battletag settings."""
 
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            await ctx.send_help()
 
     @battletag.command(name="set", pass_context=True)
     async def _set_battletag(self, ctx, tag: str):
@@ -227,7 +228,7 @@ class Blizzard:
         """Hearthstone utilities"""
 
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            await ctx.send_help()
 
     @hearthstone.command(name="notes", pass_context=True)
     async def _notes_hearthstone(self, ctx):
@@ -239,7 +240,7 @@ class Blizzard:
         """Overwatch utilities"""
 
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            await ctx.send_help()
 
     @overwatch.command(name="stats", pass_context=True)
     async def _stats_overwatch(self, ctx, tag: str=None, region: str=None):
@@ -265,7 +266,7 @@ class Blizzard:
 
         tag = tag.replace("#", "-")
         url = 'https://owapi.net/api/v3/u/' + tag + '/stats'
-        async with aiohttp.request("GET", url, headers=self.header) as response:
+        async with self.session.get(url, headers=self.header) as response:
             stats = await response.json()
 
         if 'error' in stats:
@@ -368,7 +369,7 @@ class Blizzard:
         """Starcraft2 utilities"""
 
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            await ctx.send_help()
 
     @starcraft2.command(name="notes", pass_context=True)
     async def _notes_starcraft2(self, ctx):
@@ -380,7 +381,7 @@ class Blizzard:
         """World of Warcraft utilities"""
 
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            await ctx.send_help()
 
     @warcraft.command(name="notes", pass_context=True)
     async def _notes_warcraft(self, ctx):
@@ -414,7 +415,7 @@ class Blizzard:
         """Diablo3 utilities"""
 
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            await ctx.send_help()
 
     @diablo3.command(name="notes", pass_context=True)
     async def _notes_diablo3(self, ctx):
@@ -467,8 +468,8 @@ class Blizzard:
         tag = tag.replace("#", "-")
         url = 'https://' + region + '.api.battle.net/d3/profile/'\
               + tag + '/?locale=' + locale + '&apikey=' + key
-
-        async with aiohttp.request("GET", url, headers=self.header) as response:
+        
+        async with self.session.get(url, headers=self.header) as response:
             stats = await response.json()
 
         if 'code' in stats:
@@ -509,7 +510,7 @@ class Blizzard:
         """Heroes of the Storm utilities"""
 
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            await ctx.send_help()
 
     @hots.command(name="notes", pass_context=True)
     async def _notes_hots(self, ctx):
@@ -523,7 +524,7 @@ class Blizzard:
                        self.abbr[game]])
         tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'div']
         attr = {'div': 'class'}
-        async with aiohttp.request("GET", url, headers=self.patch_header) as response:
+        async with self.session.get(url, headers=self.patch_header) as response:
             dirty = await response.text()
         clean = bleach.clean(dirty, tags=tags, attributes=attr, strip=True)
         soup = BeautifulSoup(clean, "html.parser")
@@ -616,7 +617,7 @@ class Blizzard:
         thumb_url = 'http://wowtokenprices.com/assets/wowtokeninterlaced.png'
 
         try:
-            async with aiohttp.request("GET", url, headers=self.header) as response:
+            async with self.session.get(url, headers=self.header) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
             data = soup.find('div', class_=realm + '-region-div')
@@ -636,3 +637,6 @@ class Blizzard:
 
         except:
             await ctx.send("Error finding WoW token prices.")
+
+    def __unload(self):
+        self.session.close()
