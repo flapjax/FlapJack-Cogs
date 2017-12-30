@@ -56,7 +56,7 @@ class ColorMe:
         """Change the color of your name via custom roles."""
 
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            await ctx.send_help()
 
     @colorme.command(name="change", pass_context=True, no_pm=True)
     @commands.cooldown(10, 60, commands.BucketType.user)
