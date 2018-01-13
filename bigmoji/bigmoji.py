@@ -30,8 +30,12 @@ class Bigmoji:
         if emoji[0] == '<':
             convert = False
             name = emoji.split(':')[1]
-            emoji = emoji.split(':')[2][:-1]
-            url = 'https://cdn.discordapp.com/emojis/' + emoji + '.png'
+            emoji_name = emoji.split(':')[2][:-1]
+            anim = emoji.split(':')[0]
+            if anim == '<a':
+                url = 'https://cdn.discordapp.com/emojis/' + emoji_name + '.gif'
+            else:
+                url = 'https://cdn.discordapp.com/emojis/' + emoji_name + '.png'
         else:
             chars = []
             name = []
@@ -69,7 +73,10 @@ class Bigmoji:
             await self.bot.say("Image creation timed out.")
             return
 
-        await self.bot.send_file(channel, img, filename=name + '.png')
+        if emoji.split(':')[0] == '<a':
+            await self.bot.send_file(channel, img, filename=name + '.gif')
+        else:
+            await self.bot.send_file(channel, img, filename=name + '.png')
 
     @staticmethod
     def generate(img, convert, **kwargs):
