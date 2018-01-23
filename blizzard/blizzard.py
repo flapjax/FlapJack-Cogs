@@ -39,6 +39,7 @@ class Blizzard:
         self.bot = bot
         self.settings_path = "data/blizzard/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
+        self.session = aiohttp.ClientSession(loop=self.bot.loop)
         self.base_url = 'https://us.battle.net/connect/en/app/'
         self.product_url = '/patch-notes?productType='
         self.wowtoken_url = 'http://wowtokenprices.com'
@@ -533,7 +534,7 @@ class Blizzard:
                        self.abbr[game]])
         tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'div']
         attr = {'div': 'class'}
-        async with aiohttp.get(url, headers=self.patch_header) as response:
+        async with self.session.get(url, headers=self.patch_header) as response:
             dirty = await response.text()
         clean = bleach.clean(dirty, tags=tags, attributes=attr, strip=True)
         soup = BeautifulSoup(clean, "html.parser")
@@ -625,7 +626,7 @@ class Blizzard:
         thumb_url = 'http://wowtokenprices.com/assets/wowtokeninterlaced.png'
 
         try:
-            async with aiohttp.get(url, headers=self.header) as response:
+            async with self.session.get(url, headers=self.header) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
             data = soup.find('div', class_=realm + '-region-div')
