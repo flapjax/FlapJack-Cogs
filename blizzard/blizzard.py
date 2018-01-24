@@ -77,6 +77,9 @@ class Blizzard:
         self.expired_embed = discord.Embed(title="This menu has exipred due "
                                            "to inactivity.")
 
+    def __unload(self):
+        self.session.close()
+
     async def show_menu(self, ctx, message, messages, page):
         if message:
             return await self.bot.edit_message(message, messages[page])
