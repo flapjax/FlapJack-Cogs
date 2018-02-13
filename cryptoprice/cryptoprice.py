@@ -65,7 +65,7 @@ class CryptoPrice:
             column.append(row.find("a", class_="price").get_text().strip())
             #column.append(row.select('a[data-supply]')[0].get_text().strip())
             #column.append(row.find("a", class_="volume").get_text().strip())
-            column.append(row.find("td", class_="percent-24h").get_text().strip())
+            #column.append(row.find("td", class_="percent-24h").get_text().strip())
             rows.append(column)
 
         # Handy sorting thing that could be used to limit results
