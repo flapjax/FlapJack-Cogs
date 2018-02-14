@@ -13,6 +13,7 @@ class SmartReact:
         self.bot = bot
         self.settings_path = "data/smartreact/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
+        self.NONWORDS = set(" ~!@#$%^&*()_=+`'\"/.,;:\\|[]\{\}<>")
 
     @commands.command(name="addreact", no_pm=True, pass_context=True)
     async def addreact(self, ctx, word, emoji):
@@ -111,12 +112,32 @@ class SmartReact:
         if server.id not in self.settings:
             return
         react_dict = copy.deepcopy(self.settings[server.id])
-        words = message.content.lower().split()
         for emoji in react_dict:
-            if set(w.lower() for w in react_dict[emoji]).intersection(words):
-                fixed_emoji = self.fix_custom_emoji(emoji)
-                if fixed_emoji is not None:
-                    await self.bot.add_reaction(message, fixed_emoji)
+            triggers = react_dict[emoji]
+            # check each trigger, in order to avoid '"trigger"' not being recognized
+            for trigger in triggers:
+                if self.is_word_boundary(message.content, trigger):
+                    fixed_emoji = self.fix_custom_emoji(emoji)
+                    if fixed_emoji is not None:
+                        await self.bot.add_reaction(message, fixed_emoji)
+
+    # makes sure that the trigger is surrounded by word boundaries
+    # such as $, ^, a non-alphanumeric, etc
+    def is_word_boundary(self, string, trigger):
+        i = string.find(trigger)
+        if i == -1:
+            return False
+        if 0 < i:
+            c = string[i-1]
+            if c not in self.NONWORDS:
+                return False
+        # find character after trigger
+        i += len(trigger)
+        if i < len(string) - 1:
+            c = string[i]
+            if c not in self.NONWORDS:
+                return False
+        return True
 
 
 def check_folders():
