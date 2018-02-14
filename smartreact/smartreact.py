@@ -22,20 +22,20 @@ class SmartReact:
         message = ctx.message
         self.load_settings(server.id)
 
-        trigger = " ".join(command[0:-1])
-        emoji = command[-1]
-
+        trigger, emoji = parse_command(command)
         emoji = self.fix_custom_emoji(emoji)
         await self.create_smart_reaction(server, trigger, emoji, message)
 
     @commands.command(name="delreact", no_pm=True, pass_context=True)
-    async def delreact(self, ctx, word, emoji):
+    async def delreact(self, ctx, *command):
         """Delete an auto reaction to a word"""
         server = ctx.message.server
         message = ctx.message
         self.load_settings(server.id)
+
+        trigger, emoji = parse_command(command)
         emoji = self.fix_custom_emoji(emoji)
-        await self.remove_smart_reaction(server, word, emoji, message)
+        await self.remove_smart_reaction(server, trigger, emoji, message)
 
     def load_settings(self, server_id):
         self.settings = dataIO.load_json(self.settings_path)
@@ -143,6 +143,10 @@ class SmartReact:
                 return False
         return True
 
+def parse_command(command):
+    trigger = " ".join(command[0:-1])
+    emoji = command[-1]
+    return trigger, emoji
 
 def check_folders():
     folder = "data/smartreact"
