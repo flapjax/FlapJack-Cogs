@@ -13,16 +13,20 @@ class SmartReact:
         self.bot = bot
         self.settings_path = "data/smartreact/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
-        self.NONWORDS = set(" ~!@#$%^&*()_=+`'\"/.,;:\\|[]\{\}<>")
+        self.NONWORDS = set(" ~!@#$%^?&*()_=+`'\"/.,;:\\|[]\{\}<>")
 
     @commands.command(name="addreact", no_pm=True, pass_context=True)
-    async def addreact(self, ctx, word, emoji):
+    async def addreact(self, ctx, *command):
         """Add an auto reaction to a word"""
         server = ctx.message.server
         message = ctx.message
         self.load_settings(server.id)
+
+        trigger = " ".join(command[0:-1])
+        emoji = command[-1]
+
         emoji = self.fix_custom_emoji(emoji)
-        await self.create_smart_reaction(server, word, emoji, message)
+        await self.create_smart_reaction(server, trigger, emoji, message)
 
     @commands.command(name="delreact", no_pm=True, pass_context=True)
     async def delreact(self, ctx, word, emoji):
