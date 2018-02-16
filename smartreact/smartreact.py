@@ -116,11 +116,12 @@ class SmartReact:
         if server.id not in self.settings:
             return
         react_dict = copy.deepcopy(self.settings[server.id])
+        msg_lower = message.content.lower()
         for emoji in react_dict:
             triggers = react_dict[emoji]
             # check each trigger, in order to avoid '"trigger"' not being recognized
             for trigger in triggers:
-                if self.is_word_boundary(message.content, trigger):
+                if self.is_word_boundary(msg_lower, trigger):
                     fixed_emoji = self.fix_custom_emoji(emoji)
                     if fixed_emoji is not None:
                         await self.bot.add_reaction(message, fixed_emoji)
