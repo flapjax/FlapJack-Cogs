@@ -75,6 +75,10 @@ class Blizzard:
         }
         self.expired_embed = discord.Embed(title="This menu has exipred due "
                                            "to inactivity.")
+        self.session = aiohttp.ClientSession()
+
+    def __unload(self):
+        self.session.close()
 
     async def show_menu(self, ctx, message, messages, page):
         if message:
@@ -533,7 +537,7 @@ class Blizzard:
                        self.abbr[game]])
         tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'div']
         attr = {'div': 'class'}
-        async with aiohttp.get(url, headers=self.patch_header) as response:
+        async with self.session.get(url, headers=self.patch_header) as response:
             dirty = await response.text()
         clean = bleach.clean(dirty, tags=tags, attributes=attr, strip=True)
         soup = BeautifulSoup(clean, "html.parser")
@@ -625,7 +629,7 @@ class Blizzard:
         thumb_url = 'http://wowtokenprices.com/assets/wowtokeninterlaced.png'
 
         try:
-            async with aiohttp.get(url, headers=self.header) as response:
+            async with self.session.get(url, headers=self.header) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
             data = soup.find('div', class_=realm + '-region-div')
