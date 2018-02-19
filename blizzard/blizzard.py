@@ -277,9 +277,9 @@ class Blizzard:
 
         tag = tag.replace("#", "-")
         url = 'https://owapi.net/api/v3/u/' + tag + '/stats'
-        async with aiohttp.ClientSession(headers=self.header) as session:
-            async with session.get(url) as resp:
-                stats = await resp.json()
+
+        async with self.session.get(url, headers=self.header) as response:
+            stats = await response.json()
 
         if 'error' in stats:
             await self.bot.say('Could not fetch your statistics. '
@@ -481,9 +481,8 @@ class Blizzard:
         url = 'https://' + region + '.api.battle.net/d3/profile/'\
               + tag + '/?locale=' + locale + '&apikey=' + key
 
-        async with aiohttp.ClientSession(headers=self.header) as session:
-            async with session.get(url) as resp:
-                stats = await resp.json()
+        async with self.session.get(url, headers=self.header) as response:
+            stats = await response.json()
 
         if 'code' in stats:
             await self.bot.say("I coulnd't find Diablo 3 stats for that battletag.")
