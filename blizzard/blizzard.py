@@ -39,6 +39,7 @@ class Blizzard:
         self.bot = bot
         self.settings_path = "data/blizzard/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
+        self.session = aiohttp.ClientSession(loop=self.bot.loop)
         self.base_url = 'https://us.battle.net/connect/en/app/'
         self.product_url = '/patch-notes?productType='
         self.wowtoken_url = 'http://wowtokenprices.com'
@@ -75,6 +76,9 @@ class Blizzard:
         }
         self.expired_embed = discord.Embed(title="This menu has exipred due "
                                            "to inactivity.")
+
+    def __unload(self):
+        self.session.close()
 
     async def show_menu(self, ctx, message, messages, page):
         if message:
@@ -273,9 +277,9 @@ class Blizzard:
 
         tag = tag.replace("#", "-")
         url = 'https://owapi.net/api/v3/u/' + tag + '/stats'
-        async with aiohttp.ClientSession(headers=self.header) as session:
-            async with session.get(url) as resp:
-                stats = await resp.json()
+
+        async with self.session.get(url, headers=self.header) as response:
+            stats = await response.json()
 
         if 'error' in stats:
             await self.bot.say('Could not fetch your statistics. '
@@ -477,9 +481,8 @@ class Blizzard:
         url = 'https://' + region + '.api.battle.net/d3/profile/'\
               + tag + '/?locale=' + locale + '&apikey=' + key
 
-        async with aiohttp.ClientSession(headers=self.header) as session:
-            async with session.get(url) as resp:
-                stats = await resp.json()
+        async with self.session.get(url, headers=self.header) as response:
+            stats = await response.json()
 
         if 'code' in stats:
             await self.bot.say("I coulnd't find Diablo 3 stats for that battletag.")
@@ -533,7 +536,7 @@ class Blizzard:
                        self.abbr[game]])
         tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'div']
         attr = {'div': 'class'}
-        async with aiohttp.get(url, headers=self.patch_header) as response:
+        async with self.session.get(url, headers=self.patch_header) as response:
             dirty = await response.text()
         clean = bleach.clean(dirty, tags=tags, attributes=attr, strip=True)
         soup = BeautifulSoup(clean, "html.parser")
@@ -625,7 +628,7 @@ class Blizzard:
         thumb_url = 'http://wowtokenprices.com/assets/wowtokeninterlaced.png'
 
         try:
-            async with aiohttp.get(url, headers=self.header) as response:
+            async with self.session.get(url, headers=self.header) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
             data = soup.find('div', class_=realm + '-region-div')
