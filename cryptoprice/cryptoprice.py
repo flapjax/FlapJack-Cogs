@@ -18,6 +18,10 @@ class CryptoPrice:
     def __init__(self, bot):
         self.bot = bot
         self.url = "https://coinmarketcap.com/"
+        self.session = aiohttp.ClientSession()
+        
+    def __unload(self):
+        self.session.close()
 
     @commands.command()
     async def cprice(self, *, currency: str=None):
@@ -31,7 +35,7 @@ class CryptoPrice:
 
         search = search.replace(' ', '-').lower()
 
-        async with aiohttp.get(self.url) as response:
+        async with self.session.get(self.url) as response:
             cryptosoup = BeautifulSoup(await response.text(), "html.parser")
 
         results = cryptosoup.find_all("tr", id=re.compile(search))
