@@ -81,9 +81,6 @@ class Blizzard:
     def __unload(self):
         self.session.close()
 
-    def __unload(self):
-        self.session.close()
-
     async def show_menu(self, ctx, message, messages, page):
         if message:
             return await self.bot.edit_message(message, messages[page])
