@@ -56,6 +56,10 @@ class Sfx:
         self.slave_queues = {}
         self.slave_tasks = {}
         self.queue_task = bot.loop.create_task(self._queue_manager())
+        self.session = aiohttp.ClientSession()
+        
+    def __unload(self):
+        self.session.close()
 
     # Other cogs may use the following two functions as an easy API for sfx.
     # The function definitions probably violate every possible style guide,
@@ -378,7 +382,7 @@ class Sfx:
                          " Please change the filename and try again."))
             return
 
-        async with aiohttp.get(url) as new_sound:
+        async with self.session.get(url) as new_sound:
             f = open(filepath, "wb")
             f.write(await new_sound.read())
             f.close()
