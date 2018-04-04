@@ -1,0 +1,10 @@
+{
+    "NAME" : "Bigmoji",
+    "AUTHOR" : "FlapJack",
+    "SHORT" : "Uploads a large version of an emoji",
+    "DESCRIPTION" : "Uploads a large .png image of an emoji. If cairosvg is not installed, standard emojis will be limited to a 72x72 png.\n\nDependencies:\ncairosvg :: http://cairosvg.org/ \n\nWindows users take note, cairosvg is difficult to install properly. Some people have had success following the Windows instructions for installing WeasyPrint (http://weasyprint.readthedocs.io/en/stable/install.html#windows), which has cairosvg as a dependency.\nTODO: wand is now supported. Include instructions for installing wand / ImageMagick on windows.",
+    "INSTALL_MSG" : "Thanks for installing Bigmoji.",
+    "REQUIREMENTS" : ["cairosvg"],
+    "TAGS" : ["emoji", "big", "huge"],
+    "DISABLED" : false
+}
