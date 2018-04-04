@@ -28,6 +28,10 @@ class WordCloud:
         self.settings_path = "data/wordcloud/settings.json"
         self.mask_folder = "data/wordcloud/masks/"
         self.settings = dataIO.load_json(self.settings_path)
+        self.session = aiohttp.ClientSession()
+        
+    def __unload(self):
+        self.session.close()
 
     async def _list_masks(self, ctx):
 
@@ -217,7 +221,7 @@ class WordCloud:
 
         filepath = os.path.join(self.mask_folder, filename)
 
-        async with aiohttp.get(url) as new_image:
+        async with self.session.get(url) as new_image:
             # Overwrite file if it exists
             f = open(filepath, "wb")
             f.write(await new_image.read())
