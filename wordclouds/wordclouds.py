@@ -60,6 +60,7 @@ class WordClouds:
             await ctx.send(page)
             asyncio.sleep(1)
 
+    @commands.guild_only()
     @commands.command(name='wordcloud', pass_context=True, no_pm=True, aliases=['wc'])
     @commands.cooldown(1, 10, commands.BucketType.guild)
     async def wordcloud(self, ctx, *argv):
@@ -176,6 +177,7 @@ class WordClouds:
         wc.generate(text)
         wc.to_file(filepath)
 
+    @commands.guild_only()
     @commands.group(name='wcset', pass_context=True, no_pm=True)
     @checks.mod_or_permissions(administrator=True)
     async def wcset(self, ctx):
