@@ -60,7 +60,8 @@ class WordClouds:
             await ctx.send(page)
             asyncio.sleep(1)
 
-    @commands.command(name='wordcloud', pass_context=True, no_pm=True, aliases=['wc'])
+    @commands.guild_only()
+    @commands.command(name='wordcloud', aliases=['wc'])
     @commands.cooldown(1, 10, commands.BucketType.guild)
     async def wordcloud(self, ctx, *argv):
         """Generate a wordcloud. Optional arguments are channel, user, and
@@ -148,7 +149,7 @@ class WordClouds:
                     if user is None or user == message.author:
                         text += message.clean_content + ' '
         except discord.errors.Forbidden:
-            await self.bot.say("Wordcloud creation failed. I can't see that channel!")
+            await ctx.send("Wordcloud creation failed. I can't see that channel!")
             return
 
         if not text or text.isspace():
@@ -176,7 +177,8 @@ class WordClouds:
         wc.generate(text)
         wc.to_file(filepath)
 
-    @commands.group(name='wcset', pass_context=True, no_pm=True)
+    @commands.guild_only()
+    @commands.group(name='wcset')
     @checks.mod_or_permissions(administrator=True)
     async def wcset(self, ctx):
         """WordCloud image settings"""
@@ -184,12 +186,12 @@ class WordClouds:
             await ctx.send_help()
             return
 
-    @wcset.command(name='listmask', pass_context=True, no_pm=True)
+    @wcset.command(name='listmask')
     async def _wcset_listmask(self, ctx):
         """List image files available for masking"""
         await self._list_masks(ctx)
 
-    @wcset.command(name='maskfile', pass_context=True, no_pm=True)
+    @wcset.command(name='maskfile')
     async def _wcset_maskfile(self, ctx, filename: str):
         """Set local image file for masking
         - place masks in [TBD: mask folder]"""
@@ -202,7 +204,7 @@ class WordClouds:
         await self.conf.guild(guild).mask.set(filename)
         await ctx.send('Mask set to {}.'.format(filename))
 
-    @wcset.command(name='upload', pass_context = True, no_pm=True)
+    @wcset.command(name='upload')
     @checks.is_owner()
     async def _wcset_upload(self, ctx, url: str=None):
         """Upload an image mask through Discord"""
@@ -257,14 +259,14 @@ class WordClouds:
         finally:
             await msg.clear_reactions()
 
-    @wcset.command(name='clearmask', pass_context=True, no_pm=True)
+    @wcset.command(name='clearmask')
     async def _wcset_clearmask(self, ctx):
         """Clear image file for masking"""
         guild = ctx.guild
         await self.conf.guild(guild).mask.set(None)
         await ctx.send('Mask set to None.')
 
-    @wcset.command(name='colormask', pass_context=True, no_pm=True)
+    @wcset.command(name='colormask')
     async def _wcset_colormask(self, ctx, on_off: bool=None):
         """Turn color masking on/off"""
         guild = ctx.guild
@@ -275,7 +277,7 @@ class WordClouds:
             await self.conf.guild(guild).colormask.set(True)
             await ctx.send('Color masking turned on.')
 
-    @wcset.command(name='bgcolor', pass_context=True, no_pm=True)
+    @wcset.command(name='bgcolor')
     async def _wcset_bgcolor(self, ctx, color: str):
         """Set background color. Use 'clear' for transparent."""
         # No checks for bad colors yet
@@ -283,7 +285,7 @@ class WordClouds:
         await self.conf.guild(guild).bgcolor.set(color)
         await ctx.send('Background color set to {}.'.format(color))
 
-    @wcset.command(name='maxwords', pass_context=True, no_pm=True)
+    @wcset.command(name='maxwords')
     async def _wcset_maxwords(self, ctx, count: int):
         """Set maximum number of words to appear in the word cloud
         Set to 0 for default (4000)."""
@@ -292,7 +294,7 @@ class WordClouds:
         await self.conf.guild(guild).maxwords.set(count)
         await ctx.send('Max words set to {}.'.format(str(count)))
 
-    @wcset.command(name='exclude', pass_context=True, no_pm=True)
+    @wcset.command(name='exclude')
     async def _wcset_exclude(self, ctx, word: str):
         """Add a word to the excluded list.
         This overrides the default excluded list!"""
@@ -302,7 +304,7 @@ class WordClouds:
         await self.conf.guild(guild).excluded.set(excluded)
         await ctx.send("'{}' added to excluded words.".format(word))
 
-    @wcset.command(name='clearwords', pass_context=True, no_pm=True)
+    @wcset.command(name='clearwords')
     async def _wcset_clearwords(self, ctx):
         """Clear the excluded word list.
         Default excluded list will be used."""
