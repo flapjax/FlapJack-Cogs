@@ -29,6 +29,13 @@ except:
 # I would be light years behind where I am now :)
 
 
+class SFXError(Exception):
+    pass
+
+
+class NoTextToSpeak(SFXError):
+    pass
+
 class SuspendedPlayer:
 
     def __init__(self, voice_client):
@@ -226,15 +233,20 @@ class Sfx:
     async def tts(self, ctx, *text: str):
         """Play a TTS clip in your current channel"""
 
-        if not gTTS_avail:
-            await self.bot.say("You do not have gTTS installed.")
-            return
-        vchan = ctx.message.author.voice_channel
-        if vchan is None:
-            await self.bot.say("You are not connected to a voice channel.")
-            return
+        try:
+            if not text:
+                raise NoTextToSpeak
+            if not gTTS_avail:
+                await self.bot.say("You do not have gTTS installed.")
+                return
+            vchan = ctx.message.author.voice_channel
+            if vchan is None:
+                await self.bot.say("You are not connected to a voice channel.")
+                return
 
-        self.enqueue_tts(vchan, " ".join(text))
+            self.enqueue_tts(vchan, " ".join(text))
+        except NoTextToSpeak:
+            await self.bot.send_cmd_help(ctx)
 
     @commands.command(no_pm=True, pass_context=True, aliases=['playsound'])
     @commands.cooldown(1, 1, commands.BucketType.server)
