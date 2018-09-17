@@ -84,7 +84,7 @@ class SmartReact:
                                            "this emoji.")
 
         except (discord.errors.HTTPException, discord.errors.InvalidArgument):
-            await self.bot.say("That's not an emoji I recognize. "
+            await message.channel.send("That's not an emoji I recognize. "
                                "(might be custom!)")
 
     # Thanks irdumb#1229 for the help making this "more Pythonic"
