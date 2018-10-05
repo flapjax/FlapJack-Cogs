@@ -2,8 +2,7 @@ import asyncio
 from datetime import datetime
 
 import discord
-from redbot.core import Config, checks
-from discord.ext import commands
+from redbot.core import Config, checks, commands
 
 # Credit to JennJenn#6857 for thinking up this cog.
 # It started as a joke, and people actualy use it! Who knew?
@@ -39,15 +38,15 @@ class MsgVote:
         if await self.conf.dn_emoji() is None:
             await self.conf.dn_emoji.set("👎")
 
-    @commands.group(name="msgvote", pass_context=True, no_pm=True)
+    @commands.group()
+    @commands.guild_only()
     @checks.admin_or_permissions(manage_server=True)
     async def msgvote(self, ctx):
         """Msgvote cog settings"""
 
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
+        pass
 
-    @msgvote.command(name="on", pass_context=True, no_pm=True)
+    @msgvote.command(name="on")
     async def _msgvote_on(self, ctx):
         """Turn on msgvote mode in the current channel"""
 
@@ -60,7 +59,7 @@ class MsgVote:
             await self.conf.channels_enabled.set(channels)
             await ctx.send("Msgvote mode is now on in this channel.")
 
-    @msgvote.command(name="off", pass_context=True, no_pm=True)
+    @msgvote.command(name="off")
     async def _msgvote_off(self, ctx):
         """Turn off msgvote mode in the current channel"""
 
@@ -73,7 +72,7 @@ class MsgVote:
             await self.conf.channels_enabled.set(channels)
             await ctx.send("Msgvote mode is now off in this channel.")
 
-    @msgvote.command(name="bot", pass_context=True, no_pm=True)
+    @msgvote.command(name="bot")
     async def _msgvote_bot(self, ctx):
         """Turn on/off reactions to bot's own messages"""
 
@@ -84,7 +83,7 @@ class MsgVote:
             await self.conf.bot_react.set(True)
             await ctx.send("Reactions to bot messages turned ON.")
 
-    @msgvote.command(name="upemoji", pass_context=True, no_pm=True)
+    @msgvote.command(name="upemoji")
     async def _msgvote_upemoji(self, ctx, emoji):
         """Set the upvote emoji"""
 
@@ -95,7 +94,7 @@ class MsgVote:
         await self.conf.up_emoji.set(str(emoji))
         await ctx.send("Upvote emoji set to: " + str(emoji))
 
-    @msgvote.command(name="downemoji", pass_context=True, no_pm=True)
+    @msgvote.command(name="downemoji")
     async def _msgvote_downemoji(self, ctx, emoji):
         """Set the downvote emoji"""
 
@@ -106,7 +105,7 @@ class MsgVote:
         await self.conf.dn_emoji.set(str(emoji))
         await ctx.send("Downvote emoji set to: " + str(emoji))
 
-    @msgvote.command(name="duration", pass_context=True, no_pm=True)
+    @msgvote.command(name="duration")
     async def _msgvote_duration(self, ctx, duration: int):
         """Set the duration in seconds for which votes will be monitored
         on each message."""
@@ -118,7 +117,7 @@ class MsgVote:
         else:
             await ctx.send("Invalid duration. Must be a positive integer.")
 
-    @msgvote.command(name="threshold", pass_context=True, no_pm=True)
+    @msgvote.command(name="threshold")
     async def _msgvote_threshold(self, ctx, threshold: int):
         """Set the threshold of [downvotes - upvotes] for msg deletion.
         Must be a positive integer. Or, set to 0 to disable deletion."""
