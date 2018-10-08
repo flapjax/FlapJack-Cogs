@@ -4,8 +4,10 @@ import discord
 from redbot.core import Config
 from discord.ext import commands
 
+BaseCog = getattr(commands, "Cog", object)
 
-class SmartReact:
+
+class SmartReact(BaseCog):
 
     """Create automatic reactions when trigger words are typed in chat"""
 
