@@ -2,11 +2,12 @@ import os
 import re
 
 from discord.ext import commands
-
 from redbot.core import checks, Config
 
+BaseCog = getattr(commands, "Cog", object)
 
-class Wat:
+
+class Wat(BaseCog):
 
     """Repeat messages when other users are having trouble hearing"""
 
