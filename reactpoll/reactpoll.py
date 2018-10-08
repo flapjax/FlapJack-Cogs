@@ -6,8 +6,10 @@ import time
 from discord.ext import commands
 from redbot.core import Config, checks
 
+BaseCog = getattr(commands, "Cog", object)
 
-class NewPoll:
+
+class NewPoll(BaseCog):
     """A new reaction poll"""
 
     def __init__(self, ctx, main, question: str, options: str, duration: str):
