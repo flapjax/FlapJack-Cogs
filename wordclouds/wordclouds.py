@@ -14,9 +14,10 @@ from wordcloud import ImageColorGenerator
 
 # Special thanks to co-author aikaterna for pressing onward
 # with this cog when I had lost motivation!
+BaseCog = getattr(commands, "Cog", object)
 
 
-class WordClouds:
+class WordClouds(BaseCog):
 
     """Word Clouds"""
 
