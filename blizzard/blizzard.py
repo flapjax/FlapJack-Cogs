@@ -16,9 +16,10 @@ from discord.ext.commands import formatter
 # patch notes. https://github.com/judge2020/BattleNetUpdateChecker
 # Embed menus are modified version of the menu cog written by Awoonar Dust#7332
 # https://github.com/Lunar-Dust/Dusty-Cogs/
+BaseCog = getattr(commands, "Cog", object)
 
 
-class Blizzard:
+class Blizzard(BaseCog):
 
     """Blizzard Game Utilities"""
 
