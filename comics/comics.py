@@ -6,8 +6,10 @@ import discord
 from bs4 import BeautifulSoup
 from discord.ext import commands
 
+BaseCog = getattr(commands, "Cog", object)
 
-class Comics:
+
+class Comics(BaseCog):
     """Print random comics from popular sources"""
 
     def __init__(self, bot):
