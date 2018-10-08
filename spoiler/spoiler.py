@@ -11,8 +11,10 @@ try:
 except:
     pillowAvailable = False
 
+BaseCog = getattr(commands, "Cog", object)
 
-class Spoiler:
+
+class Spoiler(BaseCog):
 
     """Hide spoilers using animated GIFs"""
 
