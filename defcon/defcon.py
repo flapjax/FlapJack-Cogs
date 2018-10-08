@@ -4,8 +4,10 @@ import discord
 from redbot.core import Config, checks
 from discord.ext import commands
 
+BaseCog = getattr(commands, "Cog", object)
 
-class Defcon:
+
+class Defcon(BaseCog):
 
     """Server DEFCON Levels"""
 
