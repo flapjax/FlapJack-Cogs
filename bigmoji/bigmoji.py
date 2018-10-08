@@ -17,8 +17,10 @@ except:
     except:
         svg_convert = None
 
+BaseCog = getattr(commands, "Cog", object)
 
-class Bigmoji:
+
+class Bigmoji(BaseCog):
 
     """Emoji tools"""
 
