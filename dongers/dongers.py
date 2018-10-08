@@ -5,8 +5,10 @@ from discord.ext import commands
 
 from bs4 import BeautifulSoup
 
+BaseCog = getattr(commands, "Cog", object)
 
-class Dongers:
+
+class Dongers(BaseCog):
 
     """Cog that does dongers"""
 
