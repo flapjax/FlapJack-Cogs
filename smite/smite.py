@@ -10,9 +10,10 @@ from discord.ext import commands
 
 # Special thanks to Kunkulada for suggesting this cog and
 # contributing to the design of the embeds.
+BaseCog = getattr(commands, "Cog", object)
 
 
-class Smite:
+class Smite(BaseCog):
 
     """Smite Game Utilities"""
 
