@@ -1,13 +1,12 @@
 import copy
-
 import discord
-from redbot.core import Config, commands
+from redbot.core import Config, commands, checks
+from redbot.core.utils.chat_formatting import pagify
+
 
 BaseCog = getattr(commands, "Cog", object)
 
-
 class SmartReact(BaseCog):
-
     """Create automatic reactions when trigger words are typed in chat"""
 
     default_guild_settings = {
@@ -21,7 +20,8 @@ class SmartReact(BaseCog):
             **self.default_guild_settings
         )
 
-    @commands.command(name="addreact", no_pm=True)
+    @commands.guild_only()
+    @commands.command(name="addreact")
     async def addreact(self, ctx, word, emoji):
         """Add an auto reaction to a word"""
         guild = ctx.message.guild
@@ -29,7 +29,8 @@ class SmartReact(BaseCog):
         emoji = self.fix_custom_emoji(emoji)
         await self.create_smart_reaction(guild, word, emoji, message)
 
-    @commands.command(name="delreact", no_pm=True, pass_context=True)
+    @commands.guild_only()
+    @commands.command(name="delreact")
     async def delreact(self, ctx, word, emoji):
         """Delete an auto reaction to a word"""
         guild = ctx.message.guild
@@ -45,6 +46,18 @@ class SmartReact(BaseCog):
                 if str(e.id) == emoji.split(':')[2][:-1]:
                     return e
         return None
+
+    @commands.guild_only()
+    @commands.command(name="listreact")
+    async def listreact(self, ctx):
+        """List reactions for this server"""
+        emojis = await self.conf.guild(ctx.guild).reactions()
+        msg = f"Smart Reactions for {ctx.guild.name}:\n"
+        for emoji in emojis:
+            for command in emojis[emoji]:
+                msg += f"{emoji}: {command}\n"
+        for page in pagify(msg, delims=["\n"]):
+            await ctx.send(msg)
 
     async def create_smart_reaction(self, guild, word, emoji, message):
         try:
@@ -100,4 +113,9 @@ class SmartReact(BaseCog):
         for emoji in reacts:
             if set(w.lower() for w in reacts[emoji]).intersection(words):
                 emoji = self.fix_custom_emoji(emoji)
-                await message.add_reaction(emoji)
+                try:
+                    await message.add_reaction(emoji)
+                except discord.errors.Forbidden:
+                    pass
+                except discord.errors.InvalidArgument:
+                    pass
