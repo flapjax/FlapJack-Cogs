@@ -5,14 +5,14 @@ from json import JSONDecodeError
 
 import aiohttp
 import discord
-from redbot.core import checks, Config
-from discord.ext import commands
+from redbot.core import checks, Config, commands
 
 # Special thanks to Kunkulada for suggesting this cog and
 # contributing to the design of the embeds.
+BaseCog = getattr(commands, "Cog", object)
 
 
-class Smite:
+class Smite(BaseCog):
 
     """Smite Game Utilities"""
 

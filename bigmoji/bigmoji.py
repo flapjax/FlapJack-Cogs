@@ -5,7 +5,7 @@ import unicodedata
 
 import aiohttp
 import discord
-from discord.ext import commands
+from redbot.core import commands
 
 try:
     import cairosvg
@@ -17,8 +17,10 @@ except:
     except:
         svg_convert = None
 
+BaseCog = getattr(commands, "Cog", object)
 
-class Bigmoji:
+
+class Bigmoji(BaseCog):
 
     """Emoji tools"""
 

@@ -3,8 +3,9 @@ import random
 import string
 import time
 
-from discord.ext import commands
-from redbot.core import Config, checks
+from redbot.core import Config, checks, commands
+
+BaseCog = getattr(commands, "Cog", object)
 
 
 class NewPoll:
@@ -139,7 +140,7 @@ class LoadedPoll(NewPoll):
         self.id = poll['id']
 
 
-class ReactPoll:
+class ReactPoll(BaseCog):
     """Commands for Reaction Polls"""
 
     def __init__(self, bot):

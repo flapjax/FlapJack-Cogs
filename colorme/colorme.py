@@ -4,12 +4,13 @@ import os
 import re
 
 import discord
-from redbot.core import Config, checks
-from discord.ext import commands
+from redbot.core import Config, checks, commands
 from discord.ext.commands import converter
 
+BaseCog = getattr(commands, "Cog", object)
 
-class ColorMe:
+
+class ColorMe(BaseCog):
 
     """Manage the color of your own name."""
 

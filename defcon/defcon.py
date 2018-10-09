@@ -1,11 +1,12 @@
 import os
 
 import discord
-from redbot.core import Config, checks
-from discord.ext import commands
+from redbot.core import Config, checks, commands
+
+BaseCog = getattr(commands, "Cog", object)
 
 
-class Defcon:
+class Defcon(BaseCog):
 
     """Server DEFCON Levels"""
 

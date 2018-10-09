@@ -5,18 +5,18 @@ from pathlib import Path
 import aiohttp
 import discord
 import numpy as np
-from discord.ext import commands
 from discord.ext.commands import converter, errors, formatter
 from PIL import Image
-from redbot.core import Config, checks, data_manager
+from redbot.core import Config, checks, data_manager, commands
 from wordcloud import WordCloud as WCloud
 from wordcloud import ImageColorGenerator
 
 # Special thanks to co-author aikaterna for pressing onward
 # with this cog when I had lost motivation!
+BaseCog = getattr(commands, "Cog", object)
 
 
-class WordClouds:
+class WordClouds(BaseCog):
 
     """Word Clouds"""
 

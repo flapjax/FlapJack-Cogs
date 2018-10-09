@@ -3,7 +3,7 @@ import random
 import textwrap
 
 import discord
-from discord.ext import commands
+from redbot.core import commands
 
 try:
     from PIL import Image, ImageDraw, ImageFont
@@ -11,8 +11,10 @@ try:
 except:
     pillowAvailable = False
 
+BaseCog = getattr(commands, "Cog", object)
 
-class Spoiler:
+
+class Spoiler(BaseCog):
 
     """Hide spoilers using animated GIFs"""
 

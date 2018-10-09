@@ -8,17 +8,17 @@ import aiohttp
 import bleach
 import discord
 from bs4 import BeautifulSoup
-from redbot.core import Config, checks
-from discord.ext import commands
+from redbot.core import Config, checks, commands
 from discord.ext.commands import formatter
 
 # Special thanks to judge2020 for telling me about this method for getting
 # patch notes. https://github.com/judge2020/BattleNetUpdateChecker
 # Embed menus are modified version of the menu cog written by Awoonar Dust#7332
 # https://github.com/Lunar-Dust/Dusty-Cogs/
+BaseCog = getattr(commands, "Cog", object)
 
 
-class Blizzard:
+class Blizzard(BaseCog):
 
     """Blizzard Game Utilities"""
 
