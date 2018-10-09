@@ -5,7 +5,7 @@ import unicodedata
 
 import aiohttp
 import discord
-from discord.ext import commands
+from redbot.core import commands
 
 try:
     import cairosvg

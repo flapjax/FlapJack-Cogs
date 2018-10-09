@@ -8,8 +8,7 @@ import aiohttp
 import bleach
 import discord
 from bs4 import BeautifulSoup
-from redbot.core import Config, checks
-from discord.ext import commands
+from redbot.core import Config, checks, commands
 from discord.ext.commands import formatter
 
 # Special thanks to judge2020 for telling me about this method for getting

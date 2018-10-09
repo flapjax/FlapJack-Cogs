@@ -1,8 +1,7 @@
 import copy
 
 import discord
-from redbot.core import Config
-from discord.ext import commands
+from redbot.core import Config, commands
 
 BaseCog = getattr(commands, "Cog", object)
 

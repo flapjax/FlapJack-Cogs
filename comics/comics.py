@@ -4,7 +4,7 @@ import re
 import aiohttp
 import discord
 from bs4 import BeautifulSoup
-from discord.ext import commands
+from redbot.core import commands
 
 BaseCog = getattr(commands, "Cog", object)
 

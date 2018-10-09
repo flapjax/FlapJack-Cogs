@@ -1,7 +1,7 @@
 import random
 
 import aiohttp
-from discord.ext import commands
+from redbot.core import commands
 
 from bs4 import BeautifulSoup
 

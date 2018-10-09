@@ -3,7 +3,7 @@ import random
 import textwrap
 
 import discord
-from discord.ext import commands
+from redbot.core import commands
 
 try:
     from PIL import Image, ImageDraw, ImageFont
