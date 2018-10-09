@@ -20,6 +20,7 @@ class SmartReact(BaseCog):
             **self.default_guild_settings
         )
 
+    @checks.mod_or_permissions(administrator=True)
     @commands.guild_only()
     @commands.command(name="addreact")
     async def addreact(self, ctx, word, emoji):
@@ -29,6 +30,7 @@ class SmartReact(BaseCog):
         emoji = self.fix_custom_emoji(emoji)
         await self.create_smart_reaction(guild, word, emoji, message)
 
+    @checks.mod_or_permissions(administrator=True)
     @commands.guild_only()
     @commands.command(name="delreact")
     async def delreact(self, ctx, word, emoji):
@@ -47,6 +49,7 @@ class SmartReact(BaseCog):
                     return e
         return None
 
+    @checks.mod_or_permissions(administrator=True)
     @commands.guild_only()
     @commands.command(name="listreact")
     async def listreact(self, ctx):
