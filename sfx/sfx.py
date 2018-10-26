@@ -14,9 +14,16 @@ from .utils import chat_formatting as cf
 from .utils import checks
 from .utils.dataIO import dataIO
 
+# TTS support check
 try:
     from gtts import gTTS
     gTTS_avail = True
+    # Auto language detect check
+    try:
+        from textblob import TextBlob
+        textblob_avail = True
+    except:
+        textblob_avail = False
 except:
     gTTS_avail = False
 
@@ -233,8 +240,20 @@ class Sfx:
         if vchan is None:
             await self.bot.say("You are not connected to a voice channel.")
             return
-
-        self.enqueue_tts(vchan, " ".join(text))
+        text_combined = "".join(text)
+        
+        # Auto language detect
+        if textblob_avail:
+            b = TextBlob(text_combined)
+            try:
+                tts_lang = b.detect_language()
+                self.enqueue_tts(vchan, text_combined, language = tts_lang)
+                return
+            except:
+                # Fallback to default language when unable to detect language.
+                self.enqueue_tts(vchan, text_combined)
+                return        
+        self.enqueue_tts(vchan, text_combined)
 
     @commands.command(no_pm=True, pass_context=True, aliases=['playsound'])
     @commands.cooldown(1, 1, commands.BucketType.server)
