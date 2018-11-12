@@ -135,7 +135,7 @@ class ColorMe:
                 return
 
             try:
-                await self.bot.move_role(server, new_role, 3)
+                await self.bot.move_role(server, new_role, 2)
             except discord.InvalidArgument:
                 await self.bot.say("Failed to move new role. (position invalid)")
                 return
