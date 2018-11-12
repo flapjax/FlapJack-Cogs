@@ -12,6 +12,7 @@ from __main__ import send_cmd_help
 from .utils import checks
 from .utils.dataIO import dataIO
 
+from webcolors import css3_names_to_hex
 
 class ColorMe:
 
@@ -76,6 +77,9 @@ class ColorMe:
 
         self.load_settings(server.id)
         protected_roles = self.settings[server.id]["Roles"]["Protected"]
+
+        # Attempt to map newcolor to CSS3 color spec
+        newcolor = str(css3_names_to_hex[str.lower(newcolor)]) if str.lower(newcolor) in css3_names_to_hex else newcolor
 
         try:
             newcolor = converter.ColourConverter(ctx, newcolor).convert()
