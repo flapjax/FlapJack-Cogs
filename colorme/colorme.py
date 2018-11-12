@@ -134,6 +134,18 @@ class ColorMe:
                 await self.bot.say("Failed to apply new role. (request failed)")
                 return
 
+            try:
+                await self.bot.move_role(server, new_role, 3)
+            except discord.InvalidArgument:
+                await self.bot.say("Failed to move new role. (position invalid)")
+                return
+            except discord.Forbidden:
+                await self.bot.say("Failed to move new role. (permissions)")
+                return
+            except discord.HTTPException:
+                await self.bot.say("Failed to move new role. (request failed)")
+                return
+
             await self.bot.reply("Your new color is set.")
         else:
             # Member appears to have an existing ColorMe role
