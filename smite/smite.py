@@ -26,9 +26,7 @@ class Smite(BaseCog):
     @commands.group(name="smite", pass_context=True)
     async def smite(self, ctx):
         """Smite cog commands."""
-
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
+        pass
 
     @smite.command(name="auth", pass_context=True)
     @checks.is_owner()
