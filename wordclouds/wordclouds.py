@@ -182,9 +182,7 @@ class WordClouds(BaseCog):
     @checks.mod_or_permissions(administrator=True)
     async def wcset(self, ctx):
         """WordCloud image settings"""
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
-            return
+        pass
 
     @wcset.command(name='listmask')
     async def _wcset_listmask(self, ctx):
