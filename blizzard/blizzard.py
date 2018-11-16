@@ -147,9 +147,7 @@ class Blizzard(BaseCog):
     @commands.group(name="blizzard", pass_context=True)
     async def blizzard(self, ctx):
         """Change blizzard cog settings."""
-
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
+        pass
 
     @blizzard.command(name="apikey", pass_context=True)
     @checks.is_owner()
@@ -195,9 +193,7 @@ class Blizzard(BaseCog):
     @commands.group(name="battletag", pass_context=True)
     async def battletag(self, ctx):
         """Change your battletag settings."""
-
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
+        pass
 
     @battletag.command(name="set", pass_context=True)
     async def _set_battletag(self, ctx, tag: str):
@@ -226,9 +222,7 @@ class Blizzard(BaseCog):
     @commands.group(name="hearthstone", pass_context=True)
     async def hearthstone(self, ctx):
         """Hearthstone utilities"""
-
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
+        pass
 
     @hearthstone.command(name="notes", pass_context=True)
     async def _notes_hearthstone(self, ctx):
@@ -238,9 +232,7 @@ class Blizzard(BaseCog):
     @commands.group(name="overwatch", pass_context=True)
     async def overwatch(self, ctx):
         """Overwatch utilities"""
-
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
+        pass
 
     @overwatch.command(name="stats", pass_context=True)
     async def _stats_overwatch(self, ctx, tag: str=None, region: str=None):
@@ -367,9 +359,7 @@ class Blizzard(BaseCog):
     @commands.group(name="starcraft2", pass_context=True)
     async def starcraft2(self, ctx):
         """Starcraft2 utilities"""
-
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
+        pass
 
     @starcraft2.command(name="notes", pass_context=True)
     async def _notes_starcraft2(self, ctx):
@@ -379,9 +369,7 @@ class Blizzard(BaseCog):
     @commands.group(name="warcraft", pass_context=True)
     async def warcraft(self, ctx):
         """World of Warcraft utilities"""
-
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
+        pass
 
     @warcraft.command(name="notes", pass_context=True)
     async def _notes_warcraft(self, ctx):
@@ -413,9 +401,7 @@ class Blizzard(BaseCog):
     @commands.group(name="diablo3", pass_context=True)
     async def diablo3(self, ctx):
         """Diablo3 utilities"""
-
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
+        pass
 
     @diablo3.command(name="notes", pass_context=True)
     async def _notes_diablo3(self, ctx):
@@ -508,9 +494,7 @@ class Blizzard(BaseCog):
     @commands.group(name="hots", pass_context=True)
     async def hots(self, ctx):
         """Heroes of the Storm utilities"""
-
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
+        pass
 
     @hots.command(name="notes", pass_context=True)
     async def _notes_hots(self, ctx):
