@@ -26,9 +26,7 @@ class Wat(BaseCog):
     @checks.admin_or_permissions(manage_server=True)
     async def watignore(self, ctx):
         """Change Wat cog ignore settings."""
-
-        if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+        pass
 
     @watignore.command(name="server", pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_server=True)

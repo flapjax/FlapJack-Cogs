@@ -55,9 +55,7 @@ class ColorMe(BaseCog):
     @commands.group(name="colorme", pass_context=True)
     async def colorme(self, ctx):
         """Change the color of your name via custom roles."""
-
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
+        pass
 
     @colorme.command(name="change", pass_context=True, no_pm=True)
     @commands.cooldown(10, 60, commands.BucketType.user)
