@@ -15,7 +15,7 @@ class Spoiler(BaseCog):
 
     @commands.guild_only()
     @commands.command(name="spoiler")
-    async def spoiler(self, ctx, *, text: str):
+    async def spoiler(self, ctx, title: str, spoiler: str=None):
         """Hide spoiler text and have it delivered via DM."""
 
         try:
@@ -24,12 +24,20 @@ class Spoiler(BaseCog):
             await ctx.send("I require the 'manage messages' permission "
                            "to hide spoilers!")
 
-        content = "**{}** posted a spoiler. React with {} to have it DMed to you.".format(ctx.author.mention, self.emoji)
+        if spoiler is None:
+            # User probably meant to omit title
+            spoiler = title
+            title = ""
+        else:
+            title = "(" + title + ")"
+
+        content = "{} posted a spoiler {}:\nReact with {} to have it DMed to you.".format(ctx.author.mention, title, self.emoji)
         message = await ctx.send(content)
         await message.add_reaction(self.emoji)
 
         self.spoilers[message.id] = {
-            'spoiler': text,
+            'title': title,
+            'spoiler': spoiler,
             'deliveries': []  # user ids to which the spoiler has been delivered
         }
 
@@ -39,7 +47,9 @@ class Spoiler(BaseCog):
             if user.id not in self.spoilers[msg_id]['deliveries']:
                 # reply with spoiler
                 try:
-                    await user.send("**Spoiler:** {}".format(self.spoilers[msg_id]['spoiler']))
+                    await user.send("Spoiler {}: {}".format(self.spoilers[msg_id]['title'],
+                                                                  self.spoilers[msg_id]['spoiler']))
+
                     self.spoilers[msg_id]['deliveries'].append(user.id)
                 except (discord.Forbidden, discord.HTTPException) as err:
                     # It's alright to fail silently if we are unable to DM the user
