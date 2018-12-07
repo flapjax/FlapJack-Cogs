@@ -71,6 +71,9 @@ class Blizzard(BaseCog):
         self.expired_embed = discord.Embed(title="This menu has exipred due "
                                            "to inactivity.")
 
+    def __unload(self):
+        self.bot.loop.create_task(self.session.close())
+
     async def show_menu(self, ctx, message, messages, page):
         if message:
             await message.edit(content=messages[page])
@@ -621,6 +624,3 @@ class Blizzard(BaseCog):
 
         except:
             await ctx.send("Error finding WoW token prices.")
-
-    def __unload(self):
-        self.session.close()

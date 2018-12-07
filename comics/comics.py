@@ -17,7 +17,7 @@ class Comics(BaseCog):
         self.session = aiohttp.ClientSession()
 
     def __unload(self):
-        self.session.close()
+        self.bot.loop.create_task(self.session.close())
 
     @commands.command(pass_context=True)
     async def ohno(self, ctx):

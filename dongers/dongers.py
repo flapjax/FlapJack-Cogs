@@ -34,4 +34,4 @@ class Dongers(BaseCog):
             await ctx.send("I couldn't find any dongers. ¯\_(ツ)_/¯")
 
     def __unload(self):
-        self.session.close()
+        self.bot.loop.create_task(self.session.close())

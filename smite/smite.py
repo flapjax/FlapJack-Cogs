@@ -23,6 +23,9 @@ class Smite(BaseCog):
         self.url_pc = 'http://api.smitegame.com/smiteapi.svc'
         self.header = {"User-Agent": "flapjackcogs/1.0"}
 
+    def __unload(self):
+        self.bot.loop.create_task(self.session.close())
+
     @commands.group(name="smite", pass_context=True)
     async def smite(self, ctx):
         """Smite cog commands."""
@@ -354,6 +357,3 @@ class Smite(BaseCog):
         # Response was something unexpected. Could be bad credentials,
         # or the Smite API has changed.
         return False
-
-    def __unload(self):
-        self.session.close()

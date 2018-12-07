@@ -36,7 +36,7 @@ class Bigmoji(BaseCog):
                   'will be limited to 72x72 png.')
 
     def __unload(self):
-        self.session.close()
+        self.bot.loop.create_task(self.session.close())
 
     @commands.command(name="bigmoji", pass_context=True)
     async def bigmoji(self, ctx, emoji):

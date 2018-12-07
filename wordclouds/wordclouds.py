@@ -41,7 +41,7 @@ class WordClouds(BaseCog):
         self.cloud_folder.mkdir(exist_ok=True)
 
     def __unload(self):
-        self.session.close()
+        self.bot.loop.create_task(self.session.close())
 
     async def _list_masks(self, ctx):
         masks = sorted([p.name for p in self.mask_folder.glob('*')])
