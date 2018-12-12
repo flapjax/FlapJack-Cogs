@@ -1,7 +1,7 @@
 import asyncio
 import functools
 from pathlib import Path
-
+from io import BytesIO
 import aiohttp
 import discord
 import numpy as np
@@ -37,8 +37,6 @@ class WordClouds(BaseCog):
         self.mask_folder = data_manager.cog_data_path(cog_instance=self) / 'masks'
         self.mask_folder.mkdir(exist_ok=True)
         # Clouds can really just be stored in memory at some point
-        self.cloud_folder = data_manager.cog_data_path(cog_instance=self) / 'clouds'
-        self.cloud_folder.mkdir(exist_ok=True)
 
     def __unload(self):
         self.bot.loop.create_task(self.session.close())
@@ -132,8 +130,6 @@ class WordClouds(BaseCog):
         kwargs = {'mask': mask, 'color_func': coloring, 'mode': mode,
                   'background_color': bg_color, 'max_words': max_words,
                   'stopwords': excluded, 'width': width, 'height': height}
-        filepath = str(self.cloud_folder / (str(channel.id) + '.png'))
-        print(filepath)
 
         msg = "Generating wordcloud for **" + guild.name + '/' + channel.name
         if user is not None:
@@ -159,23 +155,25 @@ class WordClouds(BaseCog):
                            "to view message history in that channel.")
             return
 
-        task = functools.partial(self.generate, filepath, text,
-                                 **kwargs)
+        task = functools.partial(self.generate, text, **kwargs)
         task = self.bot.loop.run_in_executor(None, task)
         try:
-            await asyncio.wait_for(task, timeout=45)
+            image = await asyncio.wait_for(task, timeout=45)
         except asyncio.TimeoutError:
             await ctx.send('Wordcloud creation timed out.')
             return
-
-        await ctx.send(file=discord.File(filepath))
+        await ctx.send(file=discord.File(image))
 
     @staticmethod
-    def generate(filepath, text, **kwargs):
+    def generate(text, **kwargs):
         # Designed to be run in executor to avoid blocking
         wc = WCloud(**kwargs)
         wc.generate(text)
-        wc.to_file(filepath)
+        file = BytesIO()
+        file.name = "wordcloud.png"
+        wc.to_file(file)
+        file.seek(0)
+        return file
 
     @commands.guild_only()
     @commands.group(name='wcset')
