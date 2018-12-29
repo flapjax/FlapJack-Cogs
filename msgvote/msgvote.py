@@ -135,7 +135,7 @@ class MsgVote(BaseCog):
         Must be a positive integer. Or, set to 0 to disable deletion."""
 
         if threshold < 0:
-            await ctx.send("Invalid threshold. Must be a positive " "integer, or 0 to disable.")
+            await ctx.send("Invalid threshold. Must be a positive integer, or 0 to disable.")
         elif threshold == 0:
             await self.config.guild(ctx.guild).threshold.set(threshold)
             await ctx.send("Message deletion disabled.")
