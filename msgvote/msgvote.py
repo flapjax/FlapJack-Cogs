@@ -10,54 +10,61 @@ BaseCog = getattr(commands, "Cog", object)
 
 
 class MsgVote(BaseCog):
-
     """Turn Discord channels into Reddit-like threads"""
-
-    default_global_settings = {
-        "channels_enabled": [],
-        "bot_react": False,
-        "duration": 300,
-        "threshold": 3,
-        "up_emoji": None,
-        "dn_emoji": None
-    }
 
     def __init__(self, bot):
         self.bot = bot
-        self.conf = Config.get_conf(self, identifier=494641511)
-        self.conf.register_global(
-            **self.default_global_settings
-        )
-        # Odd bug, default emojis don't work if not set in this way
-        # Has something to do with the way the emoji characters are grabbed
-        # from the default dict
-        bot.loop.create_task(self._fix_defaults())
+        self.config = Config.get_conf(self, identifier=494641511)
 
-    async def _fix_defaults(self):
-        if await self.conf.up_emoji() is None:
-            await self.conf.up_emoji.set("👍")
-        if await self.conf.dn_emoji() is None:
-            await self.conf.dn_emoji.set("👎")
+        default_guild = {
+            "channels_enabled": [],
+            "bot_react": False,
+            "duration": 300,
+            "threshold": 3,
+            "up_emoji": "👍",
+            "dn_emoji": "👎",
+        }
+        self.config.register_guild(**default_guild)
 
-    @commands.group()
+    @commands.group(autohelp=False)
     @commands.guild_only()
     @checks.admin_or_permissions(manage_server=True)
     async def msgvote(self, ctx):
         """Msgvote cog settings"""
 
-        pass
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help()
+
+            guild_data = await self.config.guild(ctx.guild).all()
+
+            msg = "Active Channels:\n"
+            if not guild_data["channels_enabled"]:
+                msg += "None."
+            else:
+                name_list = []
+                for chan_id in guild_data["channels_enabled"]:
+                    name_list.append(self.bot.get_channel(chan_id))
+                msg += "\n".join(chan.name for chan in name_list)
+
+            msg += f"\nBot message reactions: {guild_data['bot_react']}\nListening duration: {guild_data['duration']}s\nVote threshold: {guild_data['threshold']} votes\nUp/down emojis: {guild_data['up_emoji']} / {guild_data['dn_emoji']}"
+
+            embed = discord.Embed(colour=await ctx.embed_colour(), description=msg)
+            return await ctx.send(embed=embed)
 
     @msgvote.command(name="on")
     async def _msgvote_on(self, ctx):
         """Turn on msgvote mode in the current channel"""
 
         channel_id = ctx.message.channel.id
-        channels = await self.conf.channels_enabled()
+        channels = await self.config.guild(ctx.guild).channels_enabled()
+        if not channels:
+            await self.config.guild(ctx.guild).channels_enabled.set([])
+
         if channel_id in channels:
             await ctx.send("Msgvote mode is already on in this channel.")
         else:
             channels.append(channel_id)
-            await self.conf.channels_enabled.set(channels)
+            await self.config.guild(ctx.guild).channels_enabled.set(channels)
             await ctx.send("Msgvote mode is now on in this channel.")
 
     @msgvote.command(name="off")
@@ -65,23 +72,25 @@ class MsgVote(BaseCog):
         """Turn off msgvote mode in the current channel"""
 
         channel_id = ctx.message.channel.id
-        channels = await self.conf.channels_enabled()
+        channels = await self.config.guild(ctx.guild).channels_enabled()
+        if not channels:
+            await self.config.guild(ctx.guild).channels_enabled.set([])
         if channel_id not in channels:
             await ctx.send("Msgvote mode is already off in this channel.")
         else:
             channels.remove(channel_id)
-            await self.conf.channels_enabled.set(channels)
+            await self.config.guild(ctx.guild).channels_enabled.set(channels)
             await ctx.send("Msgvote mode is now off in this channel.")
 
     @msgvote.command(name="bot")
     async def _msgvote_bot(self, ctx):
         """Turn on/off reactions to bot's own messages"""
 
-        if await self.conf.bot_react():
-            await self.conf.bot_react.set(False)
+        if await self.config.guild(ctx.guild).bot_react():
+            await self.config.guild(ctx.guild).bot_react.set(False)
             await ctx.send("Reactions to bot messages turned OFF.")
         else:
-            await self.conf.bot_react.set(True)
+            await self.config.guild(ctx.guild).bot_react.set(True)
             await ctx.send("Reactions to bot messages turned ON.")
 
     @msgvote.command(name="upemoji")
@@ -92,7 +101,7 @@ class MsgVote(BaseCog):
         if emoji is None:
             await ctx.send("That's not a valid emoji.")
             return
-        await self.conf.up_emoji.set(str(emoji))
+        await self.config.guild(ctx.guild).up_emoji.set(str(emoji))
         await ctx.send("Upvote emoji set to: " + str(emoji))
 
     @msgvote.command(name="downemoji")
@@ -103,7 +112,7 @@ class MsgVote(BaseCog):
         if emoji is None:
             await ctx.send("That's not a valid emoji.")
             return
-        await self.conf.dn_emoji.set(str(emoji))
+        await self.config.guild(ctx.guild).dn_emoji.set(str(emoji))
         await ctx.send("Downvote emoji set to: " + str(emoji))
 
     @msgvote.command(name="duration")
@@ -112,9 +121,11 @@ class MsgVote(BaseCog):
         on each message."""
 
         if duration > 0:
-            await self.conf.duration.set(duration)
-            await ctx.send("I will monitor each message's votes until it "
-                           "is {} seconds old.".format(duration))
+            await self.config.guild(ctx.guild).duration.set(duration)
+            await ctx.send(
+                "I will monitor each message's votes until it "
+                "is {} seconds old.".format(duration)
+            )
         else:
             await ctx.send("Invalid duration. Must be a positive integer.")
 
@@ -124,35 +135,44 @@ class MsgVote(BaseCog):
         Must be a positive integer. Or, set to 0 to disable deletion."""
 
         if threshold < 0:
-            await ctx.send("Invalid threshold. Must be a positive "
-                           "integer, or 0 to disable.")
+            await ctx.send("Invalid threshold. Must be a positive integer, or 0 to disable.")
         elif threshold == 0:
-            await self.conf.threshold.set(threshold)
+            await self.config.guild(ctx.guild).threshold.set(threshold)
             await ctx.send("Message deletion disabled.")
         else:
-            await self.conf.threshold.set(threshold)
-            await ctx.send("Messages will be deleted if [downvotes - "
-                           "upvotes] reaches {}.".format(threshold))
+            await self.config.guild(ctx.guild).threshold.set(threshold)
+            await ctx.send(
+                "Messages will be deleted if [downvotes - "
+                "upvotes] reaches {}.".format(threshold)
+            )
 
     def fix_custom_emoji(self, emoji):
         if emoji[:2] != "<:":
             return emoji
         for guild in self.bot.guilds:
             for e in guild.emojis:
-                if str(e.id) == emoji.split(':')[2][:-1]:
+                if str(e.id) == emoji.split(":")[2][:-1]:
                     return e
         return None
 
     async def on_message(self, message):
-        if message.channel.id not in await self.conf.channels_enabled():
+        guild_data = await self.config.guild(message.guild).all()
+        try:
+            test = guild_data["channels_enabled"]
+        except KeyError:
             return
-        if message.author.id == self.bot.user.id and not await self.conf.bot_react():
+        if message.channel.id not in await self.config.guild(message.guild).channels_enabled():
+            return
+        if (
+            message.author.id == self.bot.user.id
+            and not await self.config.guild(message.guild).bot_react()
+        ):
             return
         # Still need to fix error (discord.errors.NotFound) on first run of cog
         # must be due to the way the emoji is stored in settings/json
         try:
-            up_emoji = self.fix_custom_emoji(await self.conf.up_emoji())
-            dn_emoji = self.fix_custom_emoji(await self.conf.dn_emoji())
+            up_emoji = self.fix_custom_emoji(await self.config.guild(message.guild).up_emoji())
+            dn_emoji = self.fix_custom_emoji(await self.config.guild(message.guild).dn_emoji())
             await message.add_reaction(up_emoji)
             await asyncio.sleep(0.5)
             await message.add_reaction(dn_emoji)
@@ -174,16 +194,16 @@ class MsgVote(BaseCog):
         message = reaction.message
         if not reaction.me:
             return
-        if await self.conf.threshold() == 0:
+        if await self.config.guild(message.guild).threshold() == 0:
             return
-        if message.channel.id not in await self.conf.channels_enabled():
+        if message.channel.id not in await self.config.guild(message.guild).channels_enabled():
             return
-        up_emoji = self.fix_custom_emoji(await self.conf.up_emoji())
-        dn_emoji = self.fix_custom_emoji(await self.conf.dn_emoji())
+        up_emoji = self.fix_custom_emoji(await self.config.guild(message.guild).up_emoji())
+        dn_emoji = self.fix_custom_emoji(await self.config.guild(message.guild).dn_emoji())
         if reaction.emoji not in (up_emoji, dn_emoji):
             return
         age = (datetime.utcnow() - message.created_at).total_seconds()
-        if age > await self.conf.duration():
+        if age > await self.config.guild(message.guild).duration():
             return
         # We have a valid vote so we can count the votes now
         upvotes = 0
@@ -193,10 +213,10 @@ class MsgVote(BaseCog):
                 upvotes = react.count
             elif react.emoji == dn_emoji:
                 dnvotes = react.count
-        if (dnvotes - upvotes) >= await self.conf.threshold():
+        if (dnvotes - upvotes) >= await self.config.guild(message.guild).threshold():
             try:
                 await message.delete()
             except discord.errors.Forbidden:
-                await message.channel.send("I require the 'Manage "
-                                           "Messages' permission to delete "
-                                           "downvoted messages!")
+                await message.channel.send(
+                    "I require the 'Manage Messages' permission to delete downvoted messages!"
+                )
