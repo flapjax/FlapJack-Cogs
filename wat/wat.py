@@ -23,13 +23,13 @@ class Wat(BaseCog):
         )
 
     @commands.group(name="watignore", pass_context=True, no_pm=True)
-    @checks.admin_or_permissions(manage_server=True)
+    @checks.admin_or_permissions(manage_guild=True)
     async def watignore(self, ctx):
         """Change Wat cog ignore settings."""
         pass
 
     @watignore.command(name="server", pass_context=True, no_pm=True)
-    @checks.admin_or_permissions(manage_server=True)
+    @checks.admin_or_permissions(manage_guild=True)
     async def _watignore_server(self, ctx):
         """Ignore/Unignore the current server"""
 
@@ -46,7 +46,7 @@ class Wat(BaseCog):
         await self.conf.guilds_ignored.set(guilds)
 
     @watignore.command(name="channel", pass_context=True, no_pm=True)
-    @checks.admin_or_permissions(manage_server=True)
+    @checks.admin_or_permissions(manage_guild=True)
     async def _watignore_channel(self, ctx):
         """Ignore/Unignore the current channel"""
 

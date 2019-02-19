@@ -145,7 +145,7 @@ class ColorMe(BaseCog):
                 return
 
     @colorme.command(name="clean", pass_context=True, no_pm=True)
-    @checks.admin_or_permissions(manage_server=True)
+    @checks.admin_or_permissions(manage_guild=True)
     async def _clean_colorme(self, ctx: commands.Context):
         """Clean colorme roles by removing all permissions."""
         user = ctx.message.author
@@ -207,7 +207,7 @@ class ColorMe(BaseCog):
             await ctx.send("Finished cleaning roles!")
 
     @colorme.command(name="purge", pass_context=True, no_pm=True)
-    @checks.admin_or_permissions(manage_server=True)
+    @checks.admin_or_permissions(manage_guild=True)
     async def _purge_colorme(self, ctx: commands.Context):
         """Purge the server of roles that may have been created
         by ColorMe, but are no longer in use."""
@@ -269,7 +269,7 @@ class ColorMe(BaseCog):
             await ctx.send("Finished deleting roles!")
 
     @colorme.command(name="protect", pass_context=True, no_pm=True)
-    @checks.admin_or_permissions(manage_server=True)
+    @checks.admin_or_permissions(manage_guild=True)
     async def _protect_colorme(self, ctx, role: str):
         """Add a role to the list of protected roles.
 
@@ -291,7 +291,7 @@ class ColorMe(BaseCog):
                            "color changes.".format(role))
 
     @colorme.command(name="unprotect", pass_context=True, no_pm=True)
-    @checks.admin_or_permissions(manage_server=True)
+    @checks.admin_or_permissions(manage_guild=True)
     async def _unprotect_colorme(self, ctx, role: str):
         """Remove a role from the list of protected roles.
 
