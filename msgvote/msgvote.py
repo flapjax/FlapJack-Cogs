@@ -156,6 +156,8 @@ class MsgVote(BaseCog):
         return None
 
     async def on_message(self, message):
+        if isinstance(message.channel, discord.abc.PrivateChannel):
+            return
         guild_data = await self.config.guild(message.guild).all()
         try:
             test = guild_data["channels_enabled"]
