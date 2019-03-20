@@ -96,7 +96,7 @@ class NewPoll:
         option_num = 1
         for option in self.options:
             base_emoji[0] += 1
-            emoji = self.emoji.append(chr(base_emoji[0]) + chr(base_emoji[1]))
+            self.emoji.append(chr(base_emoji[0]) + chr(base_emoji[1]))
             msg += f"**{option_num}**. {option}\n".format(option)
             option_num += 1
 
