@@ -93,10 +93,12 @@ class NewPoll:
         # Starting codepoint for keycap number emoji (\u0030... == 0)
         base_emoji = [ord('\u0030'), ord('\u20E3')]
         msg = "**POLL STARTED!**\n\n{}\n\n".format(self.question)
+        option_num = 1
         for option in self.options:
             base_emoji[0] += 1
-            self.emoji.append(chr(base_emoji[0]) + chr(base_emoji[1]))
-            msg += "{}\n".format(option)
+            emoji = self.emoji.append(chr(base_emoji[0]) + chr(base_emoji[1]))
+            msg += f"**{option_num}**. {option}\n".format(option)
+            option_num += 1
 
         msg += ("\nSelect the number to vote!"
                 "\nPoll closes in {} seconds.".format(self.duration))
@@ -209,10 +211,13 @@ class ReactPoll(BaseCog):
         guild = ctx.guild
 
         if not channel.permissions_for(guild.me).manage_messages:
-            await ctx.send("I require the 'Manage Messages' "
+            return await ctx.send("I require the 'Manage Messages' "
                            "permission in this channel to conduct "
                            "a reaction poll.")
-            return
+            
+        option_count = options.split(";")
+        if len(option_count) > 9:
+            return await ctx.send("Use less options for the poll. Max options: 9.")
 
         poll = NewPoll(ctx, self, question, options, duration)
 
