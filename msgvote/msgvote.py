@@ -44,7 +44,10 @@ class MsgVote(BaseCog):
                 name_list = []
                 for chan_id in guild_data["channels_enabled"]:
                     name_list.append(self.bot.get_channel(chan_id))
-                msg += "\n".join(chan.name for chan in name_list)
+                if not name_list:
+                    msg = "None."
+                else:
+                    msg += "\n".join(chan.name for chan in name_list)
 
             msg += f"\nBot message reactions: {guild_data['bot_react']}\nListening duration: {guild_data['duration']}s\nVote threshold: {guild_data['threshold']} votes\nUp/down emojis: {guild_data['up_emoji']} / {guild_data['dn_emoji']}"
 
