@@ -117,11 +117,23 @@ class NewPoll:
         await message.clear_reactions()
         winner_idx = self.tally.index(max(self.tally))
 
+        #This is handled with fuck-all efficiency, but it works for now -Ruined1
+        if self.tally[winner_idx] == 0:
+            msg += "***NO ONE VOTED.***\n"
+            await self.channel.send(msg)
+            return
+
         for idx, option in enumerate(self.options):
             if idx == winner_idx:
-                msg += "**WINNER: {}** - {} votes\n".format(option, self.tally[idx])
+                if self.tally.count(self.tally[idx]) > 1:
+                    msg += "**TIE: \n{}** - {} votes\n".format(option, self.tally[idx])
+                else:
+                    msg += "**WINNER: \n{}** - {} votes\n".format(option, self.tally[idx])
             else:
-                msg += "{} - {} votes\n".format(option, self.tally[idx])
+                if self.tally.count(self.tally[idx]) > 1 and self.tally[idx] == self.tally[winner_idx]:
+                    msg += "**TIE: \n{}** - {} votes\n".format(option, self.tally[idx])
+                else:
+                    msg += "{} - {} votes\n".format(option, self.tally[idx])
         await self.channel.send(msg)
 
 
