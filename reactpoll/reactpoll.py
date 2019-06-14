@@ -75,7 +75,7 @@ class NewPoll:
 
     @property
     async def message(self):
-        message = await self.channel.get_message(self.message_id)
+        message = await self.channel.fetch_message(self.message_id)
         return message
 
     @property
@@ -84,7 +84,7 @@ class NewPoll:
 
     @property
     def author(self):
-        return self.main.bot.get_user(self.author_id)
+        return self.main.bot.fetch_user(self.author_id)
 
     def is_valid(self):
         return False if self.end_time is None or not self.options else True
@@ -171,7 +171,7 @@ class ReactPoll(BaseCog):
         self.loop.create_task(self.load_polls())
         self.poll_task = self.loop.create_task(self.poll_closer())
 
-    def __unload(self):     
+    def cog_unload(self):     
         self.poll_task.cancel()
 
     async def poll_closer(self):
