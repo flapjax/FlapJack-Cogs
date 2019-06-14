@@ -158,6 +158,7 @@ class MsgVote(BaseCog):
                     return e
         return None
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         if isinstance(message.channel, discord.abc.PrivateChannel):
             return
