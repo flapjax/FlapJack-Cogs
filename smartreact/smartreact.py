@@ -3,6 +3,7 @@ import discord
 import copy
 from discord.ext import commands
 from .utils.dataIO import dataIO
+from __main__ import send_cmd_help
 
 
 class SmartReact:
@@ -17,7 +18,12 @@ class SmartReact:
 
     @commands.command(name="addreact", no_pm=True, pass_context=True)
     async def addreact(self, ctx, *command):
-        """Add an auto reaction to a word"""
+        """Add an auto reaction to a word.
+        Use the actual emoji and not the emoji name.
+        Syntax: [p]addreact word emoji
+        """
+        if not command:
+            return await send_cmd_help(ctx)
         server = ctx.message.server
         message = ctx.message
         self.load_settings(server.id)
@@ -28,7 +34,12 @@ class SmartReact:
 
     @commands.command(name="delreact", no_pm=True, pass_context=True)
     async def delreact(self, ctx, *command):
-        """Delete an auto reaction to a word"""
+        """Delete an auto reaction to a word.
+        Use the actual emoji and not the emoji name.
+        Syntax: [p]delreact word emoji
+        """
+        if not command:
+            return await send_cmd_help(ctx)
         server = ctx.message.server
         message = ctx.message
         self.load_settings(server.id)
