@@ -4,9 +4,7 @@ from redbot.core import Config, commands, checks
 from redbot.core.utils.chat_formatting import pagify
 
 
-BaseCog = getattr(commands, "Cog", object)
-
-class SmartReact(BaseCog):
+class SmartReact(commands.Cog):
     """Create automatic reactions when trigger words are typed in chat"""
 
     default_guild_settings = {
@@ -41,7 +39,7 @@ class SmartReact(BaseCog):
         await self.remove_smart_reaction(guild, word, emoji, message)
 
     def fix_custom_emoji(self, emoji):
-        if emoji[:2] != "<:":
+        if emoji[:2] not in ["<:", "<a"]:
             return emoji
         for guild in self.bot.guilds:
             for e in guild.emojis:
@@ -105,6 +103,7 @@ class SmartReact(BaseCog):
                                "(might be custom!)")
 
     # Thanks irdumb#1229 for the help making this "more Pythonic"
+    @commands.Cog.listener()
     async def on_message(self, message):
         if message.author == self.bot.user:
             return
