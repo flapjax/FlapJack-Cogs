@@ -54,8 +54,10 @@ class NewPoll:
                 idx += 1
             else:
                 break
-
-        value = int(text[:idx])
+        try:
+            value = int(text[:idx])
+        except ValueError:
+            return None
         unit = text[idx:].lower()
 
         if unit == "s":
