@@ -17,10 +17,8 @@ except:
     except:
         svg_convert = None
 
-BaseCog = getattr(commands, "Cog", object)
 
-
-class Bigmoji(BaseCog):
+class Bigmoji(commands.Cog):
 
     """Emoji tools"""
 
@@ -35,7 +33,7 @@ class Bigmoji(BaseCog):
             print('Failed to import svg converter. Standard emoji '
                   'will be limited to 72x72 png.')
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
     @commands.command(name="bigmoji", pass_context=True)
