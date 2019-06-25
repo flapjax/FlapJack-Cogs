@@ -105,6 +105,8 @@ class SmartReact(commands.Cog):
     # Thanks irdumb#1229 for the help making this "more Pythonic"
     @commands.Cog.listener()
     async def on_message(self, message):
+        if not message.guild:
+            return
         if message.author == self.bot.user:
             return
         guild = message.guild
