@@ -1,6 +1,4 @@
 import asyncio
-import copy
-import os
 import re
 
 import discord
