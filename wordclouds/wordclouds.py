@@ -89,7 +89,7 @@ class WordClouds(commands.Cog):
             except discord.ext.commands.BadArgument:
                 pass
 
-            if arg.isdigit() and int(arg) <= 10000:
+            if arg.isdecimal() and int(arg) <= 10000:
                 limit = int(arg)
 
         guild = channel.guild

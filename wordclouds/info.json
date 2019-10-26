@@ -1,10 +1,8 @@
 {
-    "NAME" : "WordClouds",
-    "AUTHOR" : "FlapJack and aikaterna",
-    "SHORT" : "Create word clouds from text channel content.",
-    "DESCRIPTION" : "Create word clouds from text channel content.\n\nDependencies: WordCloud :: https://github.com/amueller/word_cloud \n\nWindows users may need to install Visual C++ Build Tools. (http://landinghub.visualstudio.com/visual-cpp-build-tools)",
-    "INSTALL_MSG" : "Thanks for installing WordClouds",
-    "REQUIREMENTS" : ["wordcloud", "numpy", "matplotlib"],
-    "TAGS" : ["word", "cloud", "wordcloud"],
-    "DISABLED" : false
+    "author" : ["FlapJack", "aikaterna"]
+    "short" : "Create word clouds from text channel content.",
+    "description" : "Create word clouds from text channel content.\n\nDependencies: WordCloud :: https://github.com/amueller/word_cloud \n\nWindows users may need to install Visual C++ Build Tools. (http://landinghub.visualstudio.com/visual-cpp-build-tools)",
+    "install_msg" : "Thanks for installing WordClouds",
+    "requirements" : ["wordcloud", "numpy", "matplotlib"],
+    "tags" : ["word", "cloud", "wordcloud"]
 }
