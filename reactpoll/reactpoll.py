@@ -1,11 +1,10 @@
 import asyncio
+import discord
 import random
 import string
 import time
 
 from redbot.core import Config, checks, commands
-
-BaseCog = getattr(commands, "Cog", object)
 
 
 class NewPoll:
@@ -16,7 +15,14 @@ class NewPoll:
         self.main = main
         self.tally = []
         # Thanks 26 remindme.py
-        self.units = {"second": 1, "minute": 60, "hour": 3600, "day": 86400, "week": 604800, "month": 2592000}
+        self.units = {
+            "second": 1,
+            "minute": 60,
+            "hour": 3600,
+            "day": 86400,
+            "week": 604800,
+            "month": 2592000,
+        }
         # Following are needed to reconstruct a poll
         self.author_id = ctx.author.id
         self.channel_id = ctx.channel.id
@@ -30,19 +36,18 @@ class NewPoll:
     def as_dict(self):
         # for JSON serialization. This dict completely defines a poll.
         return {
-            'author': self.author_id,
-            'channel': self.channel_id,
-            'message': self.message_id,
-            'question': self.question,
-            'options': self.options,
-            'emoji': self.emoji,
-            'end_time': self.end_time,
-            'id': self.id
+            "author": self.author_id,
+            "channel": self.channel_id,
+            "message": self.message_id,
+            "question": self.question,
+            "options": self.options,
+            "emoji": self.emoji,
+            "end_time": self.end_time,
+            "id": self.id,
         }
 
     def generate_id(self):
-        return ''.join(random.choice(
-                       string.ascii_uppercase) for i in range(5))
+        return "".join(random.choice(string.ascii_uppercase) for i in range(5))
 
     def parse_duration(self, text):
         # use remindme parsing for now
@@ -77,7 +82,13 @@ class NewPoll:
 
     @property
     async def message(self):
-        message = await self.channel.fetch_message(self.message_id)
+        channel = self.channel
+        if not channel:
+            return None
+        try:
+            message = await channel.fetch_message(self.message_id)
+        except discord.errors.Forbidden:
+            return None
         return message
 
     @property
@@ -93,7 +104,7 @@ class NewPoll:
 
     async def open_poll(self):
         # Starting codepoint for keycap number emoji (\u0030... == 0)
-        base_emoji = [ord('\u0030'), ord('\u20E3')]
+        base_emoji = [ord("\u0030"), ord("\u20E3")]
         msg = "**POLL STARTED!**\n\n{}\n\n".format(self.question)
         option_num = 1
         for option in self.options:
@@ -102,8 +113,7 @@ class NewPoll:
             msg += f"**{option_num}**. {option}\n".format(option)
             option_num += 1
 
-        msg += ("\nSelect the number to vote!"
-                "\nPoll closes in {} seconds.".format(self.duration))
+        msg += "\nSelect the number to vote!\nPoll closes in {} seconds.".format(self.duration)
         message = await self.channel.send(msg)
         self.message_id = message.id
         for emoji in self.emoji:
@@ -112,19 +122,30 @@ class NewPoll:
 
     async def close_poll(self):
         message = await self.message
+        if not message:
+            return
         msg = "**POLL ENDED!**\n\n{}\n\n".format(self.question)
         for reaction in message.reactions:
             if reaction.emoji in self.emoji:
                 self.tally.append(reaction.count - 1)
-        await message.clear_reactions()
-        winner_idx = self.tally.index(max(self.tally))
-
-        #This is handled with fuck-all efficiency, but it works for now -Ruined1
-        if self.tally[winner_idx] == 0:
-            msg += "***NO ONE VOTED.***\n"
-            await self.channel.send(msg)
+        try:
+            await message.clear_reactions()
+        except discord.errors.Forbidden:
+            pass
+        try:
+            winner_idx = self.tally.index(max(self.tally))
+        except ValueError:
+            winner_idx = 0
+        if not self.tally:
             return
 
+        # This is handled with fuck-all efficiency, but it works for now -Ruined1
+        if self.tally[winner_idx] == 0:
+            msg += "***NO ONE VOTED.***\n"
+            try:
+                return await self.channel.send(msg)
+            except discord.errors.Forbidden:
+                pass
         for idx, option in enumerate(self.options):
             if idx == winner_idx:
                 if self.tally.count(self.tally[idx]) > 1:
@@ -132,11 +153,17 @@ class NewPoll:
                 else:
                     msg += "**WINNER: \n{}** - {} votes\n".format(option, self.tally[idx])
             else:
-                if self.tally.count(self.tally[idx]) > 1 and self.tally[idx] == self.tally[winner_idx]:
+                if (
+                    self.tally.count(self.tally[idx]) > 1
+                    and self.tally[idx] == self.tally[winner_idx]
+                ):
                     msg += "**TIE: \n{}** - {} votes\n".format(option, self.tally[idx])
                 else:
                     msg += "{} - {} votes\n".format(option, self.tally[idx])
-        await self.channel.send(msg)
+        try:
+            await self.channel.send(msg)
+        except discord.errors.Forbidden:
+            pass
 
 
 class LoadedPoll(NewPoll):
@@ -146,40 +173,36 @@ class LoadedPoll(NewPoll):
         self.main = main
         self.tally = []
         # Following are needed to reconstruct a poll
-        self.author_id = poll['author']
-        self.channel_id = poll['channel']
-        self.message_id = poll['message']
-        self.question = poll['question']
-        self.options = poll['options']
-        self.emoji = poll['emoji']
-        self.end_time = poll['end_time']
-        self.id = poll['id']
+        self.author_id = poll["author"]
+        self.channel_id = poll["channel"]
+        self.message_id = poll["message"]
+        self.question = poll["question"]
+        self.options = poll["options"]
+        self.emoji = poll["emoji"]
+        self.end_time = poll["end_time"]
+        self.id = poll["id"]
 
 
-class ReactPoll(BaseCog):
+class ReactPoll(commands.Cog):
     """Commands for Reaction Polls"""
 
     def __init__(self, bot):
         self.bot = bot
         self.conf = Config.get_conf(self, identifier=1148673908)
-        default_global_settings = {
-            'polls': []
-        }
-        self.conf.register_global(
-            **default_global_settings
-        )
+        default_global_settings = {"polls": []}
+        self.conf.register_global(**default_global_settings)
         self.polls = []
         self.loop = asyncio.get_event_loop()
         self.loop.create_task(self.load_polls())
         self.poll_task = self.loop.create_task(self.poll_closer())
 
-    def cog_unload(self):     
+    def cog_unload(self):
         self.poll_task.cancel()
 
     async def poll_closer(self):
         while True:
             # consider making < 60 second polls not use config + this task
-            await asyncio.sleep(1)
+            await asyncio.sleep(5)
             now_time = time.time()
             for poll in self.polls:
                 if poll.end_time <= now_time:
@@ -192,7 +215,7 @@ class ReactPoll(BaseCog):
     async def delete_poll(self, poll: NewPoll):
         async with self.conf.polls() as polls:
             for existing_poll in polls:
-                if poll.id == existing_poll['id']:
+                if poll.id == existing_poll["id"]:
                     polls.remove(existing_poll)
 
     async def store_poll(self, poll: NewPoll):
@@ -213,9 +236,10 @@ class ReactPoll(BaseCog):
                     self.polls.append(load_poll)
 
     @commands.guild_only()
-    @commands.command(name='rpoll')
-    async def rpoll(self, ctx: commands.Context, question: str,
-                    options: str, duration: str='60s'):
+    @commands.command(name="rpoll")
+    async def rpoll(
+        self, ctx: commands.Context, question: str, options: str, duration: str = "60s"
+    ):
         """Start a reaction poll
         Usage example (time argument is optional)
         [p]rpoll "Is this a poll?" "Yes;No;Maybe" "60s"
@@ -225,10 +249,12 @@ class ReactPoll(BaseCog):
         guild = ctx.guild
 
         if not channel.permissions_for(guild.me).manage_messages:
-            return await ctx.send("I require the 'Manage Messages' "
-                           "permission in this channel to conduct "
-                           "a reaction poll.")
-            
+            return await ctx.send(
+                "I require the 'Manage Messages' "
+                "permission in this channel to conduct "
+                "a reaction poll."
+            )
+
         option_count = options.split(";")
         if len(option_count) > 9:
             return await ctx.send("Use less options for the poll. Max options: 9.")
@@ -240,4 +266,4 @@ class ReactPoll(BaseCog):
             self.polls.append(poll)
             await self.store_poll(poll)
         else:
-            await ctx.send('Poll was not valid.')
+            await ctx.send("Poll was not valid.")
