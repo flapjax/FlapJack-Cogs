@@ -1,5 +1,5 @@
 {
-    "author" : ["FlapJack", "aikaterna"]
+    "author" : ["FlapJack", "aikaterna"],
     "short" : "Create word clouds from text channel content.",
     "description" : "Create word clouds from text channel content.\n\nDependencies: WordCloud :: https://github.com/amueller/word_cloud \n\nWindows users may need to install Visual C++ Build Tools. (http://landinghub.visualstudio.com/visual-cpp-build-tools)",
     "install_msg" : "Thanks for installing WordClouds",
