@@ -78,7 +78,7 @@ class NewPoll:
         return int(time.time() + self.duration)
 
     def parse_options(self, text):
-        return [opt.strip() for opt in text.split(";")]
+        return [opt.strip() for opt in text.split(";") if opt]
 
     @property
     async def message(self):
