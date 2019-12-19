@@ -186,11 +186,13 @@ class MsgVote(BaseCog):
             # Implement a non-spammy way to alert users in future
             pass
 
+    @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         if user.id == self.bot.user.id:
             return
         await self.count_votes(reaction)
 
+    @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
         if user.id == self.bot.user.id:
             return
