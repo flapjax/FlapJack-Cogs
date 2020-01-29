@@ -5,10 +5,8 @@ from redbot.core import commands
 
 from bs4 import BeautifulSoup
 
-BaseCog = getattr(commands, "Cog", object)
 
-
-class Dongers(BaseCog):
+class Dongers(commands.Cog):
 
     """Cog that does dongers"""
 
@@ -33,5 +31,5 @@ class Dongers(BaseCog):
         except:
             await ctx.send("I couldn't find any dongers. ¯\_(ツ)_/¯")
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())

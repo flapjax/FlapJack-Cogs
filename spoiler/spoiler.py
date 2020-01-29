@@ -1,10 +1,8 @@
 import discord
 from redbot.core import commands
 
-BaseCog = getattr(commands, "Cog", object)
 
-
-class Spoiler(BaseCog):
+class Spoiler(commands.Cog):
 
     """Hide spoilers by delivering them via DM"""
 
@@ -41,6 +39,7 @@ class Spoiler(BaseCog):
             'deliveries': []  # user ids to which the spoiler has been delivered
         }
 
+    @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         msg_id = reaction.message.id
         if reaction.emoji == self.emoji and msg_id in self.spoilers and user.id != self.bot.user.id:

@@ -15,10 +15,9 @@ from discord.ext.commands import formatter
 # patch notes. https://github.com/judge2020/BattleNetUpdateChecker
 # Embed menus are modified version of the menu cog written by Awoonar Dust#7332
 # https://github.com/Lunar-Dust/Dusty-Cogs/
-BaseCog = getattr(commands, "Cog", object)
 
 
-class Blizzard(BaseCog):
+class Blizzard(commands.Cog):
 
     """Blizzard Game Utilities"""
 
@@ -71,7 +70,7 @@ class Blizzard(BaseCog):
         self.expired_embed = discord.Embed(title="This menu has exipred due "
                                            "to inactivity.")
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
     async def show_menu(self, ctx, message, messages, page):

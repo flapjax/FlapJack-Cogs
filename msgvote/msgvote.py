@@ -6,10 +6,9 @@ from redbot.core import Config, checks, commands
 
 # Credit to JennJenn#6857 for thinking up this cog.
 # It started as a joke, and people actualy use it! Who knew?
-BaseCog = getattr(commands, "Cog", object)
 
 
-class MsgVote(BaseCog):
+class MsgVote(commands.Cog):
     """Turn Discord channels into Reddit-like threads"""
 
     def __init__(self, bot):

@@ -3,10 +3,8 @@ import re
 
 from redbot.core import checks, Config, commands
 
-BaseCog = getattr(commands, "Cog", object)
 
-
-class Wat(BaseCog):
+class Wat(command.Cog):
 
     """Repeat messages when other users are having trouble hearing"""
 
@@ -63,6 +61,7 @@ class Wat(BaseCog):
         await self.conf.channels_ignored.set(chans)
 
     # Come up with a new method to ignore bot commands
+    @commands.Cog.listener()
     async def on_message(self, message):
         if message.guild is None:
             return

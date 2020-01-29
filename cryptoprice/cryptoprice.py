@@ -5,10 +5,8 @@ from bs4 import BeautifulSoup
 from redbot.core import commands
 from tabulate import tabulate
 
-BaseCog = getattr(commands, "Cog", object)
 
-
-class CryptoPrice(BaseCog):
+class CryptoPrice(commands.Cog):
 
     """Fetches cryptocurrency information"""
 
@@ -17,7 +15,7 @@ class CryptoPrice(BaseCog):
         self.base_url = "https://coinmarketcap.com/"
         self.session = aiohttp.ClientSession()
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
     @commands.command()

@@ -9,10 +9,9 @@ from redbot.core import checks, Config, commands
 
 # Special thanks to Kunkulada for suggesting this cog and
 # contributing to the design of the embeds.
-BaseCog = getattr(commands, "Cog", object)
 
 
-class Smite(BaseCog):
+class Smite(commands.Cog):
 
     """Smite Game Utilities"""
 
@@ -23,7 +22,7 @@ class Smite(BaseCog):
         self.url_pc = 'http://api.smitegame.com/smiteapi.svc'
         self.header = {"User-Agent": "flapjackcogs/1.0"}
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
     @commands.group(name="smite", pass_context=True)

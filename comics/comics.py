@@ -6,17 +6,15 @@ import discord
 from bs4 import BeautifulSoup
 from redbot.core import commands
 
-BaseCog = getattr(commands, "Cog", object)
 
-
-class Comics(BaseCog):
+class Comics(commands.Cog):
     """Print random comics from popular sources"""
 
     def __init__(self, bot):
         self.bot = bot
         self.session = aiohttp.ClientSession()
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
     @commands.command(pass_context=True)
