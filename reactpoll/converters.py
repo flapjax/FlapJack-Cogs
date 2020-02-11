@@ -25,7 +25,7 @@ QUESTION_RE = re.compile(r"([^;]+)(?<=\?)\s?", re.I)
 OPTIONS_RE = re.compile(r"([\S]+)(?=;)[\S\s]+", re.I)
 SPLIT_RE = re.compile(r";")
 TIME_SPLIT = re.compile(r"t(?:ime)?=")
-MULTI_RE = re.compile(r"(multi(?:ple)?[\W\_]votes?)", re.I)
+MULTI_RE = re.compile(r"(multi-vote)", re.I)
 
 
 class PollOptions(Converter):

@@ -351,9 +351,11 @@ class ReactPoll(commands.Cog):
             The options are a list separated by `;`.
             The time the poll ends is a space separated list of units of time.
             Usage example (time argument is optional)
-            if `multiple votes` is provided anywhere in the creation message the poll
+            if `multi-vote` is provided anywhere in the creation message the poll
             will allow users to vote on multiple choices.
-            [p]rpoll new Is this a poll? Yes;No;Maybe; 2 hours 21 minutes 40 seconds
+
+            Example format:
+            `[p]rpoll new Is this a poll? Yes;No;Maybe; 2 hours 21 minutes 40 seconds multi-vote`
         """
         if not channel:
             send_channel = ctx.channel
