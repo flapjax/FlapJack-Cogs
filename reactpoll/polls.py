@@ -165,8 +165,7 @@ class Poll:
         if self.duration:
             end = "| ends at"
         em.set_footer(
-            text=f"{self.author} created a poll {end}",
-            icon_url=str(self.author.avatar_url),
+            text=f"{self.author} created a poll {end}", icon_url=str(self.author.avatar_url),
         )
         if self.end_time:
             em.timestamp = self.end_time
@@ -184,13 +183,16 @@ class Poll:
         start_adding_reactions(message, self.emojis.keys())
 
     async def close_poll(self):
+
         msg = "**POLL ENDED!**\n\n"
         try:
             old_msg = await self.get_message()
             if old_msg:
                 await old_msg.clear_reactions()
         except (discord.errors.Forbidden, discord.errors.NotFound):
+            log.error("Cannot find message")
             pass
+
         em = discord.Embed(colour=await self.bot.get_embed_colour(self.channel))
         em.title = "**POLL ENDED**"
         # This is handled with fuck-all efficiency, but it works for now -Ruined1

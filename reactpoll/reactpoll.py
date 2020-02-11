@@ -15,23 +15,6 @@ from .converters import PollOptions, TIME_RE, MULTI_RE
 
 log = logging.getLogger("red.flapjackcogs.reactpoll")
 
-"""
-Please consider #105 and the syntax change on the cogboard:
-
-https://github.com/flapjax/FlapJack-Cogs/issues/105
-
-https://cogboard.red/t/react-poll-migration-to-v3/505
-
-Ideally the cog could handle v2 style poll options/syntax along with the established v3 syntax but if this is too complex it is fine to change the command syntax overall to one way or another, or whatever you think is user friendly and approachable.
-
-V3 style
-$rpoll "Is this a poll?" "Yes;No;Maybe"
-$rpoll "Is this a poll?" "Yes;No;Maybe" "3d12h30m15s"
-
-V2 style
-$rpoll Is this a poll?;Yes;No;Maybe
-$rpoll Is this a poll?;Yes;No;Maybe;t=3d12h30m15s
-"""
 EMOJI_RE = re.compile(r"<a?:[a-zA-Z0-9\_]+:([0-9]+)>")
 
 
@@ -43,6 +26,7 @@ class ReactPoll(commands.Cog):
         self.conf = Config.get_conf(self, identifier=1148673908, force_registration=True)
         default_guild_settings = {"polls": {}, "embed": True}
         self.conf.register_guild(**default_guild_settings)
+        self.conf.register_global(polls=[])
         self.polls: Dict[int, Dict[int, Poll]] = {}
         self.migrate = self.bot.loop.create_task(self.migrate_old_polls())
         self.loop = self.bot.loop.create_task(self.load_polls())
@@ -103,6 +87,8 @@ class ReactPoll(commands.Cog):
                     for m_id, poll in polls.items():
                         if isinstance(poll.end_time, float):
                             poll.end_time = datetime.utcfromtimestamp(poll.end_time)
+                        if isinstance(poll.end_time, int):
+                            poll.end_time = datetime.utcfromtimestamp(poll.end_time)
                         if poll.end_time and poll.end_time <= now_time:
                             log.debug("ending poll")
                             try:
@@ -139,7 +125,8 @@ class ReactPoll(commands.Cog):
         all_polls = await self.conf.all_guilds()
 
         for g_id, polls in all_polls.items():
-            self.polls[g_id] = {}
+            if g_id not in self.polls:
+                self.polls[g_id] = {}
             for m_id, poll in polls["polls"].items():
                 self.polls[g_id][int(m_id)] = Poll(self.bot, **poll)
 
@@ -147,14 +134,30 @@ class ReactPoll(commands.Cog):
         try:
             polls = await self.conf.polls()
         except AttributeError:
+            log.error("Error migrating old poll")
             return
         for poll in polls:
+            # log.info(poll)
             poll["author_id"] = poll["author"]
             poll["message_id"] = poll["message"]
             poll["channel_id"] = poll["channel"]
-            poll["options"] = poll["options"].split(";")
             new_poll = Poll(self.bot, **poll)
-            await self.store_poll(new_poll)
+            if not new_poll.channel:
+                continue
+            old_poll_msg = await new_poll.get_message()
+            move_msg = (
+                "Hello, due to a upgrade in the reaction poll cog "
+                "one of your polls is no longer compatible and cannot "
+                "be automatically tallied. If you wish to continue the poll, "
+                "it is recommended to create a new one or manually tally the results. "
+                f"The poll can be found at {old_poll_msg.jump_url}"
+            )
+            if new_poll.author:
+                try:
+                    await new_poll.author.send(move_msg)
+                except discord.errors.Forbidden:
+                    pass
+
         await self.conf.polls.clear()
 
     @commands.group()
