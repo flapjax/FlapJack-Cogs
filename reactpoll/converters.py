@@ -22,7 +22,7 @@ TIME_RE_STRING = r"|".join(
 )
 TIME_RE = re.compile(TIME_RE_STRING, re.I)
 QUESTION_RE = re.compile(r"([^;]+)(?<=\?)\s?", re.I)
-OPTIONS_RE = re.compile(r"([\S]+)(?=;)[\S\s]+", re.I)
+OPTIONS_RE = re.compile(r"([\S\s]+)(?=;)[\S\s]+", re.I)
 SPLIT_RE = re.compile(r";")
 TIME_SPLIT = re.compile(r"t(?:ime)?=")
 MULTI_RE = re.compile(r"(multi-vote)", re.I)
@@ -62,7 +62,7 @@ class PollOptions(Converter):
         possible_options = OPTIONS_RE.match(argument)
         if not possible_options:
             raise BadArgument("You have no options for this poll.")
-        options = [s.strip() for s in SPLIT_RE.split(possible_options[0]) if s]
+        options = [s.strip() for s in SPLIT_RE.split(possible_options[0]) if s.strip()]
         if len(options) > 20:
             raise BadArgument("Use less options for the poll. Max options: 20.")
         result["options"] = options
