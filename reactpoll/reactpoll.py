@@ -1,186 +1,38 @@
-import asyncio
 import discord
-import random
-import string
-import time
+import asyncio
+from datetime import datetime, timedelta
+import logging
+import re
+
+from typing import Dict, Optional
 
 from redbot.core import Config, checks, commands
+from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
+from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
+from redbot.core.utils.menus import start_adding_reactions
+from .polls import Poll
+from .converters import PollOptions, TIME_RE, MULTI_RE
 
+log = logging.getLogger("red.flapjackcogs.reactpoll")
 
-class NewPoll:
-    """A new reaction poll"""
+"""
+Please consider #105 and the syntax change on the cogboard:
 
-    def __init__(self, ctx, main, question: str, options: str, duration: str):
-        self.duration = None
-        self.main = main
-        self.tally = []
-        # Thanks 26 remindme.py
-        self.units = {
-            "second": 1,
-            "minute": 60,
-            "hour": 3600,
-            "day": 86400,
-            "week": 604800,
-            "month": 2592000,
-        }
-        # Following are needed to reconstruct a poll
-        self.author_id = ctx.author.id
-        self.channel_id = ctx.channel.id
-        self.message_id = None
-        self.question = question
-        self.emoji = []
-        self.options = self.parse_options(options)
-        self.end_time = self.parse_duration(duration)
-        self.id = self.generate_id()
+https://github.com/flapjax/FlapJack-Cogs/issues/105
 
-    def as_dict(self):
-        # for JSON serialization. This dict completely defines a poll.
-        return {
-            "author": self.author_id,
-            "channel": self.channel_id,
-            "message": self.message_id,
-            "question": self.question,
-            "options": self.options,
-            "emoji": self.emoji,
-            "end_time": self.end_time,
-            "id": self.id,
-        }
+https://cogboard.red/t/react-poll-migration-to-v3/505
 
-    def generate_id(self):
-        return "".join(random.choice(string.ascii_uppercase) for i in range(5))
+Ideally the cog could handle v2 style poll options/syntax along with the established v3 syntax but if this is too complex it is fine to change the command syntax overall to one way or another, or whatever you think is user friendly and approachable.
 
-    def parse_duration(self, text):
-        # use remindme parsing for now
-        text = text.replace(" ", "")
+V3 style
+$rpoll "Is this a poll?" "Yes;No;Maybe"
+$rpoll "Is this a poll?" "Yes;No;Maybe" "3d12h30m15s"
 
-        idx = 0
-        for char in text:
-            if char.isdigit():
-                idx += 1
-            else:
-                break
-        try:
-            value = int(text[:idx])
-        except ValueError:
-            return None
-        unit = text[idx:].lower()
-
-        if unit == "s":
-            unit = "second"
-        elif unit.endswith("s"):
-            unit = unit[:-1]
-        if unit not in self.units:
-            return None
-        if value < 1:
-            return None
-
-        self.duration = self.units[unit] * value
-        return int(time.time() + self.duration)
-
-    def parse_options(self, text):
-        return [opt.strip() for opt in text.split(";") if opt]
-
-    @property
-    async def message(self):
-        channel = self.channel
-        if not channel:
-            return None
-        try:
-            message = await channel.fetch_message(self.message_id)
-        except discord.errors.Forbidden:
-            return None
-        return message
-
-    @property
-    def channel(self):
-        return self.main.bot.get_channel(self.channel_id)
-
-    @property
-    def author(self):
-        return self.main.bot.fetch_user(self.author_id)
-
-    def is_valid(self):
-        return False if self.end_time is None or not self.options else True
-
-    async def open_poll(self):
-        # Starting codepoint for keycap number emoji (\u0030... == 0)
-        base_emoji = [ord("\u0030"), ord("\u20E3")]
-        msg = "**POLL STARTED!**\n\n{}\n\n".format(self.question)
-        option_num = 1
-        for option in self.options:
-            base_emoji[0] += 1
-            self.emoji.append(chr(base_emoji[0]) + chr(base_emoji[1]))
-            msg += f"**{option_num}**. {option}\n".format(option)
-            option_num += 1
-
-        msg += "\nSelect the number to vote!\nPoll closes in {} seconds.".format(self.duration)
-        message = await self.channel.send(msg)
-        self.message_id = message.id
-        for emoji in self.emoji:
-            await message.add_reaction(emoji)
-            await asyncio.sleep(0.5)
-
-    async def close_poll(self):
-        message = await self.message
-        if not message:
-            return
-        msg = "**POLL ENDED!**\n\n{}\n\n".format(self.question)
-        for reaction in message.reactions:
-            if reaction.emoji in self.emoji:
-                self.tally.append(reaction.count - 1)
-        try:
-            await message.clear_reactions()
-        except discord.errors.Forbidden:
-            pass
-        try:
-            winner_idx = self.tally.index(max(self.tally))
-        except ValueError:
-            winner_idx = 0
-        if not self.tally:
-            return
-
-        # This is handled with fuck-all efficiency, but it works for now -Ruined1
-        if self.tally[winner_idx] == 0:
-            msg += "***NO ONE VOTED.***\n"
-            try:
-                return await self.channel.send(msg)
-            except discord.errors.Forbidden:
-                pass
-        for idx, option in enumerate(self.options):
-            if idx == winner_idx:
-                if self.tally.count(self.tally[idx]) > 1:
-                    msg += "**TIE: \n{}** - {} votes\n".format(option, self.tally[idx])
-                else:
-                    msg += "**WINNER: \n{}** - {} votes\n".format(option, self.tally[idx])
-            else:
-                if (
-                    self.tally.count(self.tally[idx]) > 1
-                    and self.tally[idx] == self.tally[winner_idx]
-                ):
-                    msg += "**TIE: \n{}** - {} votes\n".format(option, self.tally[idx])
-                else:
-                    msg += "{} - {} votes\n".format(option, self.tally[idx])
-        try:
-            await self.channel.send(msg)
-        except discord.errors.Forbidden:
-            pass
-
-
-class LoadedPoll(NewPoll):
-    """A reaction poll loaded from disk"""
-
-    def __init__(self, main, poll):
-        self.main = main
-        self.tally = []
-        # Following are needed to reconstruct a poll
-        self.author_id = poll["author"]
-        self.channel_id = poll["channel"]
-        self.message_id = poll["message"]
-        self.question = poll["question"]
-        self.options = poll["options"]
-        self.emoji = poll["emoji"]
-        self.end_time = poll["end_time"]
-        self.id = poll["id"]
+V2 style
+$rpoll Is this a poll?;Yes;No;Maybe
+$rpoll Is this a poll?;Yes;No;Maybe;t=3d12h30m15s
+"""
+EMOJI_RE = re.compile(r"<a?:[a-zA-Z0-9\_]+:([0-9]+)>")
 
 
 class ReactPoll(commands.Cog):
@@ -188,82 +40,338 @@ class ReactPoll(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.conf = Config.get_conf(self, identifier=1148673908)
-        default_global_settings = {"polls": []}
-        self.conf.register_global(**default_global_settings)
-        self.polls = []
-        self.loop = asyncio.get_event_loop()
-        self.loop.create_task(self.load_polls())
-        self.poll_task = self.loop.create_task(self.poll_closer())
+        self.conf = Config.get_conf(self, identifier=1148673908, force_registration=True)
+        default_guild_settings = {"polls": {}, "embed": True}
+        self.conf.register_guild(**default_guild_settings)
+        self.polls: Dict[int, Dict[int, Poll]] = {}
+        self.migrate = self.bot.loop.create_task(self.migrate_old_polls())
+        self.loop = self.bot.loop.create_task(self.load_polls())
+        self.poll_task = self.bot.loop.create_task(self.poll_closer())
+        self.close_loop = True
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        """
+            Handle votes for polls
+        """
+        guild = self.bot.get_guild(payload.guild_id)
+        member = guild.get_member(payload.user_id)
+        if member.bot:
+            return
+        if guild.id not in self.polls:
+            # log.info(f"No polls in guild {payload.guild_id}")
+            return
+        if payload.message_id not in self.polls[guild.id]:
+            # log.info(f"No polls in message {payload.message_id}")
+            return
+        poll = self.polls[guild.id][payload.message_id]
+        await poll.add_vote(payload.user_id, str(payload.emoji))
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
+        """
+            Handle votes for polls
+        """
+        guild = self.bot.get_guild(payload.guild_id)
+        member = guild.get_member(payload.user_id)
+        if member.bot:
+            return
+        if guild.id not in self.polls:
+            # log.info(f"No polls in guild {payload.guild_id}")
+            return
+        if payload.message_id not in self.polls[guild.id]:
+            # log.info(f"No polls in message {payload.message_id}")
+            return
+        poll = self.polls[guild.id][payload.message_id]
+        await poll.remove_vote(payload.user_id, str(payload.emoji))
 
     def cog_unload(self):
+        self.close_loop = False
         self.poll_task.cancel()
+        pass
 
     async def poll_closer(self):
-        while True:
+        while self.close_loop:
             # consider making < 60 second polls not use config + this task
             await asyncio.sleep(5)
-            now_time = time.time()
-            for poll in self.polls:
-                if poll.end_time <= now_time:
-                    await poll.close_poll()
-                    # probs a better way to do this
-                    self.polls.remove(poll)
-                    # also need to delete from config
-                    await self.delete_poll(poll)
+            # log.debug("Checking for ended polls")
+            now_time = datetime.utcnow()
+            count = 0
+            try:
+                for g_id, polls in self.polls.items():
+                    to_remove = []
+                    for m_id, poll in polls.items():
+                        if isinstance(poll.end_time, float):
+                            poll.end_time = datetime.utcfromtimestamp(poll.end_time)
+                        if poll.end_time and poll.end_time <= now_time:
+                            log.debug("ending poll")
+                            try:
+                                await poll.close_poll()
+                            except Exception:
+                                pass
+                            # probs a better way to do this
+                            to_remove.append(m_id)
+                            # also need to delete from config
+                            guild = discord.Object(id=g_id)
+                            await self.delete_poll(guild, poll)
+                        if count // 10:
+                            count = 0
+                            await self.store_poll(poll)
+                        else:
+                            count += 1
+                    for m_id in to_remove:
+                        del self.polls[g_id][m_id]
+            except Exception as e:
+                log.error("Error checking for ended polls", exc_info=e)
 
-    async def delete_poll(self, poll: NewPoll):
-        async with self.conf.polls() as polls:
-            for existing_poll in polls:
-                if poll.id == existing_poll["id"]:
-                    polls.remove(existing_poll)
+    async def delete_poll(self, guild: discord.Guild, poll: Poll):
+        async with self.conf.guild(guild).polls() as polls:
+            if str(poll.message_id) in polls:
+                del polls[str(poll.message_id)]
 
-    async def store_poll(self, poll: NewPoll):
-        async with self.conf.polls() as polls:
-            polls.append(poll.as_dict())
+    async def store_poll(self, poll: Poll):
+        async with self.conf.guild(poll.guild).polls() as polls:
+            polls[str(poll.message_id)] = poll.as_dict()
 
     async def load_polls(self):
         # unfortunately we have to deal with an issue where JSON
         # serialization fails if the config default list is used
-        polls = await self.conf.polls()
-        if not polls:
-            await self.conf.polls.set([])
+        all_polls = await self.conf.all_guilds()
+
+        for g_id, polls in all_polls.items():
+            self.polls[g_id] = {}
+            for m_id, poll in polls["polls"].items():
+                self.polls[g_id][int(m_id)] = Poll(self.bot, **poll)
+
+    async def migrate_old_polls(self):
+        try:
+            polls = await self.conf.polls()
+        except AttributeError:
             return
-        else:
-            for poll in polls:
-                load_poll = LoadedPoll(self, poll)
-                if load_poll.is_valid():
-                    self.polls.append(load_poll)
+        for poll in polls:
+            poll["author_id"] = poll["author"]
+            poll["message_id"] = poll["message"]
+            poll["channel_id"] = poll["channel"]
+            poll["options"] = poll["options"].split(";")
+            new_poll = Poll(self.bot, **poll)
+            await self.store_poll(new_poll)
+        await self.conf.polls.clear()
 
+    @commands.group()
     @commands.guild_only()
-    @commands.command(name="rpoll")
-    async def rpoll(
-        self, ctx: commands.Context, question: str, options: str, duration: str = "60s"
-    ):
-        """Start a reaction poll
-        Usage example (time argument is optional)
-        [p]rpoll "Is this a poll?" "Yes;No;Maybe" "60s"
+    @checks.mod_or_permissions(manage_messages=True)
+    async def rpollset(self, ctx: commands.Context):
         """
-        message = ctx.message
-        channel = ctx.channel
-        guild = ctx.guild
+            Settings for reaction polls
+        """
 
-        if not channel.permissions_for(guild.me).manage_messages:
-            return await ctx.send(
-                "I require the 'Manage Messages' "
-                "permission in this channel to conduct "
-                "a reaction poll."
-            )
-
-        option_count = options.split(";")
-        if len(option_count) > 9:
-            return await ctx.send("Use less options for the poll. Max options: 9.")
-
-        poll = NewPoll(ctx, self, question, options, duration)
-
-        if poll.is_valid():
-            await poll.open_poll()
-            self.polls.append(poll)
-            await self.store_poll(poll)
+    @rpollset.command(name="embed", aliases=["embeds"])
+    async def rpoll_set_embed(self, ctx: commands.Context):
+        """
+            Toggle embed usage for polls in this server
+        """
+        curr_setting = await self.conf.guild(ctx.guild).embed()
+        await self.conf.guild(ctx.guild).embed.set(not curr_setting)
+        if curr_setting:
+            verb = "off"
         else:
-            await ctx.send("Poll was not valid.")
+            verb = "on"
+        await ctx.send(f"Reaction poll embeds turned {verb}.")
+
+    @commands.group()
+    @commands.guild_only()
+    async def rpoll(self, ctx: commands.Context):
+        """Commands for setting up reaction polls"""
+        pass
+
+    @rpoll.command(name="end", aliases=["close"])
+    async def end_poll(self, ctx: commands.Context, poll_id: int):
+        """
+            Manually end a poll
+
+            `<poll_id>` is the message ID for the poll.
+        """
+        if ctx.guild.id not in self.polls:
+            return await ctx.send("There are no polls on this server.")
+        if poll_id not in self.polls[ctx.guild.id]:
+            return await ctx.send("That is not a valid poll message ID.")
+        poll = self.polls[ctx.guild.id][poll_id]
+        await poll.close_poll()
+
+    async def handle_pagify(self, ctx: commands.Context, msg: str):
+        for page in pagify(msg):
+            await ctx.send(page)
+
+    @rpoll.command(name="interactive")
+    async def rpoll_interactive(self, ctx: commands.Context, channel: discord.TextChannel):
+        """
+            Interactive reaction poll creator
+
+            Provide the channel to send the poll to. [botname] will ask
+            you what the poll question will be and then ask you to provide
+            options for the poll including emojis to be used.
+        """
+        if not channel.permissions_for(ctx.me).send_messages:
+            return await ctx.send(f"I do not have permission to send messages in {channel.mention}")
+        poll_options = {"emojis": {}, "options": [], "interactive": True, "author_id": ctx.author.id}
+        default_emojis = ReactionPredicate.NUMBER_EMOJIS + ReactionPredicate.ALPHABET_EMOJIS
+        poll_options["channel_id"] = channel.id
+        await ctx.send(
+            "Enter the poll question. Entering `exit` at any time will end poll creation."
+        )
+        interactive = True
+        count = 0
+        while interactive:
+            try:
+                msg = await self.bot.wait_for(
+                    "message", check=MessagePredicate.same_context(ctx), timeout=30
+                )
+            except asyncio.TimeoutError:
+                await ctx.send("Poll creation ended due to timeout.")
+                return
+            if msg.content == "exit":
+                interactive = False
+                break
+            if not msg.content:
+                if msg.attachments:
+                    await ctx.send("Polls cannot handle attachments. Try again.")
+                continue
+            if count > 20:
+                await ctx.send("Maximum number of options provided.")
+                interactive = False
+                continue
+            if count == 0:
+                if not msg.content.endswith("?"):
+                    await ctx.send("That doesn't look like a question, try again.")
+                    continue
+                else:
+                    poll_options["question"] = msg.content
+                    await ctx.send(
+                        "Enter the options for the poll. Enter an emoji at the beginning of the message if you want to use custom emojis for the option counters."
+                    )
+                    count += 1
+                    continue
+            custom_emoji = EMOJI_RE.match(msg.content)
+            time_match = TIME_RE.match(msg.content)
+            multi_match = MULTI_RE.match(msg.content)
+            if multi_match:
+                poll_options["multiple_votes"] = True
+                await ctx.send("Allowing multiple votes for this poll.")
+                continue
+            if time_match:
+                time_data = {}
+                for time in TIME_RE.finditer(msg.content):
+                    for k, v in time.groupdict().items():
+                        if v:
+                            time_data[k] = int(v)
+                poll_options["duration"] = timedelta(**time_data)
+                await ctx.send(
+                    f"Duration for the poll set to {humanize_timedelta(timedelta=poll_options['duration'])}"
+                )
+                continue
+            if custom_emoji:
+                if custom_emoji.group(0) in poll_options["emojis"]:
+                    await ctx.send("That emoji option is already being used.")
+                    continue
+                try:
+                    await msg.add_reaction(custom_emoji.group(0))
+                    poll_options["emojis"][custom_emoji.group(0)] = msg.content.replace(
+                        custom_emoji.group(0), ""
+                    )
+                    await ctx.send(
+                        f"Option {custom_emoji.group(0)} set to {msg.content.replace(custom_emoji.group(0), '')}"
+                    )
+                    poll_options["options"].append(msg.content.replace(custom_emoji.group(0), ""))
+                except Exception:
+                    poll_options["emojis"][default_emojis[count]] = msg.content
+                    poll_options["options"].append(msg.content)
+                    await self.handle_pagify(ctx, f"Option {default_emojis[count]} set to {msg.content}")
+                count += 1
+                continue
+            else:
+                try:
+
+                    maybe_emoji = msg.content.split(" ")[0]
+                    if maybe_emoji in poll_options["emojis"]:
+                        await ctx.send("That emoji option is already being used.")
+                        continue
+                    await msg.add_reaction(maybe_emoji)
+                    poll_options["emojis"][maybe_emoji] = " ".join(msg.content.split(" ")[1:])
+                    poll_options["options"].append(" ".join(msg.content.split(" ")[1:]))
+                    await self.handle_pagify(ctx, f"Option {maybe_emoji} set to {' '.join(msg.content.split(' ')[1:])}")
+                except Exception:
+                    poll_options["emojis"][default_emojis[count]] = msg.content
+                    poll_options["options"].append(msg.content)
+                    await self.handle_pagify(ctx, f"Option {default_emojis[count]} set to {msg.content}")
+                count += 1
+                continue
+        if not poll_options["emojis"]:
+            return await ctx.send("No poll created.")
+        new_poll = Poll(self.bot, **poll_options)
+        text, em = await new_poll.build_poll()
+        if new_poll.embed:
+            sample_msg = await ctx.send("Is this poll good?", embed=em)
+        else:
+            for page in pagify(f"Is this poll good?\n\n{text}"):
+                sample_msg = await ctx.send(page)
+        start_adding_reactions(sample_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+        pred = ReactionPredicate.yes_or_no(sample_msg, ctx.author)
+        try:
+            await ctx.bot.wait_for("reaction_add", check=pred)
+        except asyncio.TimeoutError:
+            await ctx.send("Not making poll.")
+            return
+        if pred.result:
+            await new_poll.open_poll()
+            if ctx.guild.id not in self.polls:
+                self.polls[ctx.guild.id] = {}
+            self.polls[ctx.guild.id][new_poll.message_id] = new_poll
+            await self.store_poll(new_poll)
+        else:
+            await ctx.send("Not making poll.")
+
+    @rpoll.command(name="new", aliases=["create"])
+    async def rpoll_create(
+        self,
+        ctx: commands.Context,
+        channel: Optional[discord.TextChannel] = None,
+        *,
+        poll_options: PollOptions,
+    ):
+        """
+            Start a reaction poll
+
+            `[channel]` is the optional channel you want to send the poll to. If no channel is provided
+            it will default to the current channel.
+            `<poll_options>` is a formatted string of poll options.
+            The question is everything before the first occurance of `?`.
+            The options are a list separated by `;`.
+            The time the poll ends is a space separated list of units of time.
+            Usage example (time argument is optional)
+            if `multiple votes` is provided anywhere in the creation message the poll
+            will allow users to vote on multiple choices.
+            [p]rpoll new Is this a poll? Yes;No;Maybe; 2 hours 21 minutes 40 seconds
+        """
+        if not channel:
+            send_channel = ctx.channel
+        else:
+            send_channel = channel
+        if not send_channel.permissions_for(ctx.me).send_messages:
+            return await ctx.send(f"I do not have permission to send messages in {send_channel.mention}")
+        poll_options["channel_id"] = send_channel.id
+        # allow us to specify new channel for the poll
+
+        guild = ctx.guild
+        # log.info(poll_options)
+        embed = (
+            await self.conf.guild(guild).embed()
+            and send_channel.permissions_for(ctx.me).embed_links
+        )
+        poll_options["embed"] = embed
+        poll = Poll(self.bot, **poll_options)
+
+        await poll.open_poll()
+        if guild.id not in self.polls:
+            self.polls[guild.id] = {}
+        self.polls[guild.id][poll.message_id] = poll
+        await self.store_poll(poll)
