@@ -28,6 +28,8 @@ class Poll:
         self.message_id: Optional[int] = kwargs.get("message_id", None)
         self.question: str = kwargs.get("question")
         self.emojis: Dict[str, str] = kwargs.get("emojis", {})
+        if not self.emojis:
+            self.emojis = kwargs.get("emoji", {})
         self.options: List[str] = kwargs.get("options")
         self.end_time: Optional[datetime] = kwargs.get(
             "end_time", self.parse_duration(self.duration)
@@ -45,7 +47,7 @@ class Poll:
             "message_id": self.message_id,
             "question": self.question,
             "options": self.options,
-            "emoji": self.emojis,
+            "emojis": self.emojis,
             "end_time": self.end_time.timestamp() if self.end_time else None,
             "tally": self.tally,
             "embed": self.embed,
@@ -130,6 +132,15 @@ class Poll:
             return None
         return message
 
+    async def get_colour(self, channel: discord.TextChannel):
+        try:
+            if await self.bot.db.guild(channel.guild).use_bot_color():
+                return channel.guild.me.colour
+            else:
+                return await self.bot.db.color()
+        except AttributeError:
+            return await self.bot.get_embed_colour(channel)
+
     async def build_poll(self):
         # Starting codepoint for keycap number emoji (\u0030... == 0)
         base_emoji = ReactionPredicate.NUMBER_EMOJIS + ReactionPredicate.ALPHABET_EMOJIS
@@ -152,7 +163,7 @@ class Poll:
         if self.duration:
             msg += f"\nPoll closes in {humanize_timedelta(timedelta=self.duration)}"
 
-        em = discord.Embed(colour=await self.bot.get_embed_colour(self.channel))
+        em = discord.Embed(colour=await self.get_colour(self.channel))
         em.title = "POLL STARTED!"
         first = True
         for page in pagify(f"{self.question}\n\n{option_msg}", page_length=1024):
@@ -193,7 +204,7 @@ class Poll:
             log.error("Cannot find message")
             pass
 
-        em = discord.Embed(colour=await self.bot.get_embed_colour(self.channel))
+        em = discord.Embed(colour=await self.get_colour(self.channel))
         em.title = "**POLL ENDED**"
         # This is handled with fuck-all efficiency, but it works for now -Ruined1
         if sum(len(v) for k, v in self.tally.items()) == 0:
