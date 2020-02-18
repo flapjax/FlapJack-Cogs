@@ -59,6 +59,8 @@ class ReactPoll(commands.Cog):
             Handle votes for polls
         """
         guild = self.bot.get_guild(payload.guild_id)
+        if not guild:
+            return
         member = guild.get_member(payload.user_id)
         if member.bot:
             return
