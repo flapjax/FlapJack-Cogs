@@ -58,7 +58,7 @@ class SmartReact(commands.Cog):
             for command in emojis[emoji]:
                 msg += f"{emoji}: {command}\n"
         for page in pagify(msg, delims=["\n"]):
-            await ctx.send(msg)
+            await ctx.send(page)
 
     async def create_smart_reaction(self, guild, word, emoji, message):
         try:
