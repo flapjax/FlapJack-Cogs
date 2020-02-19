@@ -51,6 +51,7 @@ class Poll:
             "end_time": self.end_time.timestamp() if self.end_time else None,
             "tally": self.tally,
             "embed": self.embed,
+            "multiple_votes": self.multiple_votes
         }
 
     def parse_duration(self, duration: Optional[timedelta] = None) -> Optional[datetime]:
@@ -198,11 +199,22 @@ class Poll:
         msg = "**POLL ENDED!**\n\n"
         try:
             old_msg = await self.get_message()
+
             if old_msg:
+                for reaction in old_msg.reactions:
+                    async for user in reaction.users():
+                        if user.bot:
+                            continue
+                        if str(reaction.emoji) not in self.emojis:
+                            continue
+                        if user.id not in self.tally[str(reaction.emoji)]:
+                            self.tally[str(reaction.emoji)].append(user.id)
                 await old_msg.clear_reactions()
         except (discord.errors.Forbidden, discord.errors.NotFound):
             log.error("Cannot find message")
             pass
+        except Exception:
+            log.error("error tallying results", exc_info=True)
 
         em = discord.Embed(colour=await self.get_colour(self.channel))
         em.title = "**POLL ENDED**"
