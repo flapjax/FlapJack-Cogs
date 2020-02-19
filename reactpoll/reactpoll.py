@@ -120,8 +120,12 @@ class ReactPoll(commands.Cog):
                 del polls[str(poll.message_id)]
 
     async def store_poll(self, poll: Poll):
-        async with self.conf.guild(poll.guild).polls() as polls:
-            polls[str(poll.message_id)] = poll.as_dict()
+        try:
+            async with self.conf.guild(poll.guild).polls() as polls:
+                polls[str(poll.message_id)] = poll.as_dict()
+        except AttributeError:
+            # The guild no longer exists or the channel was deleted.
+            return
 
     async def load_polls(self):
         # unfortunately we have to deal with an issue where JSON
