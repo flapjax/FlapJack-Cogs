@@ -199,6 +199,8 @@ class MsgVote(commands.Cog):
 
     async def count_votes(self, reaction):
         message = reaction.message
+        if not message.guild:
+            return
         if not reaction.me:
             return
         if await self.config.guild(message.guild).threshold() == 0:
