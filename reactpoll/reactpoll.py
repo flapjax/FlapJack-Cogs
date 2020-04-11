@@ -62,6 +62,8 @@ class ReactPoll(commands.Cog):
         if not guild:
             return
         member = guild.get_member(payload.user_id)
+        if member is None:
+            return
         if member.bot:
             return
         if guild.id not in self.polls:
@@ -358,11 +360,10 @@ class ReactPoll(commands.Cog):
             The question is everything before the first occurance of `?`.
             The options are a list separated by `;`.
             The time the poll ends is a space separated list of units of time.
-            Usage example (time argument is optional)
             if `multi-vote` is provided anywhere in the creation message the poll
             will allow users to vote on multiple choices.
 
-            Example format:
+            Example format (time argument is optional):
             `[p]rpoll new Is this a poll? Yes;No;Maybe; 2 hours 21 minutes 40 seconds multi-vote`
         """
         if not channel:
