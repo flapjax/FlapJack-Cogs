@@ -119,7 +119,5 @@ class SmartReact(commands.Cog):
                 emoji = self.fix_custom_emoji(emoji)
                 try:
                     await message.add_reaction(emoji)
-                except discord.errors.Forbidden:
-                    pass
-                except discord.errors.InvalidArgument:
+                except (discord.errors.Forbidden, discord.errors.InvalidArgument, discord.errors.NotFound):
                     pass
