@@ -35,23 +35,31 @@ class MsgVote(commands.Cog):
             await ctx.send_help()
 
             guild_data = await self.config.guild(ctx.guild).all()
-
+            bad_channels = []
             msg = "Active Channels:\n"
             if not guild_data["channels_enabled"]:
                 msg += "None."
             else:
-                name_list = []
+                channel_list = []
                 for chan_id in guild_data["channels_enabled"]:
-                    name_list.append(self.bot.get_channel(chan_id))
-                if not name_list:
+                    channel_obj = self.bot.get_channel(chan_id)
+                    if hasattr(channel_obj, 'name'):
+                        channel_list.append(channel_obj)
+                    else:
+                        bad_channels.append(chan_id)
+                if not channel_list:
                     msg = "None."
                 else:
-                    msg += "\n".join(chan.name for chan in name_list)
+                    msg += "\n".join(chan.name for chan in channel_list)
 
             msg += f"\nBot message reactions: {guild_data['bot_react']}\nListening duration: {guild_data['duration']}s\nVote threshold: {guild_data['threshold']} votes\nUp/down emojis: {guild_data['up_emoji']} / {guild_data['dn_emoji']}"
 
             embed = discord.Embed(colour=await ctx.embed_colour(), description=msg)
-            return await ctx.send(embed=embed)
+            await ctx.send(embed=embed)
+
+            if bad_channels:
+                new_channel_list = [x for x in guild_data["channels_enabled"] if x not in bad_channels]
+                await self.config.guild(ctx.guild).channels_enabled.set(new_channel_list)
 
     @msgvote.command(name="on")
     async def _msgvote_on(self, ctx):
