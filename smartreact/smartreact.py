@@ -3,6 +3,7 @@ import discord
 import copy
 from discord.ext import commands
 from .utils.dataIO import dataIO
+from __main__ import send_cmd_help
 
 
 class SmartReact:
@@ -13,24 +14,39 @@ class SmartReact:
         self.bot = bot
         self.settings_path = "data/smartreact/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
+        self.NONWORDS = set(" ~!@#$%^?&*()_=+`'\"/.,;:\\|[]\{\}<>")
 
     @commands.command(name="addreact", no_pm=True, pass_context=True)
-    async def addreact(self, ctx, word, emoji):
-        """Add an auto reaction to a word"""
+    async def addreact(self, ctx, *command):
+        """Add an auto reaction to a word.
+        Use the actual emoji and not the emoji name.
+        Syntax: [p]addreact word emoji
+        """
+        if not command:
+            return await send_cmd_help(ctx)
         server = ctx.message.server
         message = ctx.message
         self.load_settings(server.id)
+
+        trigger, emoji = parse_command(command)
         emoji = self.fix_custom_emoji(emoji)
-        await self.create_smart_reaction(server, word, emoji, message)
+        await self.create_smart_reaction(server, trigger, emoji, message)
 
     @commands.command(name="delreact", no_pm=True, pass_context=True)
-    async def delreact(self, ctx, word, emoji):
-        """Delete an auto reaction to a word"""
+    async def delreact(self, ctx, *command):
+        """Delete an auto reaction to a word.
+        Use the actual emoji and not the emoji name.
+        Syntax: [p]delreact word emoji
+        """
+        if not command:
+            return await send_cmd_help(ctx)
         server = ctx.message.server
         message = ctx.message
         self.load_settings(server.id)
+
+        trigger, emoji = parse_command(command)
         emoji = self.fix_custom_emoji(emoji)
-        await self.remove_smart_reaction(server, word, emoji, message)
+        await self.remove_smart_reaction(server, trigger, emoji, message)
 
     def load_settings(self, server_id):
         self.settings = dataIO.load_json(self.settings_path)
@@ -111,13 +127,38 @@ class SmartReact:
         if server.id not in self.settings:
             return
         react_dict = copy.deepcopy(self.settings[server.id])
-        words = message.content.lower().split()
+        msg_lower = message.content.lower()
         for emoji in react_dict:
-            if set(w.lower() for w in react_dict[emoji]).intersection(words):
-                fixed_emoji = self.fix_custom_emoji(emoji)
-                if fixed_emoji is not None:
-                    await self.bot.add_reaction(message, fixed_emoji)
+            triggers = react_dict[emoji]
+            # check each trigger, in order to avoid '"trigger"' not being recognized
+            for trigger in triggers:
+                if self.is_word_boundary(msg_lower, trigger):
+                    fixed_emoji = self.fix_custom_emoji(emoji)
+                    if fixed_emoji is not None:
+                        await self.bot.add_reaction(message, fixed_emoji)
 
+    # makes sure that the trigger is surrounded by word boundaries
+    # such as $, ^, a non-alphanumeric, etc
+    def is_word_boundary(self, string, trigger):
+        i = string.find(trigger)
+        if i == -1:
+            return False
+        if 0 < i:
+            c = string[i-1]
+            if c not in self.NONWORDS:
+                return False
+        # find character after trigger
+        i += len(trigger)
+        if i < len(string) - 1:
+            c = string[i]
+            if c not in self.NONWORDS:
+                return False
+        return True
+
+def parse_command(command):
+    trigger = " ".join(command[0:-1])
+    emoji = command[-1]
+    return trigger, emoji
 
 def check_folders():
     folder = "data/smartreact"
