@@ -6,6 +6,6 @@
     "INSTALL_MSG" : "Thanks for installing CryptoPrice.",
     "REQUIREMENTS" : ["beautifulsoup4", "tabulate"],
     "TAGS" : ["crypto", "currency", "price", "bitcoin"],
-    "DISABLED" : true
+    "DISABLED" : true,
     "HIDDEN" : true
 }
