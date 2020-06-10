@@ -6,5 +6,6 @@
     "INSTALL_MSG" : "Thanks for installing FlapJack's Blizzard utilities cog. Diablo3 stats require a battle.net API key. Get one at https://dev.battle.net/.",
     "REQUIREMENTS" : ["beautifulsoup4", "bleach"],
     "TAGS" : ["blizzard", "patch", "notes", "games", "overwatch", "starcraft", "diablo", "warcraft", "hearthstone"],
-    "DISABLED" : false
+    "DISABLED" : true
+    "HIDDEN" : true
 }
