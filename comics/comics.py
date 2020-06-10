@@ -1,4 +1,5 @@
 import io
+import random
 import re
 
 import aiohttp
@@ -23,32 +24,42 @@ class Comics(commands.Cog):
 
         url = "http://webcomicname.com/random"
 
-        async with self.session.get(url) as response:
-            soup = BeautifulSoup(await response.text(), "html.parser")
+        async with ctx.typing():
+            async with self.session.get(url) as response:
+                soup = BeautifulSoup(await response.text(), "html.parser")
 
-        img_url = soup.find(property='og:image')['content']
+            img_url = soup.find(property='og:image')['content']
 
-        async with self.session.get(img_url) as response:
-            img = io.BytesIO(await response.read())
+            async with self.session.get(img_url) as response:
+                img = io.BytesIO(await response.read())
 
-        await ctx.send(file=discord.File(img, 'ohno.png'))
+            await ctx.send(file=discord.File(img, 'ohno.png'))
 
     @commands.command(pass_context=True)
     async def smbc(self, ctx):
         """Saturday Morning Breakfast Cereal"""
 
-        url = "http://www.smbc-comics.com/random.php"
+        url = "http://www.smbc-comics.com/comic/archive"
 
-        async with self.session.get(url) as response:
-            soup = BeautifulSoup(await response.text(), "html.parser")
+        async with ctx.typing():
+            async with self.session.get(url, headers={'Connection': 'keep-alive'}) as response:
+                soup = BeautifulSoup(await response.text(), "html.parser")
+			
+            all_comics = soup.find('select', attrs = {'name': 'comic'})
+            all_comics_url_stubs = [option['value'] for option in all_comics.findChildren()]
 
-        img_url = soup.find(property='og:image')['content']
-        extra_url = soup.find(id='aftercomic').img['src']
+            random_comic = random.choice(all_comics_url_stubs)
+            comic_url = f"http://www.smbc-comics.com/{random_comic}"
 
-        async with self.session.get(img_url) as response:
-            img = io.BytesIO(await response.read())
+            async with self.session.get(comic_url, headers={'Connection': 'keep-alive'}) as resp:
+                soup = BeautifulSoup(await resp.text(), "html.parser")
+                img_url = soup.find(property='og:image')['content']
+                extra_url = soup.find(id='aftercomic').img['src']
 
-        await ctx.send(file=discord.File(img, 'smbc.gif'))
+            async with self.session.get(img_url) as response:
+                img = io.BytesIO(await response.read())
+
+            await ctx.send(file=discord.File(img, 'smbc.png'))
 
     @commands.command(pass_context=True)
     async def pbf(self, ctx):
@@ -56,15 +67,16 @@ class Comics(commands.Cog):
 
         url = "http://pbfcomics.com/random"
 
-        async with self.session.get(url) as response:
-            soup = BeautifulSoup(await response.text(), "html.parser")
+        async with ctx.typing():
+            async with self.session.get(url) as response:
+                soup = BeautifulSoup(await response.text(), "html.parser")
 
-        img_url = soup.find(property='og:image')['content']
+            img_url = soup.find(property='og:image')['content']
 
-        async with self.session.get(img_url) as response:
-            img = io.BytesIO(await response.read())
+            async with self.session.get(img_url) as response:
+                img = io.BytesIO(await response.read())
 
-        await ctx.send(file=discord.File(img, 'pbf.png'))
+            await ctx.send(file=discord.File(img, 'pbf.png'))
 
     @commands.command(pass_context=True)
     async def cah(self, ctx):
@@ -72,33 +84,35 @@ class Comics(commands.Cog):
 
         url = "http://explosm.net/comics/random"
 
-        async with self.session.get(url) as response:
-            soup = BeautifulSoup(await response.text(), "html.parser")
+        async with ctx.typing():
+            async with self.session.get(url) as response:
+                soup = BeautifulSoup(await response.text(), "html.parser")
 
-        img_url = soup.find(property='og:image')['content']
+            img_url = soup.find(property='og:image')['content']
 
-        async with self.session.get(img_url) as response:
-            img = io.BytesIO(await response.read())
+            async with self.session.get(img_url) as response:
+                img = io.BytesIO(await response.read())
 
-        await ctx.send(file=discord.File(img, 'cah.png'))
+            await ctx.send(file=discord.File(img, 'cah.png'))
 
     @commands.command(pass_context=True)
     async def xkcd(self, ctx):
         """XKCD"""
 
         url = "https://c.xkcd.com/random/comic/"
-        phrase = "Image URL \(for hotlinking\/embedding\)\:"
+        phrase = "Image URL (for hotlinking or embedding):"
 
-        async with self.session.get(url) as response:
-            soup = BeautifulSoup(await response.text(), "html.parser")
+        async with ctx.typing():
+            async with self.session.get(url) as response:
+                soup = BeautifulSoup(await response.text(), "html.parser")
 
-        img_url = soup.find(string=re.compile(phrase))
-        img_url = 'https://' + img_url.split('https://')[1].rstrip()
+            img_url = soup.find(string=re.compile(phrase))
+            img_url = 'https://' + img_url.split('https://')[1].rstrip()
 
-        async with self.session.get(img_url) as response:
-            img = io.BytesIO(await response.read())
+            async with self.session.get(img_url) as response:
+                img = io.BytesIO(await response.read())
 
-        await ctx.send(file=discord.File(img, 'xkcd.png'))
+            await ctx.send(file=discord.File(img, 'xkcd.png'))
 
     @commands.command(pass_context=True)
     async def mrls(self, ctx):
@@ -106,16 +120,16 @@ class Comics(commands.Cog):
 
         url = "http://www.mrlovenstein.com/shuffle"
 
-        async with self.session.get(url) as response:
-            soup = BeautifulSoup(await response.text(), "html.parser")
+        async with ctx.typing():
+            async with self.session.get(url) as response:
+                soup = BeautifulSoup(await response.text(), "html.parser")
 
-        img_url = 'http://www.mrlovenstein.com' \
-            + soup.find(id='comic_main_image')['src']
+            img_url = f"http://www.mrlovenstein.com{soup.find(id='comic_main_image')['src']}"
 
-        async with self.session.get(img_url) as response:
-            img = io.BytesIO(await response.read())
+            async with self.session.get(img_url) as response:
+                img = io.BytesIO(await response.read())
 
-        await ctx.send(file=discord.File(img, 'mrls.gif'))
+            await ctx.send(file=discord.File(img, 'mrls.png'))
 
     @commands.command(pass_context=True)
     async def chainsaw(self, ctx):
@@ -123,15 +137,16 @@ class Comics(commands.Cog):
 
         url = "http://chainsawsuit.com/comic/random/?random&nocache=1"
 
-        async with self.session.get(url) as response:
-            soup = BeautifulSoup(await response.text(), "html.parser")
+        async with ctx.typing():
+            async with self.session.get(url) as response:
+                soup = BeautifulSoup(await response.text(), "html.parser")
 
-        img_url = soup.find(property='og:image')['content']
+            img_url = soup.find(property='og:image')['content']
 
-        async with self.session.get(img_url) as response:
-            img = io.BytesIO(await response.read())
+            async with self.session.get(img_url) as response:
+                img = io.BytesIO(await response.read())
 
-        await ctx.send(file=discord.File(img, 'chainsawsuit.png'))
+            await ctx.send(file=discord.File(img, 'chainsawsuit.png'))
 
     @commands.command(pass_context=True)
     async def sarah(self, ctx):
@@ -139,12 +154,13 @@ class Comics(commands.Cog):
 
         url = "http://www.gocomics.com/random/sarahs-scribbles"
 
-        async with self.session.get(url) as response:
-            soup = BeautifulSoup(await response.text(), "html.parser")
+        async with ctx.typing():
+            async with self.session.get(url) as response:
+                soup = BeautifulSoup(await response.text(), "html.parser")
 
-        img_url = soup.find(property='og:image')['content']
+            img_url = soup.find(property='og:image')['content']
 
-        async with self.session.get(img_url) as response:
-            img = io.BytesIO(await response.read())
+            async with self.session.get(img_url) as response:
+                img = io.BytesIO(await response.read())
 
-        await ctx.send(file=discord.File(img, 'sarahsscribbles.gif'))
+            await ctx.send(file=discord.File(img, 'sarahsscribbles.png'))
