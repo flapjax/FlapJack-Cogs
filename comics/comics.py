@@ -100,7 +100,7 @@ class Comics(commands.Cog):
         """XKCD"""
 
         url = "https://c.xkcd.com/random/comic/"
-        phrase = "Image URL (for hotlinking or embedding):"
+        phrase = r"Image URL \(for hotlinking\/embedding\)\:.*"
 
         async with ctx.typing():
             async with self.session.get(url) as response:
