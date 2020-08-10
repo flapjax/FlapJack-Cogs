@@ -1,10 +1,9 @@
 {
-    "NAME" : "Dongers",
-    "AUTHOR" : "FlapJack",
-    "SHORT" : "Prints donger faces in a chat channel.",
-    "DESCRIPTION" : "Retreives random dongers from dongerlist.com and prints them in text channels.\n\nDependencies:\nBeautifulSoup4 :: https://www.crummy.com/software/BeautifulSoup/bs4/doc/",
-    "INSTALL_MSG" : "Thanks for installing Dongers.",
-    "REQUIREMENTS" : ["beautifulsoup4"],
-    "TAGS" : ["dongers"],
-    "DISABLED" : false
+    "name" : "Dongers",
+    "author" : ["FlapJack"],
+    "short" : "Prints donger faces in a chat channel.",
+    "description" : "Retreives random dongers from dongerlist.com and prints them in text channels.\n\nDependencies:\nBeautifulSoup4 :: https://www.crummy.com/software/BeautifulSoup/bs4/doc/",
+    "install_msg" : "Thanks for installing Dongers.",
+    "requirements" : ["bs4"],
+    "tags" : ["dongers"]
 }

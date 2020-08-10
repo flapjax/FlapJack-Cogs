@@ -1,10 +1,9 @@
 {
-    "NAME" : "ColorMe",
-    "AUTHOR" : "FlapJack",
-    "SHORT" : "Allow users to manage the color of their own name.",
-    "DESCRIPTION" : "Creates a custom, permissionless role for each user and allows them to manage the color of their own name.\nFor this cog to work, please ensure your bot has permission to edit roles, and is placed higher on the role hierarchy than the roles of the members you want to allow to change their color. Be advised that Discord limits the number of roles per server, so this cog may not work well on larger servers.\n\nDependencies: None",
-    "INSTALL_MSG" : "Thanks for installing ColorMe. For this cog to work, please ensure your bot has permission to edit roles, and is placed higher on the role hierarchy than the roles of the members you want to allow to change their color.",
-    "REQUIREMENTS" : [],
-    "TAGS" : ["color", "name", "role", "custom"],
-    "DISABLED" : false
+    "name" : "ColorMe",
+    "author" : ["FlapJack"],
+    "short" : "Allow users to manage the color of their own name.",
+    "description" : "Creates a custom, permissionless role for each user and allows them to manage the color of their own name.\nFor this cog to work, please ensure your bot has permission to edit roles, and is placed higher on the role hierarchy than the roles of the members you want to allow to change their color. Be advised that Discord limits the number of roles per server, so this cog may not work well on larger servers.\n\nDependencies: None",
+    "install_msg" : "Thanks for installing ColorMe. For this cog to work, please ensure your bot has permission to edit roles, and is placed higher on the role hierarchy than the roles of the members you want to allow to change their color.",
+    "tags" : ["color", "name", "role", "custom"],
+    "permissions" : ["manage_roles"]
 }

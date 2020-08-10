@@ -1,10 +1,9 @@
 {
-    "NAME" : "Msgvote",
-    "AUTHOR" : "FlapJack",
-    "SHORT" : "Turn Discord channels into Reddit-like threads",
-    "DESCRIPTION" : "Adds upvote and downvote reactions to every message in a channel. Messages receiving excessive downvotes can be deleted automatically.\n\nDependencies: None",
-    "INSTALL_MSG" : "Thanks for installing Msgvote.",
-    "REQUIREMENTS" : [],
-    "TAGS" : ["reaction", "vote", "reddit", "upvote", "downvote"],
-    "DISABLED" : false
+    "name" : "Msgvote",
+    "author" : ["FlapJack"],
+    "short" : "Turn Discord channels into Reddit-like threads",
+    "description" : "Adds upvote and downvote reactions to every message in a channel. Messages receiving excessive downvotes can be deleted automatically.\n\nDependencies: None",
+    "install_msg" : "Thanks for installing Msgvote.",
+    "tags" : ["reaction", "vote", "upvote", "downvote"],
+    "permissions" : ["add_reactions"]
 }

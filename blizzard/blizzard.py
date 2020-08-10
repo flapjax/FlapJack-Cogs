@@ -1,5 +1,4 @@
 import asyncio
-import os
 import re
 from copy import copy
 from numbers import Number

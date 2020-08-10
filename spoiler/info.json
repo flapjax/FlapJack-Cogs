@@ -1,10 +1,8 @@
 {
-    "NAME" : "Spoiler",
-    "AUTHOR" : "FlapJack",
-    "SHORT" : "Hide spoilers using DMs",
-    "DESCRIPTION" : "Hide spoilers using DMs.",
-    "INSTALL_MSG" : "Thanks for installing FlapJack's Spoiler cog.",
-    "REQUIREMENTS" : [],
-    "TAGS" : ["spoiler"],
-    "DISABLED" : false
+    "name" : "Spoiler",
+    "author" : ["FlapJack"],
+    "short" : "Hide spoilers using DMs",
+    "description" : "Hide spoilers using DMs.",
+    "install_msg" : "Thanks for installing FlapJack's Spoiler cog.",
+    "tags" : ["spoiler"]
 }

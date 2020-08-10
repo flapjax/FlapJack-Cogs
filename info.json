@@ -1,7 +1,7 @@
 {
-    "AUTHOR" : "FlapJack",
-    "INSTALL_MSG" : "Thanks for using FlapJack Cogs. If you have any issues, please pm me on discord at FlapJack#5505.",
-    "NAME" : "FlapJack Cogs",
-    "SHORT" : "Unofficial cogs by FlapJack",
-    "DESCRIPTION" : "Thanks for using FlapJack Cogs. If you have any issues, please pm me on discord at FlapJack#5505."
+    "author" : ["FlapJack"],
+    "install_msg" : "Thanks for using FlapJack Cogs. If you have any issues, please join the Cog Support server and post in the support_flapjack-cogs channel: <https://discord.gg/k5xbRqG> or open an issue on the repo.",
+    "name" : "FlapJack Cogs",
+    "short" : "Cogs by FlapJack",
+    "description" : "Thanks for using FlapJack Cogs. If you have any issues, please join the Cog Support server and post in the support_flapjack-cogs channel: <https://discord.gg/k5xbRqG> or open an issue on the repo."
 }

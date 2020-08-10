@@ -1,4 +1,3 @@
-import os
 import re
 
 from redbot.core import checks, Config, commands

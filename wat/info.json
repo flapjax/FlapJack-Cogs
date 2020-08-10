@@ -1,10 +1,8 @@
 {
-    "NAME" : "Wat",
-    "AUTHOR" : "FlapJack",
-    "SHORT" : "Assist users who are hard of hearing.",
-    "DESCRIPTION" : "Yells the previous message in a channel when a user indicates they had trouble hearing.\n\nDependencies: None",
-    "INSTALL_MSG" : "What?",
-    "REQUIREMENTS" : [],
-    "TAGS" : ["wat", "what"],
-    "DISABLED" : false
+    "name" : "Wat",
+    "author" : ["FlapJack"],
+    "short" : "Assist users who are hard of hearing.",
+    "description" : "Yells the previous message in a channel when a user indicates they had trouble hearing.\n\nDependencies: None",
+    "install_msg" : "What?",
+    "tags" : ["wat", "what"]
 }
