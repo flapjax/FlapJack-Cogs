@@ -68,10 +68,15 @@ class Bigmoji(commands.Cog):
                     # resolve the name, however the image still exists
                     name.append("none")
             name = "_".join(name) + ".png"
+
             if len(chars) == 2:
                 if "fe0f" in chars:
                     # remove variation-selector-16 so that the appropriate url can be built without it
                     chars.remove("fe0f")
+            if "20e3" in chars:
+                # COMBINING ENCLOSING KEYCAP doesn't want to play nice either
+                chars.remove("fe0f")
+
             if svg_convert is not None:
                 url = "https://twemoji.maxcdn.com/2/svg/" + "-".join(chars) + ".svg"
                 convert = True
