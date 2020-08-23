@@ -313,6 +313,7 @@ class WordClouds(commands.Cog):
         excluded = await self.conf.guild(guild).excluded()
         if word in excluded:
             await ctx.send("'{}' is already in the excluded words.".format(word))
+            return
         excluded.append(word)
         await self.conf.guild(guild).excluded.set(excluded)
         await ctx.send("'{}' added to excluded words.".format(word))
