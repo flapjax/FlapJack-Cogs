@@ -43,6 +43,10 @@ class WordClouds(commands.Cog):
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     async def _list_masks(self, ctx):
         masks = sorted(os.listdir(self.mask_folder))
 

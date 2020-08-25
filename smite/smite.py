@@ -1,6 +1,7 @@
 import hashlib
 from datetime import datetime
 from json import JSONDecodeError
+from typing import Literal
 
 import aiohttp
 import discord
@@ -23,6 +24,11 @@ class Smite(commands.Cog):
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
+
+    async def red_delete_data_for_user(
+        self, *, requester: Literal["discord", "owner", "user", "user_strict"], user_id: int
+    ):
+        await self.conf.user_from_id(user_id).clear()
 
     @commands.group(name="smite", pass_context=True)
     async def smite(self, ctx):

@@ -5,5 +5,6 @@
     "description" : "Retreives random dongers from dongerlist.com and prints them in text channels.\n\nDependencies:\nBeautifulSoup4 :: https://www.crummy.com/software/BeautifulSoup/bs4/doc/",
     "install_msg" : "Thanks for installing Dongers.",
     "requirements" : ["bs4"],
-    "tags" : ["dongers"]
+    "tags" : ["dongers"],
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users."
 }

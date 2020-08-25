@@ -15,6 +15,10 @@ class Dongers(commands.Cog):
         self.donger_pages = 40
         self.session = aiohttp.ClientSession()
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     @commands.command()
     async def donger(self, ctx):
         """Print a random donger in chat"""

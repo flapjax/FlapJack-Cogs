@@ -18,6 +18,10 @@ class CryptoPrice(commands.Cog):
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     @commands.command()
     async def cprice(self, ctx, currency: str=None):
         """Fetch price data for cryptocurrencies matching your query.

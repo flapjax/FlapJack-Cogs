@@ -72,6 +72,10 @@ class Blizzard(commands.Cog):
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     async def show_menu(self, ctx, message, messages, page):
         if message:
             await message.edit(content=messages[page])

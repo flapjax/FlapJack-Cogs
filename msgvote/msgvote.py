@@ -25,6 +25,10 @@ class MsgVote(commands.Cog):
         }
         self.config.register_guild(**default_guild)
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     @commands.group(autohelp=False)
     @commands.guild_only()
     @checks.admin_or_permissions(manage_guild=True)

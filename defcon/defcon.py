@@ -30,6 +30,10 @@ class Defcon(commands.Cog):
             **self.default_guild_settings
         )
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     @commands.command(name="defcon", no_pm=True, pass_context=True)
     async def defcon(self, ctx):
         """Reports the server DEFCON level."""

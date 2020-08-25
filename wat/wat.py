@@ -16,6 +16,10 @@ class Wat(commands.Cog):
         self.conf = Config.get_conf(self, identifier=527690525)
         self.conf.register_global(**self.default_global_settings)
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     @commands.group(name="watignore", pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_guild=True)
     async def watignore(self, ctx):
