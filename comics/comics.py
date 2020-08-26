@@ -18,6 +18,10 @@ class Comics(commands.Cog):
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     @commands.command(pass_context=True)
     async def ohno(self, ctx):
         """Webcomic Name"""

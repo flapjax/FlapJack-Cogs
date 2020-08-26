@@ -21,6 +21,10 @@ class ColorMe(commands.Cog):
         )
         self.suffix = ":color"
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     def _is_sharing_role(self, ctx: commands.Context, role):
         guild = ctx.message.guild
         for member in guild.members:

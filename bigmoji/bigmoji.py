@@ -40,6 +40,10 @@ class Bigmoji(commands.Cog):
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     @commands.command(name="bigmoji", pass_context=True)
     async def bigmoji(self, ctx, emoji):
         """Post a large .png of an emoji"""

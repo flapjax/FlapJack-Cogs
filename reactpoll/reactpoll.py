@@ -33,6 +33,10 @@ class ReactPoll(commands.Cog):
         self.poll_task = self.bot.loop.create_task(self.poll_closer())
         self.close_loop = True
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         """

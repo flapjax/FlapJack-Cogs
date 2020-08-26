@@ -11,6 +11,10 @@ class Spoiler(commands.Cog):
         self.emoji = "👀"
         self.spoilers = {}
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     @commands.guild_only()
     @commands.command(name="spoiler")
     async def spoiler(self, ctx, title: str, spoiler: str=None):

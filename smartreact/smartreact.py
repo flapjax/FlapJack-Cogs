@@ -18,6 +18,10 @@ class SmartReact(commands.Cog):
             **self.default_guild_settings
         )
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete."""
+        return
+
     @checks.mod_or_permissions(administrator=True)
     @commands.guild_only()
     @commands.command(name="addreact")

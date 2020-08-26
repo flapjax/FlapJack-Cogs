@@ -4,5 +4,6 @@
     "short" : "Assist users who are hard of hearing.",
     "description" : "Yells the previous message in a channel when a user indicates they had trouble hearing.\n\nDependencies: None",
     "install_msg" : "What?",
-    "tags" : ["wat", "what"]
+    "tags" : ["wat", "what"],
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users."
 }
