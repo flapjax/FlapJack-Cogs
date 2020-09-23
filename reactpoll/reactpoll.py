@@ -42,6 +42,7 @@ class ReactPoll(commands.Cog):
         """
             Handle votes for polls
         """
+        await self.bot.wait_until_red_ready()
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
@@ -62,6 +63,7 @@ class ReactPoll(commands.Cog):
         """
             Handle votes for polls
         """
+        await self.bot.wait_until_red_ready()
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
@@ -85,6 +87,7 @@ class ReactPoll(commands.Cog):
         pass
 
     async def poll_closer(self):
+        await self.bot.wait_until_red_ready()
         while self.close_loop:
             # consider making < 60 second polls not use config + this task
             await asyncio.sleep(5)
