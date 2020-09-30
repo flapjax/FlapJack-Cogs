@@ -149,12 +149,12 @@ class Blizzard(commands.Cog):
         else:
             return '-'
 
-    @commands.group(name="blizzard", pass_context=True)
+    @commands.group(name="blizzard")
     async def blizzard(self, ctx):
         """Change blizzard cog settings."""
         pass
 
-    @blizzard.command(name="apikey", pass_context=True)
+    @blizzard.command(name="apikey")
     @checks.is_owner()
     async def _apikey_blizzard(self, ctx, key: str):
         """Set the cog's battle.net API key, required for Diablo statistics.
@@ -164,7 +164,7 @@ class Blizzard(commands.Cog):
         await self.conf.apikey.set(key)
         await ctx.send('API key set.')
 
-    @blizzard.command(name="noteformat", pass_context=True)
+    @blizzard.command(name="noteformat")
     @checks.is_owner()
     async def _noteformat_blizzard(self, ctx, form: str):
         """Set the format of the patch notes posted in chat.
@@ -181,7 +181,7 @@ class Blizzard(commands.Cog):
                            "`{}`, `{}`, or `{}`.".format(form, accept[0],
                                                          accept[1], accept[2]))
 
-    @blizzard.command(name="notetimeout", pass_context=True)
+    @blizzard.command(name="notetimeout")
     @checks.is_owner()
     async def _notetimeout_blizzard(self, ctx, timeout: int):
         """Set the timeout period (sec) of the patch notes reaction menus.
@@ -195,12 +195,12 @@ class Blizzard(commands.Cog):
             await ctx.send("Please choose a duration between "
                            "{} and {} seconds.".format(min_max[0], min_max[1]))
 
-    @commands.group(name="battletag", pass_context=True)
+    @commands.group(name="battletag")
     async def battletag(self, ctx):
         """Change your battletag settings."""
         pass
 
-    @battletag.command(name="set", pass_context=True)
+    @battletag.command(name="set")
     async def _set_battletag(self, ctx, tag: str):
         """Set your battletag"""
 
@@ -212,7 +212,7 @@ class Blizzard(commands.Cog):
         await self.conf.user(user).battletag.set(tag)
         await ctx.send("Your battletag has been set.")
 
-    @battletag.command(name="clear", pass_context=True)
+    @battletag.command(name="clear")
     async def _clear_battletag(self, ctx):
         """Remove your battletag"""
 
@@ -224,22 +224,22 @@ class Blizzard(commands.Cog):
         else:
             await ctx.send("I had no battletag stored for you.")
 
-    @commands.group(name="hearthstone", pass_context=True)
+    @commands.group(name="hearthstone")
     async def hearthstone(self, ctx):
         """Hearthstone utilities"""
         pass
 
-    @hearthstone.command(name="notes", pass_context=True)
+    @hearthstone.command(name="notes")
     async def _notes_hearthstone(self, ctx):
         """Latest Hearthstone patch notes"""
         await self.format_patch_notes(ctx, 'hearthstone')
 
-    @commands.group(name="overwatch", pass_context=True)
+    @commands.group(name="overwatch")
     async def overwatch(self, ctx):
         """Overwatch utilities"""
         pass
 
-    @overwatch.command(name="stats", pass_context=True)
+    @overwatch.command(name="stats")
     async def _stats_overwatch(self, ctx, tag: str=None, region: str=None):
         """Overwatch stats for your battletag (case sensitive and PC only!).
         If battletag is ommitted, bot will use your battletag if stored.
@@ -356,32 +356,32 @@ class Blizzard(commands.Cog):
             'us': 'US',
         }.get(region, ' ')
 
-    @overwatch.command(name="notes", pass_context=True)
+    @overwatch.command(name="notes")
     async def _notes_overwatch(self, ctx):
         """Latest Overwatch patch notes"""
         await self.format_patch_notes(ctx, 'overwatch')
 
-    @commands.group(name="starcraft2", pass_context=True)
+    @commands.group(name="starcraft2")
     async def starcraft2(self, ctx):
         """Starcraft2 utilities"""
         pass
 
-    @starcraft2.command(name="notes", pass_context=True)
+    @starcraft2.command(name="notes")
     async def _notes_starcraft2(self, ctx):
         """Latest Starcraft2 patch notes"""
         await self.format_patch_notes(ctx, 'starcraft2')
 
-    @commands.group(name="warcraft", pass_context=True)
+    @commands.group(name="warcraft")
     async def warcraft(self, ctx):
         """World of Warcraft utilities"""
         pass
 
-    @warcraft.command(name="notes", pass_context=True)
+    @warcraft.command(name="notes")
     async def _notes_warcraft(self, ctx):
         """Latest World of Warcraft patch notes"""
         await self.format_patch_notes(ctx, 'warcraft')
 
-    @warcraft.command(name="token", pass_context=True)
+    @warcraft.command(name="token")
     async def _token_warcraft(self, ctx, realm: str='na'):
         """WoW Token Prices"""
 
@@ -403,17 +403,17 @@ class Blizzard(commands.Cog):
             'tw': 'taiwan'
         }.get(region, ' ')
 
-    @commands.group(name="diablo3", pass_context=True)
+    @commands.group(name="diablo3")
     async def diablo3(self, ctx):
         """Diablo3 utilities"""
         pass
 
-    @diablo3.command(name="notes", pass_context=True)
+    @diablo3.command(name="notes")
     async def _notes_diablo3(self, ctx):
         """Latest Diablo3 patch notes"""
         await self.format_patch_notes(ctx, 'diablo3')
 
-    @diablo3.command(name="stats", pass_context=True)
+    @diablo3.command(name="stats")
     async def _stats_diablo3(self, ctx, tag: str=None, region: str=None):
         """Diablo3 stats for your battletag.
         If battletag is ommitted, bot will use your battletag if stored.
@@ -496,12 +496,12 @@ class Blizzard(commands.Cog):
         embed.set_footer(text=kills)
         await ctx.send(embed=embed)
 
-    @commands.group(name="hots", pass_context=True)
+    @commands.group(name="hots")
     async def hots(self, ctx):
         """Heroes of the Storm utilities"""
         pass
 
-    @hots.command(name="notes", pass_context=True)
+    @hots.command(name="notes")
     async def _notes_hots(self, ctx):
         """Latest Heroes of the Storm patch notes"""
         await self.format_patch_notes(ctx, 'hots')

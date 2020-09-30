@@ -44,7 +44,7 @@ class Bigmoji(commands.Cog):
         """Nothing to delete."""
         return
 
-    @commands.command(name="bigmoji", pass_context=True)
+    @commands.command(name="bigmoji")
     async def bigmoji(self, ctx, emoji):
         """Post a large .png of an emoji"""
         channel = ctx.channel

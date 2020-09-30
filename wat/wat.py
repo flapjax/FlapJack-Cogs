@@ -20,13 +20,14 @@ class Wat(commands.Cog):
         """Nothing to delete."""
         return
 
-    @commands.group(name="watignore", pass_context=True, no_pm=True)
+    @commands.guild_only()
+    @commands.group(name="watignore")
     @checks.admin_or_permissions(manage_guild=True)
     async def watignore(self, ctx):
         """Change Wat cog ignore settings."""
         pass
 
-    @watignore.command(name="server", pass_context=True, no_pm=True)
+    @watignore.command(name="server")
     @checks.admin_or_permissions(manage_guild=True)
     async def _watignore_server(self, ctx):
         """Ignore/Unignore the current server"""
@@ -41,7 +42,7 @@ class Wat(commands.Cog):
             await ctx.send("what? Fine, I will ignore this server.")
         await self.conf.guilds_ignored.set(guilds)
 
-    @watignore.command(name="channel", pass_context=True, no_pm=True)
+    @watignore.command(name="channel")
     @checks.admin_or_permissions(manage_guild=True)
     async def _watignore_channel(self, ctx):
         """Ignore/Unignore the current channel"""

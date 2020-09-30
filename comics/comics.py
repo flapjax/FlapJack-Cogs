@@ -22,7 +22,7 @@ class Comics(commands.Cog):
         """Nothing to delete."""
         return
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def ohno(self, ctx):
         """Webcomic Name"""
 
@@ -39,7 +39,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'ohno.png'))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def smbc(self, ctx):
         """Saturday Morning Breakfast Cereal"""
 
@@ -65,7 +65,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'smbc.png'))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def pbf(self, ctx):
         """The Perry Bible Fellowship"""
 
@@ -82,7 +82,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'pbf.png'))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def cah(self, ctx):
         """Cyanide and Happiness"""
 
@@ -99,7 +99,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'cah.png'))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def xkcd(self, ctx):
         """XKCD"""
 
@@ -118,7 +118,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'xkcd.png'))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def mrls(self, ctx):
         """Mr. Lovenstein"""
 
@@ -135,7 +135,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'mrls.png'))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def chainsaw(self, ctx):
         """Chainsawsuit"""
 
@@ -152,7 +152,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'chainsawsuit.png'))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def sarah(self, ctx):
         """Sarah's Scribbles"""
 

@@ -34,14 +34,16 @@ class Defcon(commands.Cog):
         """Nothing to delete."""
         return
 
-    @commands.command(name="defcon", no_pm=True, pass_context=True)
+    @commands.guild_only()
+    @commands.command(name="defcon")
     async def defcon(self, ctx):
         """Reports the server DEFCON level."""
         guild = ctx.message.guild
         channel = ctx.message.channel
         await self._post_defcon(ctx, guild, channel)
 
-    @commands.command(name="defcon+", no_pm=True, pass_context=True)
+    @commands.guild_only()
+    @commands.command(name="defcon+")
     async def defconplus(self, ctx):
         """Elevates the server DEFCON level."""
         guild = ctx.message.guild
@@ -56,7 +58,8 @@ class Defcon(commands.Cog):
         await self.conf.guild(guild).authority.set(member.display_name)
         await self._post_defcon(ctx, guild, channel)
 
-    @commands.command(name="defcon-", no_pm=True, pass_context=True)
+    @commands.guild_only()
+    @commands.command(name="defcon-")
     async def defconminus(self, ctx):
         """Lowers the server DEFCON level."""
         guild = ctx.message.guild
@@ -71,7 +74,8 @@ class Defcon(commands.Cog):
         await self.conf.guild(guild).authority.set(member.display_name)
         await self._post_defcon(ctx, guild, channel)
 
-    @commands.command(name="setdefcon", no_pm=True, pass_context=True)
+    @commands.guild_only()
+    @commands.command(name="setdefcon")
     async def setdefcon(self, ctx, level: int):
         """Manually set the server DEFCON level in case of emergency."""
         guild = ctx.message.guild
@@ -85,7 +89,8 @@ class Defcon(commands.Cog):
             await ctx.send("Not a valid DEFCON level. Haven't "
                            "you seen War Games?")
 
-    @commands.command(name="defconchan", no_pm=True, pass_context=True)
+    @commands.guild_only()
+    @commands.command(name="defconchan")
     @checks.mod()
     async def defconchan(self, ctx, channel: discord.TextChannel=None):
         """Constrain defcon alerts to a specific channel.
