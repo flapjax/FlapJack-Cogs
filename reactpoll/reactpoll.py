@@ -47,7 +47,7 @@ class ReactPoll(commands.Cog):
         if not guild:
             return
         member = guild.get_member(payload.user_id)
-        if member.bot:
+        if not member or member.bot:
             return
         if guild.id not in self.polls:
             # log.info(f"No polls in guild {payload.guild_id}")
@@ -68,9 +68,7 @@ class ReactPoll(commands.Cog):
         if not guild:
             return
         member = guild.get_member(payload.user_id)
-        if member is None:
-            return
-        if member.bot:
+        if not member or member.bot:
             return
         if guild.id not in self.polls:
             # log.info(f"No polls in guild {payload.guild_id}")
