@@ -215,6 +215,7 @@ class ReactPoll(commands.Cog):
             return await ctx.send("That is not a valid poll message ID.")
         poll = self.polls[ctx.guild.id][poll_id]
         await poll.close_poll()
+        await ctx.tick()
 
     async def handle_pagify(self, ctx: commands.Context, msg: str):
         for page in pagify(msg):
