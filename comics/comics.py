@@ -27,6 +27,7 @@ class Comics(commands.Cog):
         """Nothing to delete."""
         return
 
+    @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def ohno(self, ctx):
         """Webcomic Name"""
@@ -44,6 +45,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'ohno.png'))
 
+    @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def smbc(self, ctx):
         """Saturday Morning Breakfast Cereal"""
@@ -70,6 +72,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'smbc.png'))
 
+    @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def pbf(self, ctx):
         """The Perry Bible Fellowship"""
@@ -87,6 +90,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'pbf.png'))
 
+    @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def cah(self, ctx):
         """Cyanide and Happiness"""
@@ -104,6 +108,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'cah.png'))
 
+    @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def xkcd(self, ctx):
         """XKCD"""
@@ -123,6 +128,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'xkcd.png'))
 
+    @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def mrls(self, ctx):
         """Mr. Lovenstein"""
@@ -140,6 +146,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'mrls.png'))
 
+    @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def chainsaw(self, ctx):
         """Chainsawsuit"""
@@ -157,6 +164,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'chainsawsuit.png'))
 
+    @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def sarah(self, ctx):
         """Sarah's Scribbles"""
@@ -174,6 +182,7 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, 'sarahsscribbles.png'))
 
+    @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def dilbert(self, ctx, date: str = None):
         """Dilbert
@@ -211,7 +220,13 @@ class Comics(commands.Cog):
                 except json.decoder.JSONDecodeError:
                     return await ctx.send("I can't read that comic page.")
 
-            async with self.session.get(comic_info["image"]) as response:
-                img = io.BytesIO(await response.read())
+            image_url = comic_info.get("image", None)
 
-            await ctx.send(file=discord.File(img, f"dilbert-{date}.png"))
+            if image_url:
+                async with self.session.get(comic_info["image"]) as response:
+                    img = io.BytesIO(await response.read())
+                    
+                return await ctx.send(file=discord.File(img, f"dilbert-{date}.png"))
+
+            return await ctx.send("I can't read that comic page.")
+
