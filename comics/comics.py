@@ -1,11 +1,16 @@
 import io
+import json
 import random
 import re
 
 import aiohttp
+import datetime
 import discord
 from bs4 import BeautifulSoup
 from redbot.core import commands
+
+
+DATE_RE = r"^([0-9][0-9]|19[0-9][0-9]|20[0-9][0-9])(\.|-|\/)([1-9]|0[1-9]|1[0-2])(\.|-|\/)([1-9]|0[1-9]|1[0-9]|2[0-9]|3[0-1])$"
 
 
 class Comics(commands.Cog):
@@ -168,3 +173,45 @@ class Comics(commands.Cog):
                 img = io.BytesIO(await response.read())
 
             await ctx.send(file=discord.File(img, 'sarahsscribbles.png'))
+
+    @commands.command()
+    async def dilbert(self, ctx, date: str = None):
+        """Dilbert
+
+        Random, or specify a date in YYYY-MM-DD format (2020-01-15).
+        Examples:
+        \t`[p]dilbert`\t\tFetches random comic
+        \t`[p]dilbert 2020-1-15`\tFetches comic for Jan 15, 2020
+        """
+        if date:
+            date_match = re.match(DATE_RE, date)
+            if not date_match:
+                return await ctx.send("That doesn't seem like a valid date. Try a format like `2020-01-15`.")
+            date = date_match[0]
+        else:
+            start_date = datetime.date(1989, 4, 16)
+            end_date = datetime.datetime.today().date()
+            time_between_dates = end_date - start_date
+            days_between_dates = time_between_dates.days
+            random_number_of_days = random.randrange(days_between_dates)
+            date = start_date + datetime.timedelta(days=random_number_of_days)
+
+        url = f"https://dilbert.com/strip/{date}"
+
+        async with ctx.typing():
+            async with self.session.get(url) as response:
+                html = await response.text()
+                soup = BeautifulSoup(html, "html.parser")
+                script_tag = soup.find("script", type="application/ld+json")
+                tag = script_tag.string.lstrip().rstrip()
+                tag = tag.replace("\n", " ").replace("\r", " ")
+                tag = re.sub(" +", " ", tag)
+                try:
+                    comic_info = json.loads(tag)
+                except json.decoder.JSONDecodeError:
+                    return await ctx.send("I can't read that comic page.")
+
+            async with self.session.get(comic_info["image"]) as response:
+                img = io.BytesIO(await response.read())
+
+            await ctx.send(file=discord.File(img, f"dilbert-{date}.png"))
