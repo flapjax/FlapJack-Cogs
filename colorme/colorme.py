@@ -1,5 +1,6 @@
 import asyncio
 import re
+import webcolors
 
 import discord
 from redbot.core import Config, checks, commands
@@ -25,7 +26,8 @@ class ColorMe(commands.Cog):
         """Nothing to delete."""
         return
 
-    def _is_sharing_role(self, ctx: commands.Context, role):
+    @staticmethod
+    def _is_sharing_role(ctx: commands.Context, role):
         guild = ctx.message.guild
         for member in guild.members:
             if (role in member.roles) and (member.id != ctx.message.author.id):
@@ -41,15 +43,46 @@ class ColorMe(commands.Cog):
             return True
         return False
 
-    def _elim_valid_roles(self, roles):
+    @staticmethod
+    def _elim_valid_roles(roles):
         for role in roles:
             if len(role.members) > 0:
                 roles.remove(role)
         return roles
 
-    def _already_has_colorme(self, ctx, rolename):
+    @staticmethod
+    def _already_has_colorme(ctx: commands.Context, rolename):
         guild = ctx.message.guild
         return discord.utils.get(guild.roles, name=rolename)
+
+    @staticmethod
+    def _color_converter(hex_code_or_color_word: str):
+        """
+        Used for user input on color
+        Input:    discord.Color name, CSS3 color name, 0xFFFFFF, #FFFFFF, FFFFFF
+        Output:   0xFFFFFF
+        """
+        # #FFFFFF and FFFFFF to 0xFFFFFF
+        hex_match = re.match(r"#?[a-f0-9]{6}", hex_code_or_color_word.lower())
+        if hex_match:
+            hex_code = f"0x{hex_code_or_color_word.lstrip('#')}"
+            return hex_code
+
+        # discord.Color checking
+        if hasattr(discord.Color, hex_code_or_color_word):
+            hex_code = str(getattr(discord.Color, hex_code_or_color_word)())
+            hex_code = hex_code.replace("#", "0x")
+            return hex_code
+
+        # CSS3 color name checking
+        try:
+            hex_code = webcolors.name_to_hex(hex_code_or_color_word, spec="css3")
+            hex_code = hex_code.replace("#", "0x")
+            return hex_code
+        except ValueError:
+            pass
+
+        return None
 
     @commands.guild_only()
     @commands.group(name="colorme")
@@ -59,10 +92,11 @@ class ColorMe(commands.Cog):
 
     @colorme.command(name="change")
     @commands.cooldown(10, 60, commands.BucketType.user)
-    async def _change_colorme(self, ctx: commands.Context, newcolor: discord.Colour):
+    async def _change_colorme(self, ctx: commands.Context, newcolor: str):
         """Change the color of your name.
 
-        New color must be a valid hexidecimal color value.
+        `newcolor` must be a hex code like `#990000` or `990000`, a [Discord color name](https://discordpy.readthedocs.io/en/latest/api.html#colour),
+        or a [CSS3 color name](https://www.w3.org/TR/2018/REC-css-color-3-20180619/#svg-color).
         """
         guild = ctx.message.guild
         member = ctx.message.author
@@ -70,6 +104,18 @@ class ColorMe(commands.Cog):
         disc = member.discriminator
         top_role = member.top_role
         protected_roles = await self.conf.guild(guild).protected_roles()
+
+        # color decoding time
+        newcolor = newcolor.replace(" ", "_")
+        newcolor = self._color_converter(newcolor)
+        if not newcolor:
+            await ctx.send(
+                "Not a valid color code. Use a hex code like #990000, a "
+                "Discord color name or a CSS3 color name.\n"
+                "<https://discordpy.readthedocs.io/en/latest/api.html#colour>\n"
+                "<https://www.w3.org/TR/2018/REC-css-color-3-20180619/#svg-color>"
+            )
+            return
 
         role_to_change = None
         for role in member.roles:
@@ -93,11 +139,12 @@ class ColorMe(commands.Cog):
                                "going to make a new one. Please talk "
                                "to your server admin about fixing this!")
                 return
+
             # Make a new cosmetic role for this person
             try:
                 new_role = await guild.create_role(reason='Custom ColorMe Role',
                                                    name=rolename,
-                                                   colour=newcolor,
+                                                   colour=discord.Colour(int(newcolor, 16)),
                                                    hoist=False,
                                                    permissions=discord.Permissions.none())
             except discord.Forbidden:
@@ -122,7 +169,7 @@ class ColorMe(commands.Cog):
             # Need to make sure they are not sharing with someone else
             if not self._is_sharing_role(ctx, role_to_change):
                 try:
-                    await role_to_change.edit(colour=newcolor, reason='ColorMe Change')
+                    await role_to_change.edit(colour=discord.Colour(int(newcolor, 16)), reason='ColorMe Change')
                 except discord.Forbidden:
                     return await ctx.send("Failed to edit role. (permissions)")
                 except discord.HTTPException:
