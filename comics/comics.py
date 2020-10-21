@@ -200,10 +200,7 @@ class Comics(commands.Cog):
         else:
             start_date = datetime.date(1989, 4, 16)
             end_date = datetime.datetime.today().date()
-            time_between_dates = end_date - start_date
-            days_between_dates = time_between_dates.days
-            random_number_of_days = random.randrange(days_between_dates)
-            date = start_date + datetime.timedelta(days=random_number_of_days)
+            date = self._fetch_random_date(start_date, end_date)
 
         url = f"https://dilbert.com/strip/{date}"
 
@@ -230,3 +227,103 @@ class Comics(commands.Cog):
 
             return await ctx.send("I can't read that comic page.")
 
+    @commands.bot_has_permissions(attach_files=True)
+    @commands.command()
+    async def calvin(self, ctx, date: str = None):
+        """Calvin and Hobbes
+
+        Random, or specify a date in YYYY-MM-DD format (1995-12-31).
+        The valid date range for this comic is 1985-11-18 to 1995-12-31.
+        
+        Examples:
+        \t`[p]calvin`\t\tFetches random comic
+        \t`[p]calvin 1995-12-31`\tFetches comic for Dec 31, 1995
+        """
+        bad_date_message = "That doesn't seem like a valid date. Try a format like `1995-12-31`."
+        start_date = datetime.date(1985, 11, 18)
+        end_date = datetime.date(1995, 12, 31)
+
+        if date:
+            split_date = str(date).split("-") # (YYYY, MM, DD)
+            try:
+                supplied_date = datetime.date(int(split_date[0]), int(split_date[1]), int(split_date[2]))
+            except ValueError:
+                return await ctx.send(bad_date_message)
+            if not start_date <= supplied_date <= end_date:
+                return await ctx.send("This comic can only be used on dates between 11-18-1985 and 12-31-1995.")
+            date_match = re.match(DATE_RE, date)
+            if not date_match:
+                return await ctx.send(bad_date_message)
+            date = date_match[0]
+        else:
+            date = self._fetch_random_date(start_date, end_date)
+
+        split_date = str(date).split("-")
+        url = f"https://www.gocomics.com/calvinandhobbes/{split_date[0]}/{split_date[1]}/{split_date[2]}"
+        async with ctx.typing():
+            async with self.session.get(url) as response:
+                html = await response.text()
+                soup = BeautifulSoup(html, "html.parser")
+                a = soup.find_all("img", class_="lazyload img-fluid")
+                for item in a:
+                    i = item.get('data-srcset')
+                    if i.startswith("https://assets.amuniversal.com/"):
+                        url = i.split()[0]
+            if url:
+                async with self.session.get(url) as response:
+                    img = io.BytesIO(await response.read())
+                    
+                return await ctx.send(file=discord.File(img, f"calvin-{date}.png"))
+
+            return await ctx.send("I can't read that comic page.")
+
+    @commands.bot_has_permissions(attach_files=True)
+    @commands.command()
+    async def garfield(self, ctx, date: str = None):
+        """Garfield
+
+        Random, or specify a date in YYYY-MM-DD format (1995-12-31).
+        The valid date range for this comic is 1978-06-19 to today.
+        
+        Examples:
+        \t`[p]garfield`\t\tFetches random comic
+        \t`[p]garfield 1978-06-19`\tFetches comic for Jun 19, 1978
+        """
+        bad_date_message = "That doesn't seem like a valid date. Try a format like `1994-06-16`."
+        start_date = datetime.date(1978, 6, 19)
+        end_date = datetime.datetime.today().date()
+
+        if date:
+            split_date = str(date).split("-") # (YYYY, MM, DD)
+            try:
+                supplied_date = datetime.date(int(split_date[0]), int(split_date[1]), int(split_date[2]))
+            except ValueError:
+                return await ctx.send(bad_date_message) 
+            if not start_date <= supplied_date <= end_date:
+                return await ctx.send("This comic can only be used on dates between 1978-06-19 and today.")
+            date_match = re.match(DATE_RE, date)
+            if not date_match:
+                return await ctx.send(bad_date_message)
+            date = date_match[0]
+        else:
+            date = self._fetch_random_date(start_date, end_date)
+
+        split_date = str(date).split("-")
+        url = f"https://www.gocomics.com/garfield/{split_date[0]}/{split_date[1]}/{split_date[2]}"
+        async with ctx.typing():
+            async with self.session.get(url) as response:
+                soup = BeautifulSoup(await response.text(), "html.parser")
+
+            img_url = soup.find(property='og:image')['content']
+            async with self.session.get(img_url) as response:
+                img = io.BytesIO(await response.read())
+
+            await ctx.send(file=discord.File(img, f"garfield-{date}.png"))
+
+    @staticmethod
+    def _fetch_random_date(start_date, end_date):
+        time_between_dates = end_date - start_date
+        days_between_dates = time_between_dates.days
+        random_number_of_days = random.randrange(days_between_dates)
+        date = start_date + datetime.timedelta(days=random_number_of_days)
+        return date
