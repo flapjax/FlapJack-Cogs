@@ -23,6 +23,7 @@ class SmartReact(commands.Cog):
         return
 
     @checks.mod_or_permissions(administrator=True)
+    @commands.bot_has_permissions(add_reactions=True, read_message_history=True)
     @commands.guild_only()
     @commands.command(name="addreact")
     async def addreact(self, ctx, word, emoji):
@@ -33,6 +34,7 @@ class SmartReact(commands.Cog):
         await self.create_smart_reaction(guild, word, emoji, message)
 
     @checks.mod_or_permissions(administrator=True)
+    @commands.bot_has_permissions(add_reactions=True, read_message_history=True)
     @commands.guild_only()
     @commands.command(name="delreact")
     async def delreact(self, ctx, word, emoji):
@@ -45,10 +47,9 @@ class SmartReact(commands.Cog):
     def fix_custom_emoji(self, emoji):
         if emoji[:2] not in ["<:", "<a"]:
             return emoji
-        for guild in self.bot.guilds:
-            for e in guild.emojis:
-                if str(e.id) == emoji.split(':')[2][:-1]:
-                    return e
+        e = self.bot.get_emoji(int(emoji.split(':')[2][:-1]))
+        if e:
+            return e
         return None
 
     @checks.mod_or_permissions(administrator=True)
@@ -57,10 +58,18 @@ class SmartReact(commands.Cog):
     async def listreact(self, ctx):
         """List reactions for this server"""
         emojis = await self.conf.guild(ctx.guild).reactions()
+        emojis_copy = copy.deepcopy(emojis)
         msg = f"Smart Reactions for {ctx.guild.name}:\n"
-        for emoji in emojis:
-            for command in emojis[emoji]:
+        for emoji, words in emojis_copy.items():
+            e = self.fix_custom_emoji(emoji)
+            if (not e) or (len(words) == 0):
+                del emojis[emoji]
+                continue
+            for command in words:
                 msg += f"{emoji}: {command}\n"
+        await self.conf.guild(ctx.guild).reactions.set(emojis)
+        if len(emojis) == 0:
+            msg += "None."
         for page in pagify(msg, delims=["\n"]):
             await ctx.send(page)
 
@@ -121,6 +130,8 @@ class SmartReact(commands.Cog):
         for emoji in reacts:
             if set(w.lower() for w in reacts[emoji]).intersection(words):
                 emoji = self.fix_custom_emoji(emoji)
+                if not emoji:
+                    return
                 try:
                     await message.add_reaction(emoji)
                 except (discord.errors.Forbidden, discord.errors.InvalidArgument, discord.errors.NotFound):
