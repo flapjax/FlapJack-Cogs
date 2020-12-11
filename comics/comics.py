@@ -38,12 +38,12 @@ class Comics(commands.Cog):
             async with self.session.get(url) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            img_url = soup.find(property='og:image')['content']
+            img_url = soup.find(property="og:image")["content"]
 
             async with self.session.get(img_url) as response:
                 img = io.BytesIO(await response.read())
 
-            await ctx.send(file=discord.File(img, 'ohno.png'))
+            await ctx.send(file=discord.File(img, "ohno.png"))
 
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
@@ -53,24 +53,24 @@ class Comics(commands.Cog):
         url = "http://www.smbc-comics.com/comic/archive"
 
         async with ctx.typing():
-            async with self.session.get(url, headers={'Connection': 'keep-alive'}) as response:
+            async with self.session.get(url, headers={"Connection": "keep-alive"}) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
-			
-            all_comics = soup.find('select', attrs = {'name': 'comic'})
-            all_comics_url_stubs = [option['value'] for option in all_comics.findChildren()]
+
+            all_comics = soup.find("select", attrs={"name": "comic"})
+            all_comics_url_stubs = [option["value"] for option in all_comics.findChildren()]
 
             random_comic = random.choice(all_comics_url_stubs)
             comic_url = f"http://www.smbc-comics.com/{random_comic}"
 
-            async with self.session.get(comic_url, headers={'Connection': 'keep-alive'}) as resp:
+            async with self.session.get(comic_url, headers={"Connection": "keep-alive"}) as resp:
                 soup = BeautifulSoup(await resp.text(), "html.parser")
-                img_url = soup.find(property='og:image')['content']
-                extra_url = soup.find(id='aftercomic').img['src']
+                img_url = soup.find(property="og:image")["content"]
+                extra_url = soup.find(id="aftercomic").img["src"]
 
             async with self.session.get(img_url) as response:
                 img = io.BytesIO(await response.read())
 
-            await ctx.send(file=discord.File(img, 'smbc.png'))
+            await ctx.send(file=discord.File(img, "smbc.png"))
 
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
@@ -83,12 +83,12 @@ class Comics(commands.Cog):
             async with self.session.get(url) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            img_url = soup.find(property='og:image')['content']
+            img_url = soup.find(property="og:image")["content"]
 
             async with self.session.get(img_url) as response:
                 img = io.BytesIO(await response.read())
 
-            await ctx.send(file=discord.File(img, 'pbf.png'))
+            await ctx.send(file=discord.File(img, "pbf.png"))
 
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
@@ -101,12 +101,12 @@ class Comics(commands.Cog):
             async with self.session.get(url) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            img_url = soup.find(property='og:image')['content']
+            img_url = soup.find(property="og:image")["content"]
 
             async with self.session.get(img_url) as response:
                 img = io.BytesIO(await response.read())
 
-            await ctx.send(file=discord.File(img, 'cah.png'))
+            await ctx.send(file=discord.File(img, "cah.png"))
 
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
@@ -121,12 +121,12 @@ class Comics(commands.Cog):
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
             img_url = soup.find(string=re.compile(phrase))
-            img_url = 'https://' + img_url.split('https://')[1].rstrip()
+            img_url = "https://" + img_url.split("https://")[1].rstrip()
 
             async with self.session.get(img_url) as response:
                 img = io.BytesIO(await response.read())
 
-            await ctx.send(file=discord.File(img, 'xkcd.png'))
+            await ctx.send(file=discord.File(img, "xkcd.png"))
 
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
@@ -144,7 +144,7 @@ class Comics(commands.Cog):
             async with self.session.get(img_url) as response:
                 img = io.BytesIO(await response.read())
 
-            await ctx.send(file=discord.File(img, 'mrls.png'))
+            await ctx.send(file=discord.File(img, "mrls.png"))
 
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
@@ -157,12 +157,12 @@ class Comics(commands.Cog):
             async with self.session.get(url) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            img_url = soup.find(property='og:image')['content']
+            img_url = soup.find(property="og:image")["content"]
 
             async with self.session.get(img_url) as response:
                 img = io.BytesIO(await response.read())
 
-            await ctx.send(file=discord.File(img, 'chainsawsuit.png'))
+            await ctx.send(file=discord.File(img, "chainsawsuit.png"))
 
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
@@ -175,12 +175,12 @@ class Comics(commands.Cog):
             async with self.session.get(url) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            img_url = soup.find(property='og:image')['content']
+            img_url = soup.find(property="og:image")["content"]
 
             async with self.session.get(img_url) as response:
                 img = io.BytesIO(await response.read())
 
-            await ctx.send(file=discord.File(img, 'sarahsscribbles.png'))
+            await ctx.send(file=discord.File(img, "sarahsscribbles.png"))
 
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
@@ -222,7 +222,7 @@ class Comics(commands.Cog):
             if image_url:
                 async with self.session.get(comic_info["image"]) as response:
                     img = io.BytesIO(await response.read())
-                    
+
                 return await ctx.send(file=discord.File(img, f"dilbert-{date}.png"))
 
             return await ctx.send("I can't read that comic page.")
@@ -234,7 +234,7 @@ class Comics(commands.Cog):
 
         Random, or specify a date in YYYY-MM-DD format (1995-12-31).
         The valid date range for this comic is 1985-11-18 to 1995-12-31.
-        
+
         Examples:
         \t`[p]calvin`\t\tFetches random comic
         \t`[p]calvin 1995-12-31`\tFetches comic for Dec 31, 1995
@@ -244,7 +244,7 @@ class Comics(commands.Cog):
         end_date = datetime.date(1995, 12, 31)
 
         if date:
-            split_date = str(date).split("-") # (YYYY, MM, DD)
+            split_date = str(date).split("-")  # (YYYY, MM, DD)
             try:
                 supplied_date = datetime.date(int(split_date[0]), int(split_date[1]), int(split_date[2]))
             except ValueError:
@@ -266,13 +266,13 @@ class Comics(commands.Cog):
                 soup = BeautifulSoup(html, "html.parser")
                 a = soup.find_all("img", class_="lazyload img-fluid")
                 for item in a:
-                    i = item.get('data-srcset')
+                    i = item.get("data-srcset")
                     if i.startswith("https://assets.amuniversal.com/"):
                         url = i.split()[0]
             if url:
                 async with self.session.get(url) as response:
                     img = io.BytesIO(await response.read())
-                    
+
                 return await ctx.send(file=discord.File(img, f"calvin-{date}.png"))
 
             return await ctx.send("I can't read that comic page.")
@@ -284,7 +284,7 @@ class Comics(commands.Cog):
 
         Random, or specify a date in YYYY-MM-DD format (1995-12-31).
         The valid date range for this comic is 1978-06-19 to today.
-        
+
         Examples:
         \t`[p]garfield`\t\tFetches random comic
         \t`[p]garfield 1978-06-19`\tFetches comic for Jun 19, 1978
@@ -294,11 +294,11 @@ class Comics(commands.Cog):
         end_date = datetime.datetime.today().date()
 
         if date:
-            split_date = str(date).split("-") # (YYYY, MM, DD)
+            split_date = str(date).split("-")  # (YYYY, MM, DD)
             try:
                 supplied_date = datetime.date(int(split_date[0]), int(split_date[1]), int(split_date[2]))
             except ValueError:
-                return await ctx.send(bad_date_message) 
+                return await ctx.send(bad_date_message)
             if not start_date <= supplied_date <= end_date:
                 return await ctx.send("This comic can only be used on dates between 1978-06-19 and today.")
             date_match = re.match(DATE_RE, date)
@@ -314,11 +314,44 @@ class Comics(commands.Cog):
             async with self.session.get(url) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            img_url = soup.find(property='og:image')['content']
+            img_url = soup.find(property="og:image")["content"]
             async with self.session.get(img_url) as response:
                 img = io.BytesIO(await response.read())
 
             await ctx.send(file=discord.File(img, f"garfield-{date}.png"))
+
+    @commands.bot_has_permissions(attach_files=True)
+    @commands.command()
+    async def oddones(self, ctx, date: str = None):
+        """Odd 1s Out
+
+        Only random comics are available.
+        """
+        all_comics = []
+        main_url = "https://theodd1sout.com/pages/comics"
+        async with ctx.typing():
+            async with self.session.get(main_url) as response:
+                html = await response.text()
+                soup = BeautifulSoup(html, "html.parser")
+                a = soup.find_all("a", {"class": "shogun-image-link"})
+                for item in a:
+                    try:
+                        all_comics.append(item["href"])
+                    except KeyError:
+                        pass
+                random_comic_page = random.choice(all_comics)
+                async with self.session.get(random_comic_page) as response:
+                    html = await response.text()
+                    soup = BeautifulSoup(html, "html.parser")
+                    partial_comic_url = soup.find(id="article-featured-image")["src"]
+                    comic_name = soup.find(id="article-featured-image")["alt"].replace(" ", "-")
+
+            if partial_comic_url:
+                async with self.session.get(f"https:{partial_comic_url}") as response:
+                    img = io.BytesIO(await response.read())
+                    await ctx.send(file=discord.File(img, f"oddonesout-{comic_name}.png"))
+            else:
+                return await ctx.send("Can't retrieve a comic image for that site.")
 
     @staticmethod
     def _fetch_random_date(start_date, end_date):
