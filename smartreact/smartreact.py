@@ -136,3 +136,8 @@ class SmartReact(commands.Cog):
                     await message.add_reaction(emoji)
                 except (discord.errors.Forbidden, discord.errors.InvalidArgument, discord.errors.NotFound):
                     pass
+                except discord.errors.HTTPException:
+                    reactions = await self.conf.guild(guild).reactions()
+                    if emoji in reactions:
+                        del reactions[emoji]
+                        await self.conf.guild(guild).reactions.set(reactions)
