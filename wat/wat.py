@@ -1,4 +1,5 @@
 import re
+import discord
 
 from redbot.core import checks, Config, commands
 
@@ -83,5 +84,5 @@ class Wat(commands.Cog):
                 ):
                     emoji = "\N{CHEERING MEGAPHONE}"
                     msg = f"{name} said, **{emoji}   {content}**"
-                    await message.channel.send(msg)
+                    await message.channel.send(msg, allowed_mentions=discord.AllowedMentions(users=False))
                     break
