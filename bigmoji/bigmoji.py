@@ -49,63 +49,66 @@ class Bigmoji(commands.Cog):
         """Post a large .png of an emoji"""
         channel = ctx.channel
         convert = False
-        if emoji[0] == "<":
-            # custom Emoji
-            name = emoji.split(":")[1]
-            emoji_name = emoji.split(":")[2][:-1]
-            if emoji.split(":")[0] == "<a":
-                # animated custom emoji
-                url = "https://cdn.discordapp.com/emojis/" + emoji_name + ".gif"
-                name += ".gif"
+        try:
+            if emoji[0] == "<":
+                # custom Emoji
+                name = emoji.split(":")[1]
+                emoji_name = emoji.split(":")[2][:-1]
+                if emoji.split(":")[0] == "<a":
+                    # animated custom emoji
+                    url = "https://cdn.discordapp.com/emojis/" + emoji_name + ".gif"
+                    name += ".gif"
+                else:
+                    url = "https://cdn.discordapp.com/emojis/" + emoji_name + ".png"
+                    name += ".png"
             else:
-                url = "https://cdn.discordapp.com/emojis/" + emoji_name + ".png"
-                name += ".png"
-        else:
-            chars = []
-            name = []
-            for char in emoji:
-                chars.append(str(hex(ord(char)))[2:])
-                try:
-                    name.append(unicodedata.name(char))
-                except ValueError:
-                    # Sometimes occurs when the unicodedata library cannot
-                    # resolve the name, however the image still exists
-                    name.append("none")
-            name = "_".join(name) + ".png"
+                chars = []
+                name = []
+                for char in emoji:
+                    chars.append(str(hex(ord(char)))[2:])
+                    try:
+                        name.append(unicodedata.name(char))
+                    except ValueError:
+                        # Sometimes occurs when the unicodedata library cannot
+                        # resolve the name, however the image still exists
+                        name.append("none")
+                name = "_".join(name) + ".png"
 
-            if len(chars) == 2:
-                if "fe0f" in chars:
-                    # remove variation-selector-16 so that the appropriate url can be built without it
+                if len(chars) == 2:
+                    if "fe0f" in chars:
+                        # remove variation-selector-16 so that the appropriate url can be built without it
+                        chars.remove("fe0f")
+                if "20e3" in chars:
+                    # COMBINING ENCLOSING KEYCAP doesn't want to play nice either
                     chars.remove("fe0f")
-            if "20e3" in chars:
-                # COMBINING ENCLOSING KEYCAP doesn't want to play nice either
-                chars.remove("fe0f")
 
-            if svg_convert is not None:
-                url = "https://twemoji.maxcdn.com/2/svg/" + "-".join(chars) + ".svg"
-                convert = True
+                if svg_convert is not None:
+                    url = "https://twemoji.maxcdn.com/2/svg/" + "-".join(chars) + ".svg"
+                    convert = True
+                else:
+                    url = "https://twemoji.maxcdn.com/2/72x72/" + "-".join(chars) + ".png"
+
+            async with self.session.get(url) as resp:
+                if resp.status != 200:
+                    await ctx.send("Emoji not found.")
+                    return
+                img = await resp.read()
+
+            if convert:
+                task = functools.partial(Bigmoji.generate, img)
+                task = self.bot.loop.run_in_executor(None, task)
+
+                try:
+                    img = await asyncio.wait_for(task, timeout=15)
+                except asyncio.TimeoutError:
+                    await ctx.send("Image creation timed out.")
+                    return
             else:
-                url = "https://twemoji.maxcdn.com/2/72x72/" + "-".join(chars) + ".png"
+                img = io.BytesIO(img)
 
-        async with self.session.get(url) as resp:
-            if resp.status != 200:
-                await ctx.send("Emoji not found.")
-                return
-            img = await resp.read()
-
-        if convert:
-            task = functools.partial(Bigmoji.generate, img)
-            task = self.bot.loop.run_in_executor(None, task)
-
-            try:
-                img = await asyncio.wait_for(task, timeout=15)
-            except asyncio.TimeoutError:
-                await ctx.send("Image creation timed out.")
-                return
-        else:
-            img = io.BytesIO(img)
-
-        await ctx.send(file=discord.File(img, name))
+            await ctx.send(file=discord.File(img, name))
+        except IndexError:
+            await ctx.send("That doesn't look like an emoji to me.")
 
     @staticmethod
     def generate(img):
