@@ -51,7 +51,11 @@ class Bigmoji(commands.Cog):
         convert = False
         if emoji[0] == "<":
             # custom Emoji
-            name = emoji.split(":")[1]
+            try:
+                name = emoji.split(":")[1]
+            except IndexError:
+                await ctx.send("That doesn't look like an emoji to me!")
+                return
             emoji_name = emoji.split(":")[2][:-1]
             if emoji.split(":")[0] == "<a":
                 # animated custom emoji
