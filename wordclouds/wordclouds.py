@@ -186,7 +186,11 @@ class WordClouds(commands.Cog):
         except asyncio.TimeoutError:
             await ctx.send("Wordcloud creation timed out.")
             return
-        await ctx.send(file=discord.File(image))
+        msg = "Wordcloud for **" + guild.name + "/" + channel.name
+        if user is not None:
+            msg += "/" + user.display_name
+        msg += "** using the last {} messages.".format(limit)
+        await ctx.send(msg,file=discord.File(image))
 
     @staticmethod
     def generate(text, **kwargs):
