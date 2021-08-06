@@ -120,8 +120,8 @@ class Comics(commands.Cog):
             async with self.session.get(url) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            img_url = soup.find(string=re.compile(phrase))
-            img_url = "https://" + img_url.split("https://")[1].rstrip()
+            img_url_nav_string = soup.find(text=re.compile(phrase))
+            img_url = img_url_nav_string.find_next_sibling('a').text
 
             async with self.session.get(img_url) as response:
                 img = io.BytesIO(await response.read())
