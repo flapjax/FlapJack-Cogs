@@ -55,7 +55,7 @@ class Comics(commands.Cog):
         """
         Saturday Morning Breakfast Cereal
 
-        https://www.smbc-comics.com
+        https://www.smbc-comics.com/
         """
 
         url = "https://www.smbc-comics.com/comic/archive"
@@ -86,7 +86,7 @@ class Comics(commands.Cog):
         """
         The Perry Bible Fellowship
 
-        https://pbfcomics.com
+        https://pbfcomics.com/
         """
 
         url = "https://pbfcomics.com/random"
@@ -108,7 +108,7 @@ class Comics(commands.Cog):
         """
         Cyanide and Happiness
 
-        https://explosm.net
+        https://explosm.net/
         """
 
         url = "https://explosm.net/comics/random"
@@ -130,7 +130,7 @@ class Comics(commands.Cog):
         """
         XKCD
 
-        https://xkcd.com
+        https://xkcd.com/
         """
 
         url = "https://c.xkcd.com/random/comic/"
@@ -176,7 +176,7 @@ class Comics(commands.Cog):
         """
         Chainsawsuit
 
-        https://chainsawsuit.krisstraub.com
+        https://chainsawsuit.krisstraub.com/
 
         Specify a date in YYYY-MM-DD format (2008-09-04).
         Examples:
@@ -227,7 +227,7 @@ class Comics(commands.Cog):
         """
         Sarah's Scribbles
 
-        https://www.gocomics.com/sarahs-scribbles
+        https://www.gocomics.com/sarahs-scribbles/
         """
 
         url = "https://www.gocomics.com/random/sarahs-scribbles"
@@ -297,7 +297,7 @@ class Comics(commands.Cog):
         """
         Calvin and Hobbes
 
-        https://www.gocomics.com/calvinandhobbes
+        https://www.gocomics.com/calvinandhobbes/
 
         Random, or specify a date in YYYY-MM-DD format (1995-12-31).
         The valid date range for this comic is 1985-11-18 to 1995-12-31.
@@ -395,7 +395,7 @@ class Comics(commands.Cog):
     async def oddones(self, ctx, date: str = None):
         """Odd 1s Out
 
-        https://theodd1sout.com/pages/comics
+        https://theodd1sout.com/pages/comics/
 
         Only random comics are available.
         """
