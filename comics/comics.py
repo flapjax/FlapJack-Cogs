@@ -148,21 +148,52 @@ class Comics(commands.Cog):
 
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
-    async def chainsaw(self, ctx):
-        """Chainsawsuit"""
+    async def chainsaw(self, ctx, date: str = None):
+        """
+        Chainsawsuit
+        
+        Specify a date in YYYY-MM-DD format (2008-09-04).
+        Examples:
+        \t`[p]chainsawsuit 2008-09-04`\tFetches comic for Sep 4, 2008        
+        """
+        bad_date_message = "That doesn't seem like a valid date. Try a format like `2008-09-04`."
+        start_date = datetime.date(2008, 8, 10)
+        end_date = datetime.date(2019, 2, 6)
 
-        url = "http://chainsawsuit.com/comic/random/?random&nocache=1"
+        if date:
+            split_date = str(date).split("-")  # (YYYY, MM, DD)
+            try:
+                supplied_date = datetime.date(int(split_date[0]), int(split_date[1]), int(split_date[2]))
+            except ValueError:
+                return await ctx.send(bad_date_message)
+            if not start_date <= supplied_date <= end_date:
+                return await ctx.send("This comic can only be used on dates between 2008-08-10 and 2019-02-06.")
+            date_match = re.match(DATE_RE, date)
+            if not date_match:
+                return await ctx.send(bad_date_message)
+            date = date_match[0]
+        else:
+            msg = "There is no random search feature for this comic. "
+            msg += "Please use a date with this command, formatted like `2008-09-04`."
+            return await ctx.send(msg)
+
+        split_date = str(date).split("-")
+        url = f"https://chainsawsuit.krisstraub.com/{split_date[0]}{split_date[1]}{split_date[2]}.shtml"
 
         async with ctx.typing():
             async with self.session.get(url) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            img_url = soup.find(property="og:image")["content"]
+            comic_url = soup.find(id="comic").img["src"]
+            img_url = f"https://chainsawsuit.krisstraub.com{comic_url}"
 
-            async with self.session.get(img_url) as response:
-                img = io.BytesIO(await response.read())
+            if img_url:
+                async with self.session.get(img_url) as response:
+                    img = io.BytesIO(await response.read())
 
-            await ctx.send(file=discord.File(img, "chainsawsuit.png"))
+                await ctx.send(file=discord.File(img, f"chainsawsuit-{date}.png"))
+            else:
+                await ctx.send("There is no comic available for this date.")
 
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
