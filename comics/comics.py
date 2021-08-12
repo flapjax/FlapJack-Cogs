@@ -30,9 +30,13 @@ class Comics(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def ohno(self, ctx):
-        """Webcomic Name"""
+        """
+        Webcomic Name
 
-        url = "http://webcomicname.com/random"
+        https://webcomicname.com/
+        """
+
+        url = "https://webcomicname.com/random"
 
         async with ctx.typing():
             async with self.session.get(url) as response:
@@ -48,9 +52,13 @@ class Comics(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def smbc(self, ctx):
-        """Saturday Morning Breakfast Cereal"""
+        """
+        Saturday Morning Breakfast Cereal
 
-        url = "http://www.smbc-comics.com/comic/archive"
+        https://www.smbc-comics.com
+        """
+
+        url = "https://www.smbc-comics.com/comic/archive"
 
         async with ctx.typing():
             async with self.session.get(url, headers={"Connection": "keep-alive"}) as response:
@@ -60,9 +68,9 @@ class Comics(commands.Cog):
             all_comics_url_stubs = [option["value"] for option in all_comics.findChildren()]
 
             random_comic = random.choice(all_comics_url_stubs)
-            comic_url = f"http://www.smbc-comics.com/{random_comic}"
+            comic_url = f"https://www.smbc-comics.com/{random_comic}"
 
-            async with self.session.get(comic_url, headers={"Connection": "keep-alive"}) as resp:
+            async with self.session.get(comic_url) as resp:
                 soup = BeautifulSoup(await resp.text(), "html.parser")
                 img_url = soup.find(property="og:image")["content"]
                 extra_url = soup.find(id="aftercomic").img["src"]
@@ -75,9 +83,13 @@ class Comics(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def pbf(self, ctx):
-        """The Perry Bible Fellowship"""
+        """
+        The Perry Bible Fellowship
 
-        url = "http://pbfcomics.com/random"
+        https://pbfcomics.com
+        """
+
+        url = "https://pbfcomics.com/random"
 
         async with ctx.typing():
             async with self.session.get(url) as response:
@@ -93,9 +105,13 @@ class Comics(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def cah(self, ctx):
-        """Cyanide and Happiness"""
+        """
+        Cyanide and Happiness
 
-        url = "http://explosm.net/comics/random"
+        https://explosm.net
+        """
+
+        url = "https://explosm.net/comics/random"
 
         async with ctx.typing():
             async with self.session.get(url) as response:
@@ -111,7 +127,11 @@ class Comics(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def xkcd(self, ctx):
-        """XKCD"""
+        """
+        XKCD
+
+        https://xkcd.com
+        """
 
         url = "https://c.xkcd.com/random/comic/"
         phrase = r"Image URL \(for hotlinking\/embedding\)\:.*"
@@ -121,7 +141,7 @@ class Comics(commands.Cog):
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
             img_url_nav_string = soup.find(text=re.compile(phrase))
-            img_url = img_url_nav_string.find_next_sibling('a').text
+            img_url = img_url_nav_string.find_next_sibling("a").text
 
             async with self.session.get(img_url) as response:
                 img = io.BytesIO(await response.read())
@@ -131,15 +151,19 @@ class Comics(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def mrls(self, ctx):
-        """Mr. Lovenstein"""
+        """
+        Mr. Lovenstein
 
-        url = "http://www.mrlovenstein.com/shuffle"
+        https://www.mrlovenstein.com
+        """
+
+        url = "https://www.mrlovenstein.com/shuffle"
 
         async with ctx.typing():
             async with self.session.get(url) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
 
-            img_url = f"http://www.mrlovenstein.com{soup.find(id='comic_main_image')['src']}"
+            img_url = f"https://www.mrlovenstein.com{soup.find(id='comic_main_image')['src']}"
 
             async with self.session.get(img_url) as response:
                 img = io.BytesIO(await response.read())
@@ -151,10 +175,12 @@ class Comics(commands.Cog):
     async def chainsaw(self, ctx, date: str = None):
         """
         Chainsawsuit
-        
+
+        https://chainsawsuit.krisstraub.com
+
         Specify a date in YYYY-MM-DD format (2008-09-04).
         Examples:
-        \t`[p]chainsawsuit 2008-09-04`\tFetches comic for Sep 4, 2008        
+        \t`[p]chainsawsuit 2008-09-04`\tFetches comic for Sep 4, 2008
         """
         bad_date_message = "That doesn't seem like a valid date. Try a format like `2008-09-04`."
         start_date = datetime.date(2008, 8, 10)
@@ -198,9 +224,13 @@ class Comics(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def sarah(self, ctx):
-        """Sarah's Scribbles"""
+        """
+        Sarah's Scribbles
 
-        url = "http://www.gocomics.com/random/sarahs-scribbles"
+        https://www.gocomics.com/sarahs-scribbles
+        """
+
+        url = "https://www.gocomics.com/random/sarahs-scribbles"
 
         async with ctx.typing():
             async with self.session.get(url) as response:
@@ -216,7 +246,10 @@ class Comics(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def dilbert(self, ctx, date: str = None):
-        """Dilbert
+        """
+        Dilbert
+
+        https://dilbert.com/
 
         Random, or specify a date in YYYY-MM-DD format (2020-01-15).
         Examples:
@@ -261,7 +294,10 @@ class Comics(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def calvin(self, ctx, date: str = None):
-        """Calvin and Hobbes
+        """
+        Calvin and Hobbes
+
+        https://www.gocomics.com/calvinandhobbes
 
         Random, or specify a date in YYYY-MM-DD format (1995-12-31).
         The valid date range for this comic is 1985-11-18 to 1995-12-31.
@@ -311,7 +347,10 @@ class Comics(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
     async def garfield(self, ctx, date: str = None):
-        """Garfield
+        """
+        Garfield
+
+        https://www.gocomics.com/garfield/
 
         Random, or specify a date in YYYY-MM-DD format (1995-12-31).
         The valid date range for this comic is 1978-06-19 to today.
@@ -355,6 +394,8 @@ class Comics(commands.Cog):
     @commands.command()
     async def oddones(self, ctx, date: str = None):
         """Odd 1s Out
+
+        https://theodd1sout.com/pages/comics
 
         Only random comics are available.
         """
