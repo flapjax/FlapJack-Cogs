@@ -120,10 +120,11 @@ class SmartReact(commands.Cog):
     async def on_message(self, message):
         if not message.guild:
             return
-        if message.author == self.bot.user:
+        if not message.channel.permissions_for(message.guild.me).add_reactions:
             return
-        guild = message.guild
-        reacts = copy.deepcopy(await self.conf.guild(guild).reactions())
+        if message.author.id == self.bot.user.id:
+            return
+        reacts = copy.deepcopy(await self.conf.guild(message.guild).reactions())
         if reacts is None:
             return
         words = message.content.lower().split()
@@ -137,7 +138,6 @@ class SmartReact(commands.Cog):
                 except (discord.errors.Forbidden, discord.errors.InvalidArgument, discord.errors.NotFound):
                     pass
                 except discord.errors.HTTPException:
-                    reactions = await self.conf.guild(guild).reactions()
-                    if emoji in reactions:
-                        del reactions[emoji]
-                        await self.conf.guild(guild).reactions.set(reactions)
+                    if emoji in reacts:
+                        del reacts[emoji]
+                        await self.conf.guild(message.guild).reactions.set(reacts)
