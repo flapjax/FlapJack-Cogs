@@ -71,7 +71,7 @@ class SmartReact(commands.Cog):
         if len(emojis) == 0:
             msg += "None."
         for page in pagify(msg, delims=["\n"]):
-            await ctx.send(page)
+            await ctx.send(page, allowed_mentions=discord.AllowedMentions(users=False, everyone=False, roles=False))
 
     async def create_smart_reaction(self, guild, word, emoji, message):
         try:
