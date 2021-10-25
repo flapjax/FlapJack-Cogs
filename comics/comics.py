@@ -395,41 +395,6 @@ class Comics(commands.Cog):
 
             await ctx.send(file=discord.File(img, f"garfield-{date}.png"))
 
-    @commands.bot_has_permissions(attach_files=True)
-    @commands.command()
-    async def oddones(self, ctx, date: str = None):
-        """Odd 1s Out
-
-        https://theodd1sout.com/pages/comics/
-
-        Only random comics are available.
-        """
-        all_comics = []
-        main_url = "https://theodd1sout.com/pages/comics"
-        async with ctx.typing():
-            async with self.session.get(main_url) as response:
-                html = await response.text()
-                soup = BeautifulSoup(html, "html.parser")
-                a = soup.find_all("a", {"class": "shogun-image-link"})
-                for item in a:
-                    try:
-                        all_comics.append(item["href"])
-                    except KeyError:
-                        pass
-                random_comic_page = random.choice(all_comics)
-                async with self.session.get(random_comic_page) as response:
-                    html = await response.text()
-                    soup = BeautifulSoup(html, "html.parser")
-                    partial_comic_url = soup.find(id="article-featured-image")["src"]
-                    comic_name = soup.find(id="article-featured-image")["alt"].replace(" ", "-")
-
-            if partial_comic_url:
-                async with self.session.get(f"https:{partial_comic_url}") as response:
-                    img = io.BytesIO(await response.read())
-                    await ctx.send(file=discord.File(img, f"oddonesout-{comic_name}.png"))
-            else:
-                return await ctx.send("Can't retrieve a comic image for that site.")
-
     @staticmethod
     def _fetch_random_date(start_date, end_date):
         time_between_dates = end_date - start_date
