@@ -19,6 +19,7 @@ class Comics(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.session = aiohttp.ClientSession()
+        self._headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0"}
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
@@ -39,8 +40,10 @@ class Comics(commands.Cog):
         url = "https://webcomicname.com/random"
 
         async with ctx.typing():
-            async with self.session.get(url) as response:
-                soup = BeautifulSoup(await response.text(), "html.parser")
+            timeout = aiohttp.ClientTimeout(total=20)
+            async with aiohttp.ClientSession(headers=self._headers, timeout=timeout) as session:
+                async with session.get(url) as resp:
+                    soup = BeautifulSoup(await resp.text(), "html.parser")
 
             img_url = soup.find(property="og:image")["content"]
 
@@ -61,8 +64,10 @@ class Comics(commands.Cog):
         url = "https://www.smbc-comics.com/comic/archive"
 
         async with ctx.typing():
-            async with self.session.get(url, headers={"Connection": "keep-alive"}) as response:
-                soup = BeautifulSoup(await response.text(), "html.parser")
+            timeout = aiohttp.ClientTimeout(total=20)
+            async with aiohttp.ClientSession(headers=self._headers, timeout=timeout) as session:
+                async with session.get(url) as resp:
+                    soup = BeautifulSoup(await resp.text(), "html.parser")
 
             all_comics = soup.find("select", attrs={"name": "comic"})
             all_comics_url_stubs = [option["value"] for option in all_comics.findChildren()]
