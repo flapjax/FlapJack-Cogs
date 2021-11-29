@@ -86,7 +86,11 @@ class SmartReact(commands.Cog):
             return emoji
 
         # animated or static custom emoji
-        e = self.bot.get_emoji(int(emoji.split(":")[2][:-1]))
+        e = emoji.split(":")[2][:-1].strip()
+        try:
+            e = self.bot.get_emoji(int(e))
+        except ValueError:
+            return None
         if e:
             return e
 
