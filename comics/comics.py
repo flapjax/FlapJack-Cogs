@@ -109,28 +109,6 @@ class Comics(commands.Cog):
 
     @commands.bot_has_permissions(attach_files=True)
     @commands.command()
-    async def cah(self, ctx):
-        """
-        Cyanide and Happiness
-
-        https://explosm.net/
-        """
-
-        url = "https://explosm.net/comics/random"
-
-        async with ctx.typing():
-            async with self.session.get(url) as response:
-                soup = BeautifulSoup(await response.text(), "html.parser")
-
-            img_url = soup.find(property="og:image")["content"]
-
-            async with self.session.get(img_url) as response:
-                img = io.BytesIO(await response.read())
-
-            await ctx.send(file=discord.File(img, "cah.png"))
-
-    @commands.bot_has_permissions(attach_files=True)
-    @commands.command()
     async def xkcd(self, ctx):
         """
         XKCD
