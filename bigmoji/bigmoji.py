@@ -45,6 +45,7 @@ class Bigmoji(commands.Cog):
         return
 
     @commands.command(name="bigmoji")
+    @commands.bot_has_permissions(attach_files=True)
     async def bigmoji(self, ctx, emoji):
         """Post a large .png of an emoji"""
         channel = ctx.channel
