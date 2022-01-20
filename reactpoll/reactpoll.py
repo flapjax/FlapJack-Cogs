@@ -11,12 +11,11 @@ from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
 from .polls import Poll
-from .converters import PollOptions, TIME_RE, MULTI_RE
+from .converters import PollOptions, TIME_RE, MULTI_RE, ANONYMOUS_RE, COLOUR_RE
 
 log = logging.getLogger("red.flapjackcogs.reactpoll")
 
 EMOJI_RE = re.compile(r"<a?:[a-zA-Z0-9\_]+:([0-9]+)>")
-
 
 class ReactPoll(commands.Cog):
     """Commands for Reaction Polls"""
@@ -273,9 +272,19 @@ class ReactPoll(commands.Cog):
             custom_emoji = EMOJI_RE.match(msg.content)
             time_match = TIME_RE.match(msg.content)
             multi_match = MULTI_RE.match(msg.content)
+            anonymous_match = ANONYMOUS_RE.match(msg.content)
+            colour_match = COLOUR_RE.search(msg.content)
             if multi_match:
                 poll_options["multiple_votes"] = True
                 await ctx.send("Allowing multiple votes for this poll.")
+                continue
+            if anonymous_match:
+                poll_options["anonymous"] = True
+                await ctx.send("This poll will be anonymous.")
+                continue
+            if colour_match:
+                poll_options["colour"] = PollOptions.hex_to_rgb(self, colour_match.group())
+                await ctx.send(f"This poll will use the hex code {colour_match.group()}")
                 continue
             if time_match:
                 time_data = {}
@@ -360,17 +369,28 @@ class ReactPoll(commands.Cog):
         """
             Start a reaction poll
 
-            `[channel]` is the optional channel you want to send the poll to. If no channel is provided
-            it will default to the current channel.
+            `[channel]` is the optional channel you want to send the poll to.
+            If no channel is provided it will default to the current channel.
+
             `<poll_options>` is a formatted string of poll options.
+
             The question is everything before the first occurance of `?`.
+
             The options are a list separated by `;`.
+
             The time the poll ends is a space separated list of units of time.
-            if `multi-vote` is provided anywhere in the creation message the poll
+
+            If `multi-vote` is provided anywhere in the creation message, the poll
             will allow users to vote on multiple choices.
 
-            Example format (time argument is optional):
-            `[p]rpoll new Is this a poll? Yes;No;Maybe; 2 hours 21 minutes 40 seconds multi-vote`
+            If `anonymous` is provided anywhere in the creation message, the poll
+            will not show who votes for which option.
+
+            If a hex code prefixed with `#` is provided anywhere in the creation
+            message, the embed will use that color.
+
+            Example format:
+            `[p]rpoll new Is this a poll? Yes;No;Maybe; 2 hours 21 minutes 40 seconds multi-vote anonymous #FF2100`
         """
         if not channel:
             send_channel = ctx.channel
@@ -380,6 +400,30 @@ class ReactPoll(commands.Cog):
             return await ctx.send(f"I do not have permission to send messages in {send_channel.mention}")
         poll_options["channel_id"] = send_channel.id
         # allow us to specify new channel for the poll
+
+        poll_options["emojis"] = {}
+        default_emojis = ReactionPredicate.NUMBER_EMOJIS + ReactionPredicate.ALPHABET_EMOJIS
+
+        for i, option in enumerate(poll_options["options"]):
+            custom_emoji = False # change to EMOJI_RE.match(option) when i get this working
+            if custom_emoji:
+                pass # for now.
+                """ # uncomment when this works
+                new_option = option.replace(custom_emoji.group(0), "")
+                if custom_emoji.group(0) in poll_options["emojis"]:
+                    poll_options["emojis"][default_emojis[i + 1]] = new_option
+                    poll_options["options"][i] = new_option
+                else:
+                    try:
+                        poll_options["emojis"][custom_emoji.group(0)] = new_option
+                        poll_options["options"][i] = new_option
+                    except Exception:
+                        poll_options["emojis"][default_emojis[i + 1]] = new_option
+                        poll_options["options"][i] = new_option
+                """
+            else:
+                poll_options["emojis"][default_emojis[i + 1]] = option
+                poll_options["options"][i] = option
 
         guild = ctx.guild
         # log.info(poll_options)

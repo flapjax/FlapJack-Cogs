@@ -37,6 +37,8 @@ class Poll:
         self.embed: bool = kwargs.get("embed", True)
         self.interactive: bool = kwargs.get("interactive", False)
         self.multiple_votes: bool = kwargs.get("multiple_votes", False)
+        self.anonymous: bool = kwargs.get("anonymous", False)
+        self.colour: tuple = kwargs.get("colour")
         self._bot: Red = bot
 
     def as_dict(self):
@@ -51,7 +53,9 @@ class Poll:
             "end_time": self.end_time.timestamp() if self.end_time else None,
             "tally": self.tally,
             "embed": self.embed,
-            "multiple_votes": self.multiple_votes
+            "multiple_votes": self.multiple_votes,
+            "anonymous": self.anonymous,
+            "colour": self.colour
         }
 
     def parse_duration(self, duration: Optional[timedelta] = None) -> Optional[datetime]:
@@ -85,8 +89,11 @@ class Poll:
                     if self.channel.permissions_for(self.guild.me).manage_messages:
                         old_msg = await self.get_message()
                         self.tally[e].remove(user_id)
+                        self.tally[emoji].append(user_id)
                         try:
                             await old_msg.remove_reaction(e, member)
+                            if self.anonymous:
+                                await old_msg.remove_reaction(emoji, member)
                         except Exception:
                             pass
                     if member:
@@ -96,16 +103,51 @@ class Poll:
                             )
                         except discord.errors.Forbidden:
                             pass
+
+        if not self.anonymous:
             if user_id not in self.tally[emoji]:
                 self.tally[emoji].append(user_id)
+            return
 
         else:
             if user_id not in self.tally[emoji]:
-                self.tally[emoji].append(user_id)
+                if self.channel.permissions_for(self.guild.me).manage_messages:
+                    old_msg = await self.get_message()
+                    self.tally[emoji].append(user_id)
+                    try:
+                        await old_msg.remove_reaction(emoji, member)
+                    except Exception:
+                        pass
+                    if member:
+                        try:
+                            await member.send(
+                                f"Your have added your vote to {emoji} in the anonymous poll `{self.question}`."
+                            )
+                        except discord.errors.Forbidden:
+                            pass
+                return
+
+            if user_id in self.tally[emoji]:
+                if self.channel.permissions_for(self.guild.me).manage_messages:
+                    old_msg = await self.get_message()
+                    self.tally[emoji].remove(user_id)
+                    try:
+                        await old_msg.remove_reaction(emoji, member)
+                    except Exception:
+                        pass
+                    if member:
+                        try:
+                            await member.send(
+                                f"Removed your vote from {emoji} in the anonymous poll `{self.question}`."
+                            )
+                        except discord.errors.Forbidden:
+                            pass
+                return
 
     async def remove_vote(self, user_id: int, emoji: str):
-        if user_id in self.tally[emoji]:
-            self.tally[emoji].remove(user_id)
+        if not self.anonymous:
+            if user_id in self.tally[emoji]:
+                self.tally[emoji].remove(user_id)
 
     @property
     def bot(self):
@@ -146,17 +188,9 @@ class Poll:
         # Starting codepoint for keycap number emoji (\u0030... == 0)
         base_emoji = ReactionPredicate.NUMBER_EMOJIS + ReactionPredicate.ALPHABET_EMOJIS
         msg = "**POLL STARTED!**\n\n{}\n\n".format(self.question)
-        option_num = 1
         option_msg = ""
-        if not self.interactive:
-            for option in self.options:
-                emoji = base_emoji[option_num]
-                self.emojis[emoji] = option
-                option_msg += f"**{option_num}**. {option}\n"
-                option_num += 1
-        else:
-            for emoji, option in self.emojis.items():
-                option_msg += f"{emoji}. {option}\n"
+        for emoji, option in self.emojis.items():
+            option_msg += f"{emoji}. {option}\n"
         if not self.tally:
             self.tally = {e: [] for e in self.emojis}
         msg += option_msg
@@ -164,7 +198,7 @@ class Poll:
         if self.duration:
             msg += f"\nPoll closes in {humanize_timedelta(timedelta=self.duration)}"
 
-        em = discord.Embed(colour=await self.get_colour(self.channel))
+        em = discord.Embed(colour=await self.get_colour(self.channel) if self.colour is None else discord.Colour.from_rgb(*self.colour))
         em.title = "POLL STARTED!"
         first = True
         for page in pagify(f"{self.question}\n\n{option_msg}", page_length=1024):
@@ -216,7 +250,7 @@ class Poll:
         except Exception:
             log.error("error tallying results", exc_info=True)
 
-        em = discord.Embed(colour=await self.get_colour(self.channel))
+        em = discord.Embed(colour=await self.get_colour(self.channel) if self.colour is None else discord.Colour.from_rgb(*self.colour))
         em.title = "**POLL ENDED**"
         # This is handled with fuck-all efficiency, but it works for now -Ruined1
         if sum(len(v) for k, v in self.tally.items()) == 0:

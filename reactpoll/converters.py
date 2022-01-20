@@ -26,7 +26,8 @@ OPTIONS_RE = re.compile(r"([\S\s]+)(?=;)[\S\s]+", re.I)
 SPLIT_RE = re.compile(r";")
 TIME_SPLIT = re.compile(r"t(?:ime)?=")
 MULTI_RE = re.compile(r"(multi-vote)", re.I)
-
+ANONYMOUS_RE = re.compile(r"(anonymous)", re.I)
+COLOUR_RE = re.compile(r"(#(?:[0-9a-fA-F]{3}){1,2})", re.I)
 
 class PollOptions(Converter):
     """
@@ -41,6 +42,16 @@ class PollOptions(Converter):
         if MULTI_RE.findall(argument):
             result["multiple_votes"] = True
             argument = MULTI_RE.sub("", argument)
+
+        if ANONYMOUS_RE.findall(argument):
+            result["anonymous"] = True
+            argument = ANONYMOUS_RE.sub("", argument)
+
+        COLOUR = COLOUR_RE.findall(argument)
+        if COLOUR:
+            result["colour"] = self.hex_to_rgb(COLOUR[0])
+            argument = COLOUR_RE.sub("", argument)
+
         result, argument = self.strip_question(result, argument)
         # log.info(argument)
         result, argument = self.strip_time(result, argument)
@@ -85,3 +96,8 @@ class PollOptions(Converter):
         if time_data:
             result["duration"] = timedelta(**time_data)
         return result, argument
+
+    def hex_to_rgb(self, color):
+        if len(color) <= 4:
+            return tuple(int(color[i]*2, 16) for i in (1, 2, 3))
+        return tuple(int(color[i:i+2], 16) for i in (1, 3, 5))
