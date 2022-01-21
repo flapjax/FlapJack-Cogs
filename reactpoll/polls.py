@@ -220,16 +220,9 @@ class Poll:
         em.title = "**POLL ENDED**"
         # This is handled with fuck-all efficiency, but it works for now -Ruined1
         if sum(len(v) for k, v in self.tally.items()) == 0:
-            msg += "***NO ONE VOTED.***\n"
-            try:
-                if self.embed:
-                    await self.channel.send(msg)
-                else:
-                    em.description = f"{self.question}\n\n***NO ONE VOTED.***\n"
-                    await self.channel.send(embed=em)
-            except (discord.errors.Forbidden, discord.errors.NotFound, AttributeError):
-                pass
-        votes_msg = f"{self.question}\n\n**Results**\n"
+            votes_msg = f"{self.question}\n\n***NO ONE VOTED.***\n\n**Results**\n"
+        else:
+            votes_msg = f"{self.question}\n\n**Results**\n"
         for e, vote in sorted(self.tally.items(), key=lambda x: len(x[1]), reverse=True):
             votes_msg += f"{self.emojis[e]}: {len(vote)}\n"
         msg += votes_msg
