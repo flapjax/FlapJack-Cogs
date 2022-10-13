@@ -152,7 +152,7 @@ class Poll:
             for option in self.options:
                 emoji = base_emoji[option_num]
                 self.emojis[emoji] = option
-                option_msg += f"**{option_num}**. {option}\n"
+                option_msg += f"{emoji}. {option}\n"
                 option_num += 1
         else:
             for emoji, option in self.emojis.items():
