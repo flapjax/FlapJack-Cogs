@@ -90,7 +90,7 @@ class ReactPoll(commands.Cog):
             # consider making < 60 second polls not use config + this task
             await asyncio.sleep(5)
             # log.debug("Checking for ended polls")
-            now_time = datetime.utcnow()
+            now_time = discord.utils.utcnow()
             count = 0
             try:
                 for g_id, polls in self.polls.items():
@@ -268,7 +268,8 @@ class ReactPoll(commands.Cog):
                 else:
                     poll_options["question"] = msg.content
                     await ctx.send(
-                        "Enter the options for the poll. Enter an emoji at the beginning of the message if you want to use custom emojis for the option counters."
+                        "Enter the options for the poll, one by one. Hit enter after entering in each option. Say `exit` to exit.\n"
+                        "Enter an emoji at the beginning of the message if you want to use custom emojis for the option counters."
                     )
                     count += 1
                     continue
@@ -343,6 +344,7 @@ class ReactPoll(commands.Cog):
             await ctx.send("Not making poll.")
             return
         if pred.result:
+            await sample_msg.delete()
             await new_poll.open_poll()
             if ctx.guild.id not in self.polls:
                 self.polls[ctx.guild.id] = {}

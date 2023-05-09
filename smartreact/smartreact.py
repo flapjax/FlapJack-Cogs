@@ -140,8 +140,8 @@ class SmartReact(commands.Cog):
             await self.conf.guild(guild).reactions.set(reactions)
             await message.channel.send("Successfully added this reaction.")
 
-        except (discord.errors.HTTPException, discord.errors.InvalidArgument):
-            await message.channel.send("That's not an emoji I recognize. " "(might be custom!)")
+        except (discord.errors.HTTPException):
+            await message.channel.send("That's not an emoji I recognize. (might be custom!)")
 
     async def remove_smart_reaction(self, guild, word, emoji, message):
         try:
@@ -158,7 +158,7 @@ class SmartReact(commands.Cog):
                     await message.channel.send("That emoji is not used as a reaction for that word.")
             else:
                 await message.channel.send("There are no smart reactions which use this emoji.")
-        except (discord.errors.HTTPException, discord.errors.InvalidArgument):
+        except (discord.errors.HTTPException):
             await message.channel.send("That's not an emoji I recognize. (might be custom!)")
 
     # Thanks irdumb#1229 for the help making this "more Pythonic"

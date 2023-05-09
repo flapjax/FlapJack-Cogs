@@ -57,7 +57,7 @@ class Poll:
     def parse_duration(self, duration: Optional[timedelta] = None) -> Optional[datetime]:
         # use remindme parsing for now
         if duration:
-            return datetime.utcnow() + duration
+            return discord.utils.utcnow() + duration
         else:
             return None
 
@@ -177,7 +177,7 @@ class Poll:
         if self.duration:
             end = "| ends at"
         em.set_footer(
-            text=f"{self.author} created a poll {end}", icon_url=str(self.author.avatar_url),
+            text=f"{self.author} created a poll {end}", icon_url=str(self.author.avatar.url),
         )
         if self.end_time:
             em.timestamp = self.end_time
@@ -201,6 +201,7 @@ class Poll:
             old_msg = await self.get_message()
 
             if old_msg:
+                log.debug(f"old_msg acquired for {old_msg.content}")
                 for reaction in old_msg.reactions:
                     async for user in reaction.users():
                         if user.bot:
