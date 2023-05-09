@@ -82,6 +82,8 @@ class Wat(commands.Cog):
                     and not author == message.author
                     and not PATTERN.fullmatch(content)
                 ):
+                    if len(content) == 0:
+                        continue
                     emoji = "\N{CHEERING MEGAPHONE}"
                     msg = f"{name} said, **{emoji}   {content}**"
                     await message.channel.send(msg, allowed_mentions=discord.AllowedMentions(users=False))

@@ -231,7 +231,9 @@ class ReactPoll(commands.Cog):
             options for the poll including emojis to be used.
         """
         if not channel.permissions_for(ctx.me).send_messages:
-            return await ctx.send(f"I do not have permission to send messages in {channel.mention}")
+            return await ctx.send(f"I do not have permission to send messages in {channel.mention}.")
+        if not channel.permissions_for(ctx.author).send_messages:
+            return await ctx.send(f"You do not have permission to send messages in {channel.mention}.")
         poll_options = {"emojis": {}, "options": [], "interactive": True, "author_id": ctx.author.id}
         default_emojis = ReactionPredicate.NUMBER_EMOJIS + ReactionPredicate.ALPHABET_EMOJIS
         poll_options["channel_id"] = channel.id
@@ -377,7 +379,9 @@ class ReactPoll(commands.Cog):
         else:
             send_channel = channel
         if not send_channel.permissions_for(ctx.me).send_messages:
-            return await ctx.send(f"I do not have permission to send messages in {send_channel.mention}")
+            return await ctx.send(f"I do not have permission to send messages in {send_channel.mention}.")
+        if not send_channel.permissions_for(ctx.author).send_messages:
+            return await ctx.send(f"You do not have permission to send messages in {send_channel.mention}.")
         poll_options["channel_id"] = send_channel.id
         # allow us to specify new channel for the poll
 

@@ -9,8 +9,8 @@ from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 
 
-EMOJI_RE = re.compile("(<a?)?:\\w+:(\\d{18}>)?")
-EMOJI_ID_RE = re.compile("\\d{18}")
+EMOJI_RE = re.compile("(<a?)?:\\w+:(\\d{18,19}>)?")
+EMOJI_ID_RE = re.compile("\\d{18,19}")
 
 
 class SmartReact(commands.Cog):
