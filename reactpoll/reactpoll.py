@@ -1,6 +1,7 @@
 import discord
 import asyncio
 from datetime import datetime, timedelta
+import pytz
 import logging
 import re
 
@@ -100,17 +101,18 @@ class ReactPoll(commands.Cog):
                             poll.end_time = datetime.utcfromtimestamp(poll.end_time)
                         if isinstance(poll.end_time, int):
                             poll.end_time = datetime.utcfromtimestamp(poll.end_time)
-                        if poll.end_time and poll.end_time <= now_time:
-                            log.debug("ending poll")
-                            try:
-                                await poll.close_poll()
-                            except Exception:
-                                pass
-                            # probs a better way to do this
-                            to_remove.append(m_id)
-                            # also need to delete from config
-                            guild = discord.Object(id=g_id)
-                            await self.delete_poll(guild, poll)
+                        if poll.end_time is not None:
+                            if poll.end_time.replace(tzinfo=None) and poll.end_time.replace(tzinfo=None) <= now_time.replace(tzinfo=None):
+                                log.debug("ending poll")
+                                try:
+                                    await poll.close_poll()
+                                except Exception:
+                                    pass
+                                # probs a better way to do this
+                                to_remove.append(m_id)
+                                # also need to delete from config
+                                guild = discord.Object(id=g_id)
+                                await self.delete_poll(guild, poll)
                         if count // 10:
                             count = 0
                             await self.store_poll(poll)
